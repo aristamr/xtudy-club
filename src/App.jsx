@@ -2315,17 +2315,19 @@ const DEFAULT_RESTAURANTS = [
   { id: "r2", name: "Café Vaivén", category: "Cafetería", discount: "10% de descuento", code: "VAIVEN10", tier: "free", address: "P.º Solares 30, San Juan de Ocotán, 49015 Zapopan, Jal." },
   { id: "r3", name: "Pizza Rebelde", category: "Pizza", discount: "20% en pizzas medianas", code: "BARRIO20", tier: "free", address: "Av. Ejemplo 123, Guadalajara" },
   { id: "r4", name: "Exprime GDL", category: "Jugos", discount: "10% de descuento", code: "FRESCA10", tier: "free", address: "Av. Ejemplo 456, Guadalajara" },
-  { id: "r5", name: "Sushi Salvaje", category: "Sushi", discount: "25% en rollos seleccionados", code: "ROLL25", tier: "t49", address: "Av. Ejemplo 789, Guadalajara" },
-  { id: "r6", name: "Burger Bandido", category: "Hamburguesas", discount: "2x1 en combo clásico", code: "NACION2X1", tier: "t49", address: "Av. Ejemplo 321, Guadalajara" },
-  { id: "r7", name: "Pasta Nonna", category: "Italiana", discount: "20% de descuento", code: "PIAZZA20", tier: "t49", address: "Av. Ejemplo 654, Guadalajara" },
-  { id: "r8", name: "Poke Tribu", category: "Poke", discount: "15% de descuento", code: "POKE15", tier: "t49", address: "Av. Ejemplo 987, Guadalajara" },
-  { id: "r9", name: "Fuego Norteño", category: "Carnes", discount: "30% en cortes seleccionados", code: "VALLE30", tier: "t99", address: "Av. Ejemplo 111, Guadalajara" },
-  { id: "r10", name: "Ramen Kaiju", category: "Ramen", discount: "20% + bebida gratis", code: "KOJI20", tier: "t99", address: "Av. Ejemplo 222, Guadalajara" },
-  { id: "r11", name: "La Marea Brava", category: "Mariscos", discount: "25% de descuento", code: "OLA25", tier: "t99", address: "Av. Ejemplo 333, Guadalajara" },
-  { id: "r12", name: "Antojo Callejero", category: "Mexicana", discount: "2x1 entre semana", code: "NORTE2X1", tier: "t99", address: "Av. Ejemplo 444, Guadalajara" },
-  { id: "r13", name: "El Asador Salvaje", category: "Carnes premium", discount: "35% en cortes", code: "ROBLE35", tier: "t99", address: "Av. Ejemplo 555, Guadalajara" },
-  { id: "r14", name: "Omakase Luna", category: "Sushi premium", discount: "30% de descuento", code: "LUNA30", tier: "t99", address: "Av. Ejemplo 666, Guadalajara" },
-  { id: "r15", name: "Rooftop Cielo", category: "Bar / Terraza", discount: "2x1 en bebidas", code: "CIELO2X1", tier: "t99", address: "Av. Ejemplo 777, Guadalajara" },
+  { id: "r5", name: "Sanopecado", category: "Comida saludable", discount: "Descuento por confirmar", code: "SANO01", tier: "t49", address: "Pendiente de confirmar dirección" },
+  { id: "r6", name: "Yogocup", category: "Yogurt helado", discount: "Descuento por confirmar", code: "YOGO01", tier: "t49", address: "Pendiente de confirmar dirección" },
+  { id: "r7", name: "Santo Coyote", category: "Mexicana", discount: "Descuento por confirmar", code: "COYOTE01", tier: "t49", address: "Pendiente de confirmar dirección" },
+  { id: "r8", name: "Carl's Jr", category: "Hamburguesas", discount: "Descuento por confirmar", code: "CARLS01", tier: "t49", address: "Pendiente de confirmar dirección" },
+  { id: "r9", name: "Sushi Central", category: "Sushi", discount: "Descuento por confirmar", code: "SUSHIC01", tier: "t99", address: "Pendiente de confirmar dirección" },
+  { id: "r10", name: "Quilombo", category: "Parrilla argentina", discount: "Descuento por confirmar", code: "QUILOM01", tier: "t99", address: "Pendiente de confirmar dirección" },
+  { id: "r11", name: "Papa Cabaña La Ola", category: "Mariscos", discount: "Descuento por confirmar", code: "PAPAOLA01", tier: "t99", address: "Pendiente de confirmar dirección" },
+  { id: "r12", name: "Quin Oriental", category: "Comida asiática", discount: "Descuento por confirmar", code: "QUIN01", tier: "t99", address: "Pendiente de confirmar dirección" },
+  { id: "r13", name: "Los Chilaquiles", category: "Desayunos", discount: "Descuento por confirmar", code: "CHILAQ01", tier: "t99", address: "Pendiente de confirmar dirección" },
+  { id: "r14", name: "Punto Ostra", category: "Ostras / Mariscos", discount: "Descuento por confirmar", code: "OSTRA01", tier: "t99", address: "Pendiente de confirmar dirección" },
+  { id: "r15", name: "Genki Poke", category: "Poke", discount: "Descuento por confirmar", code: "GENKI01", tier: "t49", address: "Pendiente de confirmar dirección" },
+  { id: "r16", name: "Domino's", category: "Pizza", discount: "Descuento por confirmar", code: "DOMINO01", tier: "t49", address: "Pendiente de confirmar dirección" },
+  { id: "r17", name: "Little Caesars", category: "Pizza", discount: "Descuento por confirmar", code: "LITTLEC01", tier: "t49", address: "Pendiente de confirmar dirección" },
 ];
 
 const DEFAULT_UNIVERSITIES = [
@@ -2422,6 +2424,8 @@ export default function ClubDescuentos() {
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no" });
   const [formError, setFormError] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [adminInput, setAdminInput] = useState("");
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
@@ -2566,6 +2570,30 @@ export default function ClubDescuentos() {
     setView("landing");
   };
 
+  const handleLogin = () => {
+    setLoginError("");
+    const email = loginEmail.trim().toLowerCase();
+    if (!email) {
+      setLoginError("Escribe el correo con el que te registraste.");
+      return;
+    }
+    (async () => {
+      const val = await storageGet(`account:${email}`, true);
+      if (!val) {
+        setLoginError("No encontramos una cuenta con ese correo. ¿Ya te registraste?");
+        return;
+      }
+      try {
+        const parsedAcc = JSON.parse(val);
+        setAccount(parsedAcc);
+        setView("dashboard");
+        persist(() => window.storage.set("my-email", parsedAcc.email, false));
+      } catch {
+        setLoginError("Ocurrió un problema al leer tu cuenta. Intenta de nuevo.");
+      }
+    })();
+  };
+
   const submitAdminCode = () => {
     if (adminInput === ADMIN_CODE) {
       setAdminUnlocked(true);
@@ -2587,7 +2615,7 @@ export default function ClubDescuentos() {
           const reds = [];
           for (const k of rkeys) {
             const val = await storageGet(k, true);
-            if (val) { try { reds.push(JSON.parse(val)); } catch {} }
+            if (val) { try { reds.push({ ...JSON.parse(val), _key: k }); } catch {} }
           }
           reds.sort((a, b) => new Date(b.at) - new Date(a.at));
           setRedemptions(reds);
@@ -2596,6 +2624,21 @@ export default function ClubDescuentos() {
     } else {
       setFormError("Código incorrecto.");
     }
+  };
+
+  const removeAccount = (acc) => {
+    if (!window.confirm(`¿Seguro que quieres borrar el registro de ${acc.name} (${acc.email})? Esto no se puede deshacer.`)) return;
+    setAllAccounts((prev) => prev.filter((a) => a.email !== acc.email));
+    persist(async () => {
+      await window.storage.delete(`account:${acc.email}`, true);
+      if (acc.memberId) await window.storage.delete(`member:${acc.memberId}`, true);
+    });
+  };
+
+  const removeRedemption = (item) => {
+    if (!window.confirm(`¿Borrar este canje de ${item.name || item.email} en ${item.restaurant}?`)) return;
+    setRedemptions((prev) => prev.filter((r) => r._key !== item._key));
+    persist(() => window.storage.delete(item._key, true));
   };
 
   const addRestaurant = () => {
@@ -2662,11 +2705,15 @@ export default function ClubDescuentos() {
       <AppHeader />
 
       {view === "landing" && (
-        <Landing onStart={() => setView("register")} onAdmin={() => setView("admin-login")} />
+        <Landing onStart={() => setView("register")} onAdmin={() => setView("admin-login")} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
       )}
 
       {view === "register" && (
         <Register form={form} setForm={setForm} onSubmit={handleRegister} error={formError} onBack={() => setView("landing")} universities={universities} />
+      )}
+
+      {view === "login" && (
+        <Login email={loginEmail} setEmail={setLoginEmail} onSubmit={handleLogin} error={loginError} onBack={() => setView("landing")} />
       )}
 
       {view === "dashboard" && account && (
@@ -2682,6 +2729,7 @@ export default function ClubDescuentos() {
           accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions}
           newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant}
           newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
+          onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption}
           onBack={() => setView("landing")}
         />
       )}
@@ -2692,7 +2740,7 @@ export default function ClubDescuentos() {
 
 function AppHeader() {
   return (
-    <div style={styles.appHeader}>
+    <div className="page-container" style={styles.appHeader}>
       <img src={SYMBOL_WHITE_DATA} alt="Xtudy" style={styles.headerSymbol} />
       <LangToggle />
     </div>
@@ -2723,13 +2771,13 @@ function FomoBanner() {
   );
 }
 
-function Landing({ onStart, onAdmin }) {
+function Landing({ onStart, onAdmin, onLogin }) {
   const { lang } = useContext(LangContext);
   return (
-    <div style={styles.landingWrap}>
+    <div className="page-container" style={styles.landingWrap}>
       <FomoBanner />
       <div style={styles.trianglePatch} />
-      <div style={styles.landingContent}>
+      <div className="landing-grid" style={styles.landingContent}>
         <div style={styles.landingHero}>
           <div style={styles.eyebrow}>{lang === "es" ? "CLUB DE ESTUDIANTES" : "STUDENT CLUB"}</div>
           <h1 style={styles.h1}>
@@ -2746,9 +2794,14 @@ function Landing({ onStart, onAdmin }) {
             <Sparkles size={13} color={colors.blue} />
             {lang === "es" ? "Úsalos las veces que quieras, sin límite" : "Use them as many times as you want, no limit"}
           </div>
-          <button style={styles.ctaBtn} onClick={onStart}>
-            {lang === "es" ? "Registrarme gratis" : "Sign up for free"} <ChevronRight size={18} strokeWidth={2.5} />
-          </button>
+          <div style={styles.heroBtnRow}>
+            <button style={styles.ctaBtn} onClick={onStart}>
+              {lang === "es" ? "Registrarme gratis" : "Sign up for free"} <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+            <button style={styles.loginLink} onClick={onLogin}>
+              {lang === "es" ? "Ya tengo cuenta — iniciar sesión" : "I already have an account — log in"}
+            </button>
+          </div>
         </div>
 
         <div style={styles.cardMock}>
@@ -2770,6 +2823,32 @@ function Landing({ onStart, onAdmin }) {
 
       <div style={styles.landingLinks}>
         <button style={styles.adminLink} onClick={onAdmin}><ShieldCheck size={13} /> {lang === "es" ? "Acceso administrador" : "Admin access"}</button>
+      </div>
+    </div>
+  );
+}
+
+function Login({ email, setEmail, onSubmit, error, onBack }) {
+  const { lang } = useContext(LangContext);
+  return (
+    <div style={styles.centerWrap}>
+      <div style={styles.panel}>
+        <button style={styles.backLink} onClick={onBack}><X size={16} /></button>
+        <img src={SYMBOL_DATA} alt="Xtudy" style={styles.panelSymbol} />
+        <div style={styles.eyebrow}>{lang === "es" ? "BIENVENIDO DE VUELTA" : "WELCOME BACK"}</div>
+        <h2 style={styles.h2}>{lang === "es" ? "Iniciar sesión" : "Log in"}</h2>
+        <p style={styles.formSub}>
+          {lang === "es"
+            ? "Escribe el correo con el que te registraste — no necesitas contraseña."
+            : "Type the email you registered with — no password needed."}
+        </p>
+        <div style={styles.form}>
+          <label style={styles.label}>{lang === "es" ? "Correo electrónico" : "Email"}
+            <input style={styles.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={lang === "es" ? "tucorreo@ejemplo.com" : "youremail@example.com"} />
+          </label>
+          {error && <div style={styles.errorText}>{error}</div>}
+          <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{lang === "es" ? "Entrar" : "Log in"}</button>
+        </div>
       </div>
     </div>
   );
@@ -2835,7 +2914,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   };
 
   return (
-    <div style={styles.dashWrap}>
+    <div className="page-container" style={styles.dashWrap}>
       <div style={styles.dashHeader}>
         <div>
           <div style={styles.memberBadge}><Check size={12} /> {lang === "es" ? "Eres parte del Club Xtudy" : "You're part of the Xtudy Club"}</div>
@@ -2958,7 +3037,7 @@ function AdminLogin({ value, setValue, onSubmit, error, onBack }) {
   );
 }
 
-function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, newUni, setNewUni, onAddUni, onRemoveUni, onBack }) {
+function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, onBack }) {
   const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length }));
 
   const byRestaurant = {};
@@ -2971,7 +3050,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
 
   const downloadCsv = (filename, rows) => {
     const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -2995,7 +3074,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
   };
 
   return (
-    <div style={styles.dashWrap}>
+    <div className="page-container" style={styles.dashWrap}>
       <div style={styles.dashHeader}>
         <div><div style={styles.eyebrow}>PANEL INTERNO</div><h2 style={styles.h2}>Administración</h2></div>
         <button style={styles.logoutBtn} onClick={onBack}><X size={15} /> Cerrar</button>
@@ -3026,6 +3105,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
               <div style={styles.adminRowMeta}>{a.email} · {a.phone} · {a.university} · Xtudy: {a.isXtudy === "si" ? "Sí" : "No"}</div>
             </div>
             <span style={styles.adminRowTier}>{TIERS.find((t) => t.id === a.tier)?.name}</span>
+            <button style={styles.removeBtn} onClick={() => onRemoveAccount(a)} title="Borrar este registro"><X size={14} /></button>
           </div>
         ))}
       </div>
@@ -3085,11 +3165,12 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       <div style={styles.adminTableWrap}>
         {(redemptions || []).length === 0 && <p style={styles.emptyText}>Aún no hay canjes registrados.</p>}
         {(redemptions || []).map((r, i) => (
-          <div key={i} style={styles.adminRow}>
+          <div key={r._key || i} style={styles.adminRow}>
             <div>
               <div style={styles.adminRowName}>{r.name || r.email} — {r.restaurant}</div>
               <div style={styles.adminRowMeta}>{new Date(r.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })} · nivel: {TIERS.find((t) => t.id === r.tier)?.name || r.tier}</div>
             </div>
+            <button style={styles.removeBtn} onClick={() => onRemoveRedemption(r)} title="Borrar este canje"><X size={14} /></button>
           </div>
         ))}
       </div>
@@ -3120,6 +3201,28 @@ const fontImport = `
 *, *::before, *::after { box-sizing: border-box; }
 input, select, button { max-width: 100%; }
 img { max-width: 100%; height: auto; }
+
+.page-container {
+  width: 98%;
+  max-width: 1700px;
+  margin: 0 auto;
+}
+
+.landing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .landing-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+}
 `;
 
 const colors = {
@@ -3134,29 +3237,31 @@ const colors = {
 };
 
 const styles = {
-  app: { minHeight: "100vh", background: colors.navy, fontFamily: "'Inter', sans-serif", color: colors.card, padding: "24px 16px 60px", position: "relative" },
+  app: { minHeight: "100vh", background: colors.navy, fontFamily: "'Inter', sans-serif", color: colors.card, padding: "24px 8px 60px", position: "relative" },
   loadingWrap: { minHeight: "300px", display: "flex", alignItems: "center", justifyContent: "center", background: colors.navy },
   stamp: { width: 40, height: 40, borderRadius: "50%", border: `3px dashed ${colors.blue}`, animation: "spin 1.2s linear infinite" },
-  landingWrap: { maxWidth: 1100, margin: "0 auto", position: "relative", width: "100%" },
-  landingContent: { display: "flex", flexWrap: "wrap", gap: 32, alignItems: "center", justifyContent: "center" },
-  trianglePatch: { position: "absolute", top: -24, right: -40, width: 160, height: 160, background: colors.blue, opacity: 0.18, clipPath: "polygon(100% 0, 0 0, 100% 100%)", pointerEvents: "none" },
+  landingWrap: { position: "relative", minHeight: "calc(100vh - 170px)", display: "flex", flexDirection: "column", justifyContent: "center" },
+  landingContent: {},
+  trianglePatch: { position: "absolute", top: "-10%", right: "-6%", width: "38%", height: "70%", background: colors.blue, opacity: 0.16, clipPath: "polygon(100% 0, 0 0, 100% 100%)", pointerEvents: "none" },
   fomoBanner: { display: "flex", alignItems: "center", gap: 8, background: "rgba(0,130,203,0.12)", border: `1px solid ${colors.blue}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "#CFE6F5", marginBottom: 18 },
-  landingHero: { textAlign: "left", padding: "12px 4px 28px", position: "relative", zIndex: 1, flex: "1 1 380px", minWidth: 300, maxWidth: 480 },
+  landingHero: { textAlign: "left", padding: "12px 4px 28px", position: "relative", zIndex: 1, maxWidth: 640 },
   eyebrow: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: 2, color: colors.blueLight, marginBottom: 10, fontWeight: 500 },
-  h1: { fontFamily: "'Host Grotesk', sans-serif", fontSize: "clamp(28px, 4.5vw, 40px)", lineHeight: 1.1, margin: "0 0 14px", color: colors.card, fontWeight: 800 },
+  h1: { fontFamily: "'Host Grotesk', sans-serif", fontSize: "clamp(28px, 3.5vw, 48px)", lineHeight: 1.1, margin: "0 0 14px", color: colors.card, fontWeight: 800 },
   accentText: { color: colors.blueLight },
-  heroSub: { fontSize: 15, lineHeight: 1.55, color: "#CFE0EC", margin: "0 0 22px", maxWidth: 420 },
+  heroSub: { fontSize: "clamp(15px, 1.1vw, 17px)", lineHeight: 1.6, color: "#CFE0EC", margin: "0 0 22px", maxWidth: 460 },
   ctaBtn: { display: "inline-flex", alignItems: "center", gap: 8, background: colors.blue, color: "#fff", border: "none", borderRadius: 999, padding: "13px 22px", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif" },
+  heroBtnRow: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10 },
+  loginLink: { background: "none", border: "none", color: "#9FC0D6", fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline", padding: 0 },
   ctaBtnSmall: { display: "inline-flex", alignItems: "center", gap: 6, background: colors.blue, color: "#fff", border: "none", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" },
   unlimitedPill: { display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,130,203,0.14)", border: `1px solid ${colors.blue}`, color: "#CFE0EC", fontSize: 12.5, fontWeight: 600, borderRadius: 999, padding: "6px 12px", marginBottom: 18 },
-  cardMock: { display: "flex", justifyContent: "center", margin: "8px 0 24px", position: "relative", zIndex: 1, flex: "0 1 300px", minWidth: 260, width: "100%" },
-  membershipCard: { background: colors.card, borderRadius: 18, padding: 20, width: "100%", maxWidth: 300, color: colors.ink, boxShadow: "0 12px 30px rgba(0,0,0,0.3)" },
+  cardMock: { display: "flex", justifyContent: "center", margin: "8px 0 24px", position: "relative", zIndex: 1, width: "100%" },
+  membershipCard: { background: colors.card, borderRadius: 20, padding: 26, width: "100%", maxWidth: 340, color: colors.ink, boxShadow: "0 12px 30px rgba(0,0,0,0.3)" },
   membershipCardBig: { background: colors.card, borderRadius: 18, padding: 22, color: colors.ink, boxShadow: "0 12px 30px rgba(0,0,0,0.3)", maxWidth: 420, margin: "0 auto 22px" },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   cardBrand: { fontFamily: "'Host Grotesk', sans-serif", fontWeight: 800, letterSpacing: 1, fontSize: 13, color: colors.navy },
   cardBrandImg: { height: 20, width: "auto" },
   panelSymbol: { height: 26, width: "auto", marginBottom: 10 },
-  appHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto 18px" },
+  appHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   headerSymbol: { height: 22, width: "auto" },
   langToggle: { display: "flex", gap: 4, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
   langBtn: { border: "none", background: "none", color: "#9FC0D6", fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 999, cursor: "pointer" },
@@ -3183,7 +3288,7 @@ const styles = {
   radioBtn: { flex: 1, padding: "9px 0", borderRadius: 10, border: `1px solid ${colors.line}`, background: "#fff", cursor: "pointer", fontSize: 13.5, color: colors.ink },
   radioBtnActive: { background: colors.blue, color: "#fff", borderColor: colors.blue },
   errorText: { fontSize: 12.5, color: "#B3261E" },
-  dashWrap: { maxWidth: 1100, margin: "0 auto" },
+  dashWrap: {},
   dashHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 },
   memberBadge: { display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,130,203,0.18)", border: `1px solid ${colors.blue}`, color: colors.blueLight, fontSize: 11.5, fontWeight: 600, borderRadius: 999, padding: "4px 10px", marginBottom: 8 },
   logoutBtn: { display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: colors.card, borderRadius: 10, padding: "8px 12px", fontSize: 12.5, cursor: "pointer" },
