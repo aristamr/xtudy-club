@@ -2675,6 +2675,45 @@ export default function ClubDescuentos() {
     })();
   };
 
+  const loadAdminData = () => {
+    persist(async () => {
+      try {
+        const savedCode = await storageGet("resident-access-code", true);
+        if (savedCode) setResidentAccessCode(savedCode);
+      } catch {}
+      try {
+        const idx = await window.storage.list("account:", true);
+        const keys = idx?.keys || [];
+        const accs = [];
+        for (const k of keys) {
+          const val = await storageGet(k, true);
+          if (val) { try { accs.push(JSON.parse(val)); } catch {} }
+        }
+        setAllAccounts(accs);
+      } catch { setAllAccounts([]); }
+      try {
+        const ridx = await window.storage.list("redemption:", true);
+        const rkeys = ridx?.keys || [];
+        const reds = [];
+        for (const k of rkeys) {
+          const val = await storageGet(k, true);
+          if (val) { try { reds.push({ ...JSON.parse(val), _key: k }); } catch {} }
+        }
+        reds.sort((a, b) => new Date(b.at) - new Date(a.at));
+        setRedemptions(reds);
+      } catch { setRedemptions([]); }
+    });
+  };
+
+  useEffect(() => {
+    if (view !== "admin" || !adminUnlocked) return;
+    const interval = setInterval(() => {
+      loadAdminData();
+    }, 15000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, adminUnlocked]);
+
   const submitAdminLogin = async () => {
     setFormError("");
     try {
@@ -2688,33 +2727,7 @@ export default function ClubDescuentos() {
       }
       setAdminUnlocked(true);
       setView("admin");
-      persist(async () => {
-        try {
-          const savedCode = await storageGet("resident-access-code", true);
-          if (savedCode) setResidentAccessCode(savedCode);
-        } catch {}
-        try {
-          const idx = await window.storage.list("account:", true);
-          const keys = idx?.keys || [];
-          const accs = [];
-          for (const k of keys) {
-            const val = await storageGet(k, true);
-            if (val) { try { accs.push(JSON.parse(val)); } catch {} }
-          }
-          setAllAccounts(accs);
-        } catch { setAllAccounts([]); }
-        try {
-          const ridx = await window.storage.list("redemption:", true);
-          const rkeys = ridx?.keys || [];
-          const reds = [];
-          for (const k of rkeys) {
-            const val = await storageGet(k, true);
-            if (val) { try { reds.push({ ...JSON.parse(val), _key: k }); } catch {} }
-          }
-          reds.sort((a, b) => new Date(b.at) - new Date(a.at));
-          setRedemptions(reds);
-        } catch { setRedemptions([]); }
-      });
+      loadAdminData();
     } catch {
       setFormError("Ocurrió un problema al iniciar sesión. Intenta de nuevo.");
     }
@@ -2827,6 +2840,7 @@ export default function ClubDescuentos() {
           newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
           onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption}
           residentAccessCode={residentAccessCode} onUpdateResidentCode={updateResidentCode}
+          onRefresh={loadAdminData}
           onBack={() => setView("landing")}
         />
       )}
@@ -3192,7 +3206,7 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
   );
 }
 
-function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
+function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
   const [editingRestId, setEditingRestId] = useState(null);
   const [editDraft, setEditDraft] = useState({});
 
@@ -3254,6 +3268,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
     <div className="page-container" style={styles.dashWrap}>
       <div style={styles.dashHeader}>
         <div><div style={styles.eyebrow}>PANEL INTERNO</div><h2 style={styles.h2}>Administración</h2></div>
+        <button style={styles.exportBtn} onClick={onRefresh}>⟳ Actualizar</button>
         <button style={styles.logoutBtn} onClick={onBack}><X size={15} /> Cerrar</button>
       </div>
 
