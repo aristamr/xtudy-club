@@ -8,7 +8,7 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
-import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin } from "lucide-react";
+import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
@@ -2328,10 +2328,10 @@ const RESTAURANT_TIER_OPTIONS = [
 ];
 
 const DEFAULT_RESTAURANTS = [
-  { id: "r1", name: "Dogos Bravo", category: "Hot dogs", discount: "15% de descuento", code: "BRAVO15", tier: "guest", address: "Av. General Ramón Corona 2419, San Juan de Ocotán, 45019 Zapopan, Jal." },
-  { id: "r2", name: "Café Vaivén", category: "Cafetería", discount: "10% de descuento", code: "VAIVEN10", tier: "guest", address: "P.º Solares 30, San Juan de Ocotán, 49015 Zapopan, Jal." },
+  { id: "r1", name: "Dogos Bravo", category: "Hot dogs", discountPercent: 15, code: "BRAVO15", tier: "guest", address: "Av. General Ramón Corona 2419, San Juan de Ocotán, 45019 Zapopan, Jal." },
+  { id: "r2", name: "Café Vaivén", category: "Cafetería", discountPercent: 10, code: "VAIVEN10", tier: "guest", address: "P.º Solares 30, San Juan de Ocotán, 49015 Zapopan, Jal." },
   { id: "r3", name: "Pizza Rebelde", category: "Pizza", discount: "20% en pizzas medianas", code: "BARRIO20", tier: "guest", address: "Av. Ejemplo 123, Guadalajara" },
-  { id: "r4", name: "Exprime GDL", category: "Jugos", discount: "10% de descuento", code: "FRESCA10", tier: "guest", address: "Av. Ejemplo 456, Guadalajara" },
+  { id: "r4", name: "Exprime GDL", category: "Jugos", discountPercent: 10, code: "FRESCA10", tier: "guest", address: "Av. Ejemplo 456, Guadalajara" },
   { id: "r5", name: "Sanopecado", category: "Comida saludable", discount: "Descuento por confirmar", code: "SANO01", tier: "soon", address: "Pendiente de confirmar dirección" },
   { id: "r6", name: "Yogocup", category: "Yogurt helado", discount: "Descuento por confirmar", code: "YOGO01", tier: "soon", address: "Pendiente de confirmar dirección" },
   { id: "r7", name: "Santo Coyote", category: "Mexicana", discount: "Descuento por confirmar", code: "COYOTE01", tier: "soon", address: "Pendiente de confirmar dirección" },
@@ -2375,6 +2375,16 @@ const DEFAULT_UNIVERSITIES = [
 function tierOrder(id) {
   if (id === "soon") return SOON_ORDER;
   return TIERS.find((t) => t.id === id)?.order ?? 0;
+}
+
+// Le da formato automático al descuento: si hay un porcentaje numérico, arma el
+// texto solo (bilingüe). Si no, usa el texto libre o un mensaje por defecto.
+function formatDiscount(r, lang) {
+  if (r.discountPercent !== undefined && r.discountPercent !== null && r.discountPercent !== "") {
+    return lang === "es" ? `${r.discountPercent}% de descuento` : `${r.discountPercent}% off`;
+  }
+  if (r.discount) return r.discount;
+  return lang === "es" ? "Descuento por confirmar" : "Discount to be confirmed";
 }
 
 function genMemberId() {
@@ -2481,7 +2491,7 @@ export default function ClubDescuentos() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discount: "", code: "", tier: "guest", address: "" });
+  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "" });
   const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
@@ -2728,10 +2738,11 @@ export default function ClubDescuentos() {
   const addRestaurant = () => {
     if (!newRest.name.trim() || !newRest.code.trim()) return;
     saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...newRest }]);
-    setNewRest({ name: "", category: "", discount: "", code: "", tier: "guest", address: "" });
+    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "" });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
   const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
+  const updateRestaurant = (id, patch) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
   const addUniversity = () => {
     if (!newUni.name.trim()) return;
@@ -2812,7 +2823,7 @@ export default function ClubDescuentos() {
       {view === "admin" && adminUnlocked && (
         <AdminPanel
           accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions}
-          newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant} onUpdateRestTier={updateRestaurantTier}
+          newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant} onUpdateRestTier={updateRestaurantTier} onUpdateRest={updateRestaurant}
           newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
           onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption}
           residentAccessCode={residentAccessCode} onUpdateResidentCode={updateResidentCode}
@@ -3093,7 +3104,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                 </a>
               </>
             )}
-            <div style={styles.restDiscount}>{r.discount}</div>
+            <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
             <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
               <QrCode size={14} /> {openQrFor === r.id ? (lang === "es" ? "Ocultar QR" : "Hide QR") : (lang === "es" ? "Mostrar QR" : "Show QR")}
             </button>
@@ -3166,7 +3177,27 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
   );
 }
 
-function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
+function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
+  const [editingRestId, setEditingRestId] = useState(null);
+  const [editDraft, setEditDraft] = useState({});
+
+  const startEditRest = (r) => {
+    setEditingRestId(r.id);
+    setEditDraft({
+      name: r.name,
+      category: r.category,
+      code: r.code,
+      address: r.address || "",
+      discountPercent: r.discountPercent ?? "",
+      discount: r.discountPercent ? "" : (r.discount || ""),
+    });
+  };
+  const saveEditRest = (id) => {
+    const patch = { ...editDraft };
+    if (patch.discountPercent === "") delete patch.discountPercent;
+    onUpdateRest(id, patch);
+    setEditingRestId(null);
+  };
   const [codeInput, setCodeInput] = useState(residentAccessCode);
   useEffect(() => { setCodeInput(residentAccessCode); }, [residentAccessCode]);
   const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length, adminName: TIER_NAME_ES[t.id] }));
@@ -3252,7 +3283,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       <div style={styles.adminAddForm}>
         <input style={styles.input} placeholder="Nombre" value={newRest.name} onChange={(e) => setNewRest({ ...newRest, name: e.target.value })} />
         <input style={styles.input} placeholder="Categoría" value={newRest.category} onChange={(e) => setNewRest({ ...newRest, category: e.target.value })} />
-        <input style={styles.input} placeholder="Descuento (ej. 15% de descuento)" value={newRest.discount} onChange={(e) => setNewRest({ ...newRest, discount: e.target.value })} />
+        <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
         <input style={styles.input} placeholder="Dirección de la sucursal" value={newRest.address} onChange={(e) => setNewRest({ ...newRest, address: e.target.value })} />
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
@@ -3262,16 +3293,34 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       </div>
       <div style={styles.adminTableWrap}>
         {restaurants.map((r) => (
-          <div key={r.id} style={styles.adminRow}>
-            <div>
-              <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
-              <div style={styles.adminRowMeta}>{r.discount} · código: {r.code}</div>
+          editingRestId === r.id ? (
+            <div key={r.id} style={styles.adminEditRow}>
+              <div style={styles.adminAddForm}>
+                <input style={styles.input} placeholder="Nombre" value={editDraft.name} onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })} />
+                <input style={styles.input} placeholder="Categoría" value={editDraft.category} onChange={(e) => setEditDraft({ ...editDraft, category: e.target.value })} />
+                <input style={styles.input} placeholder="% de descuento (solo el número)" type="number" value={editDraft.discountPercent} onChange={(e) => setEditDraft({ ...editDraft, discountPercent: e.target.value })} />
+                <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
+                <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
+                <input style={styles.input} placeholder="Dirección de la sucursal" value={editDraft.address} onChange={(e) => setEditDraft({ ...editDraft, address: e.target.value })} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={styles.ctaBtnSmall} onClick={() => saveEditRest(r.id)}><Save size={14} /> Guardar</button>
+                <button style={styles.exportBtn} onClick={() => setEditingRestId(null)}>Cancelar</button>
+              </div>
             </div>
-            <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
-              {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <button style={styles.removeBtn} onClick={() => onRemoveRest(r.id)}><X size={14} /></button>
-          </div>
+          ) : (
+            <div key={r.id} style={styles.adminRow}>
+              <div>
+                <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
+                <div style={styles.adminRowMeta}>{formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}</div>
+              </div>
+              <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
+                {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <button style={styles.removeBtn} onClick={() => startEditRest(r)} title="Editar este restaurante"><Pencil size={14} /></button>
+              <button style={styles.removeBtn} onClick={() => onRemoveRest(r.id)} title="Borrar este restaurante"><X size={14} /></button>
+            </div>
+          )
         ))}
       </div>
 
@@ -3487,6 +3536,7 @@ const styles = {
   adminStatLabel: { fontSize: 11.5, color: colors.muted },
   adminTableWrap: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 },
   adminRow: { background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 },
+  adminEditRow: { background: "rgba(0,130,203,0.1)", border: "1px solid rgba(0,130,203,0.4)", borderRadius: 10, padding: "12px", display: "flex", flexDirection: "column", gap: 10 },
   adminTierSelect: { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "6px 8px", fontSize: 12, fontWeight: 600 },
   adminRowName: { fontSize: 13.5, fontWeight: 600 },
   adminRowMeta: { fontSize: 11.5, color: "#9FC0D6" },
