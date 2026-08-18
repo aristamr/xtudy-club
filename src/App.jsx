@@ -2408,6 +2408,38 @@ function formatDiscount(r, lang) {
   return lang === "es" ? "Descuento por confirmar" : "Discount to be confirmed";
 }
 
+// Devuelve la lista de sucursales de un restaurante, sin importar si se guardó
+// con el campo nuevo (branches: [...]) o el viejo (branch: "texto único").
+// Así, restaurantes ya existentes en la base de datos siguen funcionando igual.
+function getBranches(r) {
+  if (Array.isArray(r.branches) && r.branches.length > 0) return r.branches;
+  if (r.branch) return [{ name: r.branch, address: r.address || "" }];
+  return [];
+}
+
+// Arma el link de "Ver ubicación". Prioridad:
+// 1) Si el admin pegó un link de Google Maps directo, se usa tal cual.
+// 2) Si es franquicia con varias sucursales, arma un link con todas como paradas
+//    (así se ven todas al mismo tiempo en Google Maps).
+// 3) Si no, arma la búsqueda normal con nombre + dirección.
+function getLocationUrl(r) {
+  if (r.mapsLink && r.mapsLink.trim()) return r.mapsLink.trim();
+  const branches = getBranches(r);
+  if (r.isFranchise && branches.length > 1) {
+    const stops = branches
+      .filter((b) => b.address)
+      .map((b) => encodeURIComponent(`${r.name} ${b.name}, ${b.address}`.trim()));
+    if (stops.length > 0) return `https://www.google.com/maps/dir/${stops.join("/")}`;
+  }
+  if (branches.length === 1 && branches[0].address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + " " + branches[0].name + ", " + branches[0].address)}`;
+  }
+  if (r.address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ", " + r.address)}`;
+  }
+  return null;
+}
+
 function genMemberId() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let id = "";
@@ -2512,7 +2544,7 @@ export default function ClubDescuentos() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "" });
+  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "" });
   const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
@@ -2788,7 +2820,7 @@ export default function ClubDescuentos() {
   const addRestaurant = () => {
     if (!newRest.name.trim() || !newRest.code.trim()) return;
     saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...newRest }]);
-    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "" });
+    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "" });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
   const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
@@ -3162,20 +3194,31 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           <div key={r.id} style={styles.restCard}>
             <div style={styles.restCategory}>{r.category}</div>
             <div style={styles.restName}>{r.name}</div>
-            {r.isFranchise && r.branch && (
-              <div style={styles.franchiseBadge}>🏪 {lang === "es" ? "Solo en" : "Only at"}: {r.branch}</div>
-            )}
-            {r.address && (
+            {r.isFranchise && (() => {
+              const branches = getBranches(r);
+              if (branches.length === 0) return null;
+              if (branches.length === 1) {
+                return <div style={styles.franchiseBadge}>{lang === "es" ? "Solo en la siguiente sucursal" : "Only at this branch"}: {branches[0].name}</div>;
+              }
+              return (
+                <div style={styles.franchiseBadge}>
+                  {lang === "es" ? "Disponible en" : "Available at"} {branches.length} {lang === "es" ? "sucursales" : "branches"}: {branches.map((b) => b.name).join(", ")}
+                </div>
+              );
+            })()}
+            {(r.address || getBranches(r).length > 0) && (
               <>
-                <div style={styles.restAddress}>📍 {r.address}</div>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.branch ? " " + r.branch : "") + ", " + r.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.locationLink}
-                >
-                  <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
-                </a>
+                {!r.isFranchise && r.address && <div style={styles.restAddress}>📍 {r.address}</div>}
+                {getLocationUrl(r) && (
+                  <a
+                    href={getLocationUrl(r)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.locationLink}
+                  >
+                    <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
+                  </a>
+                )}
               </>
             )}
             <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
@@ -3265,15 +3308,33 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       discountPercent: r.discountPercent ?? "",
       discount: r.discountPercent ? "" : (r.discount || ""),
       isFranchise: r.isFranchise || false,
-      branch: r.branch || "",
+      mapsLink: r.mapsLink || "",
+      branches: getBranches(r).length > 0 ? getBranches(r) : [{ name: "", address: "" }],
     });
   };
   const saveEditRest = (id) => {
     const patch = { ...editDraft };
     if (patch.discountPercent === "") delete patch.discountPercent;
+    if (patch.isFranchise) {
+      patch.branches = patch.branches.filter((b) => b.name.trim() || b.address.trim());
+      patch.branch = patch.branches[0]?.name || "";
+    } else {
+      patch.branches = [];
+      patch.branch = "";
+    }
     onUpdateRest(id, patch);
     setEditingRestId(null);
   };
+  const updateBranchField = (i, field, value) => {
+    setEditDraft((prev) => {
+      const branches = [...prev.branches];
+      branches[i] = { ...branches[i], [field]: value };
+      return { ...prev, branches };
+    });
+  };
+  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", address: "" }] }));
+  const removeBranchRow = (i) => setEditDraft((prev) => ({ ...prev, branches: prev.branches.filter((_, idx) => idx !== i) }));
+
   const [codeInput, setCodeInput] = useState(residentAccessCode);
   useEffect(() => { setCodeInput(residentAccessCode); }, [residentAccessCode]);
   const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length, adminName: TIER_NAME_ES[t.id] }));
@@ -3363,6 +3424,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
         <input style={styles.input} placeholder="Dirección de la sucursal" value={newRest.address} onChange={(e) => setNewRest({ ...newRest, address: e.target.value })} />
+        <input style={styles.input} placeholder="Link de Google Maps (opcional)" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
           {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
@@ -3386,15 +3448,26 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                 <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
                 <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
                 <input style={styles.input} placeholder="Dirección de la sucursal" value={editDraft.address} onChange={(e) => setEditDraft({ ...editDraft, address: e.target.value })} />
+                <input style={styles.input} placeholder="Link de Google Maps (opcional, para 'Ver ubicación')" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
                 <label style={styles.franchiseCheckLabel}>
                   <input type="checkbox" checked={editDraft.isFranchise} onChange={(e) => setEditDraft({ ...editDraft, isFranchise: e.target.checked })} />
                   Es franquicia (varias sucursales)
                 </label>
-                {editDraft.isFranchise && (
-                  <input style={styles.input} placeholder="Sucursal donde aplica (ej. Plaza Andares)" value={editDraft.branch} onChange={(e) => setEditDraft({ ...editDraft, branch: e.target.value })} />
-                )}
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              {editDraft.isFranchise && (
+                <div style={styles.branchListWrap}>
+                  <p style={styles.demoNote}>Sucursales donde aplica la promo:</p>
+                  {editDraft.branches.map((b, i) => (
+                    <div key={i} style={styles.branchRow}>
+                      <input style={styles.input} placeholder="Nombre de la sucursal (ej. Plaza Andares)" value={b.name} onChange={(e) => updateBranchField(i, "name", e.target.value)} />
+                      <input style={styles.input} placeholder="Dirección de esta sucursal" value={b.address} onChange={(e) => updateBranchField(i, "address", e.target.value)} />
+                      <button style={styles.removeBtn} onClick={() => removeBranchRow(i)} title="Quitar esta sucursal"><X size={14} /></button>
+                    </div>
+                  ))}
+                  <button style={styles.exportBtn} onClick={addBranchRow}>+ Agregar otra sucursal</button>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <button style={styles.ctaBtnSmall} onClick={() => saveEditRest(r.id)}><Save size={14} /> Guardar</button>
                 <button style={styles.exportBtn} onClick={() => setEditingRestId(null)}>Cancelar</button>
               </div>
@@ -3403,7 +3476,11 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
             <div key={r.id} style={styles.adminRow}>
               <div>
                 <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
-                <div style={styles.adminRowMeta}>{formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}{r.isFranchise && r.branch ? ` · 🏪 Sucursal: ${r.branch}` : ""}</div>
+                <div style={styles.adminRowMeta}>
+                  {formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}
+                  {r.isFranchise && getBranches(r).length > 0 ? ` · ${getBranches(r).length === 1 ? "Sucursal" : getBranches(r).length + " sucursales"}: ${getBranches(r).map((b) => b.name).join(", ")}` : ""}
+                  {r.mapsLink ? " · link de Maps personalizado ✓" : ""}
+                </div>
               </div>
               <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
                 {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -3609,8 +3686,10 @@ const styles = {
   restCard: { background: colors.card, color: colors.ink, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 4 },
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
-  franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: colors.ink, gridColumn: "1 / -1" },
-  franchiseBadge: { fontSize: 10.5, fontWeight: 600, color: colors.blue, background: "rgba(0,130,203,0.1)", padding: "3px 8px", borderRadius: 999, display: "inline-block", marginTop: 3, marginBottom: 2 },
+  franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#fff", gridColumn: "1 / -1" },
+  branchListWrap: { marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.15)" },
+  branchRow: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" },
+  franchiseBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: colors.blue, padding: "5px 9px", borderRadius: 8, display: "inline-block", marginTop: 3, marginBottom: 2 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
   restNameLocked: { fontSize: 13, color: "#CFE0EC", fontWeight: 600 },
   restAddress: { fontSize: 11, color: colors.muted, lineHeight: 1.3 },
