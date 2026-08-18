@@ -2512,7 +2512,7 @@ export default function ClubDescuentos() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "" });
+  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "" });
   const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
@@ -2788,7 +2788,7 @@ export default function ClubDescuentos() {
   const addRestaurant = () => {
     if (!newRest.name.trim() || !newRest.code.trim()) return;
     saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...newRest }]);
-    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "" });
+    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "" });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
   const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
@@ -3162,11 +3162,14 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           <div key={r.id} style={styles.restCard}>
             <div style={styles.restCategory}>{r.category}</div>
             <div style={styles.restName}>{r.name}</div>
+            {r.isFranchise && r.branch && (
+              <div style={styles.franchiseBadge}>🏪 {lang === "es" ? "Solo en" : "Only at"}: {r.branch}</div>
+            )}
             {r.address && (
               <>
                 <div style={styles.restAddress}>📍 {r.address}</div>
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ", " + r.address)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.branch ? " " + r.branch : "") + ", " + r.address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={styles.locationLink}
@@ -3261,6 +3264,8 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       address: r.address || "",
       discountPercent: r.discountPercent ?? "",
       discount: r.discountPercent ? "" : (r.discount || ""),
+      isFranchise: r.isFranchise || false,
+      branch: r.branch || "",
     });
   };
   const saveEditRest = (id) => {
@@ -3361,6 +3366,13 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
           {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
+        <label style={styles.franchiseCheckLabel}>
+          <input type="checkbox" checked={newRest.isFranchise} onChange={(e) => setNewRest({ ...newRest, isFranchise: e.target.checked })} />
+          Es franquicia (varias sucursales)
+        </label>
+        {newRest.isFranchise && (
+          <input style={styles.input} placeholder="Sucursal donde aplica (ej. Plaza Andares)" value={newRest.branch} onChange={(e) => setNewRest({ ...newRest, branch: e.target.value })} />
+        )}
         <button style={styles.ctaBtnSmall} onClick={onAddRest}><Plus size={15} /> Agregar restaurante</button>
       </div>
       <div style={styles.adminTableWrap}>
@@ -3374,6 +3386,13 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                 <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
                 <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
                 <input style={styles.input} placeholder="Dirección de la sucursal" value={editDraft.address} onChange={(e) => setEditDraft({ ...editDraft, address: e.target.value })} />
+                <label style={styles.franchiseCheckLabel}>
+                  <input type="checkbox" checked={editDraft.isFranchise} onChange={(e) => setEditDraft({ ...editDraft, isFranchise: e.target.checked })} />
+                  Es franquicia (varias sucursales)
+                </label>
+                {editDraft.isFranchise && (
+                  <input style={styles.input} placeholder="Sucursal donde aplica (ej. Plaza Andares)" value={editDraft.branch} onChange={(e) => setEditDraft({ ...editDraft, branch: e.target.value })} />
+                )}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button style={styles.ctaBtnSmall} onClick={() => saveEditRest(r.id)}><Save size={14} /> Guardar</button>
@@ -3384,7 +3403,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
             <div key={r.id} style={styles.adminRow}>
               <div>
                 <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
-                <div style={styles.adminRowMeta}>{formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}</div>
+                <div style={styles.adminRowMeta}>{formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}{r.isFranchise && r.branch ? ` · 🏪 Sucursal: ${r.branch}` : ""}</div>
               </div>
               <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
                 {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -3590,6 +3609,8 @@ const styles = {
   restCard: { background: colors.card, color: colors.ink, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 4 },
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
+  franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: colors.ink, gridColumn: "1 / -1" },
+  franchiseBadge: { fontSize: 10.5, fontWeight: 600, color: colors.blue, background: "rgba(0,130,203,0.1)", padding: "3px 8px", borderRadius: 999, display: "inline-block", marginTop: 3, marginBottom: 2 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
   restNameLocked: { fontSize: 13, color: "#CFE0EC", fontWeight: 600 },
   restAddress: { fontSize: 11, color: colors.muted, lineHeight: 1.3 },
