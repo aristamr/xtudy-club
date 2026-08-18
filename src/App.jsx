@@ -2312,24 +2312,35 @@ const TIERS = [
   { id: "resident", name: "Residente Xtudy", price: 49, order: 1, tagline: { es: "Acceso a todos los restaurantes", en: "Access to every restaurant" } },
 ];
 
+// Nivel especial solo para restaurantes: no está ligado a ninguna membresía.
+// Sirve para mostrar "Próximamente" con candado, sin importar el nivel del estudiante.
+const SOON_TIER = { id: "soon", name: "Próximamente", order: 999 };
+
+// Todas las opciones de nivel que puede tener un restaurante (para selects de administración)
+const RESTAURANT_TIER_OPTIONS = [...TIERS, SOON_TIER];
+
+function restaurantTierLabel(tierId) {
+  return RESTAURANT_TIER_OPTIONS.find((t) => t.id === tierId)?.name || tierId;
+}
+
 const DEFAULT_RESTAURANTS = [
   { id: "r1", name: "Dogos Bravo", category: "Hot dogs", discount: "15% de descuento", code: "BRAVO15", tier: "guest", address: "Av. General Ramón Corona 2419, San Juan de Ocotán, 45019 Zapopan, Jal." },
   { id: "r2", name: "Café Vaivén", category: "Cafetería", discount: "10% de descuento", code: "VAIVEN10", tier: "guest", address: "P.º Solares 30, San Juan de Ocotán, 49015 Zapopan, Jal." },
   { id: "r3", name: "Pizza Rebelde", category: "Pizza", discount: "20% en pizzas medianas", code: "BARRIO20", tier: "guest", address: "Av. Ejemplo 123, Guadalajara" },
   { id: "r4", name: "Exprime GDL", category: "Jugos", discount: "10% de descuento", code: "FRESCA10", tier: "guest", address: "Av. Ejemplo 456, Guadalajara" },
-  { id: "r5", name: "Sanopecado", category: "Comida saludable", discount: "Descuento por confirmar", code: "SANO01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r6", name: "Yogocup", category: "Yogurt helado", discount: "Descuento por confirmar", code: "YOGO01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r7", name: "Santo Coyote", category: "Mexicana", discount: "Descuento por confirmar", code: "COYOTE01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r8", name: "Carl's Jr", category: "Hamburguesas", discount: "Descuento por confirmar", code: "CARLS01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r9", name: "Sushi Central", category: "Sushi", discount: "Descuento por confirmar", code: "SUSHIC01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r10", name: "Quilombo", category: "Parrilla argentina", discount: "Descuento por confirmar", code: "QUILOM01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r11", name: "Papa Cabaña La Ola", category: "Mariscos", discount: "Descuento por confirmar", code: "PAPAOLA01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r12", name: "Quin Oriental", category: "Comida asiática", discount: "Descuento por confirmar", code: "QUIN01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r13", name: "Los Chilaquiles", category: "Desayunos", discount: "Descuento por confirmar", code: "CHILAQ01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r14", name: "Punto Ostra", category: "Ostras / Mariscos", discount: "Descuento por confirmar", code: "OSTRA01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r15", name: "Genki Poke", category: "Poke", discount: "Descuento por confirmar", code: "GENKI01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r16", name: "Domino's", category: "Pizza", discount: "Descuento por confirmar", code: "DOMINO01", tier: "resident", address: "Pendiente de confirmar dirección" },
-  { id: "r17", name: "Little Caesars", category: "Pizza", discount: "Descuento por confirmar", code: "LITTLEC01", tier: "resident", address: "Pendiente de confirmar dirección" },
+  { id: "r5", name: "Sanopecado", category: "Comida saludable", discount: "Descuento por confirmar", code: "SANO01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r6", name: "Yogocup", category: "Yogurt helado", discount: "Descuento por confirmar", code: "YOGO01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r7", name: "Santo Coyote", category: "Mexicana", discount: "Descuento por confirmar", code: "COYOTE01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r8", name: "Carl's Jr", category: "Hamburguesas", discount: "Descuento por confirmar", code: "CARLS01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r9", name: "Sushi Central", category: "Sushi", discount: "Descuento por confirmar", code: "SUSHIC01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r10", name: "Quilombo", category: "Parrilla argentina", discount: "Descuento por confirmar", code: "QUILOM01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r11", name: "Papa Cabaña La Ola", category: "Mariscos", discount: "Descuento por confirmar", code: "PAPAOLA01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r12", name: "Quin Oriental", category: "Comida asiática", discount: "Descuento por confirmar", code: "QUIN01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r13", name: "Los Chilaquiles", category: "Desayunos", discount: "Descuento por confirmar", code: "CHILAQ01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r14", name: "Punto Ostra", category: "Ostras / Mariscos", discount: "Descuento por confirmar", code: "OSTRA01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r15", name: "Genki Poke", category: "Poke", discount: "Descuento por confirmar", code: "GENKI01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r16", name: "Domino's", category: "Pizza", discount: "Descuento por confirmar", code: "DOMINO01", tier: "soon", address: "Pendiente de confirmar dirección" },
+  { id: "r17", name: "Little Caesars", category: "Pizza", discount: "Descuento por confirmar", code: "LITTLEC01", tier: "soon", address: "Pendiente de confirmar dirección" },
 ];
 
 const DEFAULT_UNIVERSITIES = [
@@ -2359,6 +2370,7 @@ const DEFAULT_UNIVERSITIES = [
 const ADMIN_CODE = "xtudy-admin";
 
 function tierOrder(id) {
+  if (id === "soon") return SOON_TIER.order;
   return TIERS.find((t) => t.id === id)?.order ?? 0;
 }
 
@@ -2666,6 +2678,7 @@ export default function ClubDescuentos() {
     setNewRest({ name: "", category: "", discount: "", code: "", tier: "guest", address: "" });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
+  const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
 
   const addUniversity = () => {
     if (!newUni.name.trim()) return;
@@ -2746,7 +2759,7 @@ export default function ClubDescuentos() {
       {view === "admin" && adminUnlocked && (
         <AdminPanel
           accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions}
-          newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant}
+          newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant} onUpdateRestTier={updateRestaurantTier}
           newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
           onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption}
           residentAccessCode={residentAccessCode} onUpdateResidentCode={updateResidentCode}
@@ -3077,7 +3090,7 @@ function AdminLogin({ value, setValue, onSubmit, error, onBack }) {
   );
 }
 
-function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
+function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
   const [codeInput, setCodeInput] = useState(residentAccessCode);
   const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length }));
 
@@ -3166,7 +3179,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
         <input style={styles.input} placeholder="Dirección de la sucursal" value={newRest.address} onChange={(e) => setNewRest({ ...newRest, address: e.target.value })} />
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
-          {TIERS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <button style={styles.ctaBtnSmall} onClick={onAddRest}><Plus size={15} /> Agregar restaurante</button>
       </div>
@@ -3175,8 +3188,11 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
           <div key={r.id} style={styles.adminRow}>
             <div>
               <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
-              <div style={styles.adminRowMeta}>{r.discount} · código: {r.code} · nivel: {TIERS.find((t) => t.id === r.tier)?.name}</div>
+              <div style={styles.adminRowMeta}>{r.discount} · código: {r.code}</div>
             </div>
+            <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
+              {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
             <button style={styles.removeBtn} onClick={() => onRemoveRest(r.id)}><X size={14} /></button>
           </div>
         ))}
@@ -3394,6 +3410,7 @@ const styles = {
   adminStatLabel: { fontSize: 11.5, color: colors.muted },
   adminTableWrap: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 },
   adminRow: { background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 },
+  adminTierSelect: { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "6px 8px", fontSize: 12, fontWeight: 600 },
   adminRowName: { fontSize: 13.5, fontWeight: 600 },
   adminRowMeta: { fontSize: 11.5, color: "#9FC0D6" },
   adminRowTier: { fontSize: 11.5, background: colors.blue, color: "#fff", padding: "4px 9px", borderRadius: 999, fontWeight: 600, whiteSpace: "nowrap" },
