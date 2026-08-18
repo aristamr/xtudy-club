@@ -2607,6 +2607,16 @@ export default function ClubDescuentos() {
       setFormError("Completa todos los campos para continuar.");
       return;
     }
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailPattern.test(form.email.trim())) {
+      setFormError("Escribe un correo electrónico válido (ej. nombre@correo.com).");
+      return;
+    }
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) {
+      setFormError("El teléfono debe tener 10 dígitos.");
+      return;
+    }
     if (form.isXtudy === "si") {
       const codeOk = await checkResidentCode(form.residentCode);
       if (!codeOk) {
