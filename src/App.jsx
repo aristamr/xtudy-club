@@ -2838,8 +2838,8 @@ function Landing({ onStart, onAdmin, onLogin }) {
           </h1>
           <p style={styles.heroSub}>
             {lang === "es"
-              ? "Regístrate gratis y desbloquea descuentos reales en restaurantes de Guadalajara. Sin credencial que verificar: solo tu correo y listo."
-              : "Sign up for free and unlock real discounts at restaurants in Guadalajara. No ID to verify: just your email and you're in."}
+              ? "Regístrate gratis y desbloquea descuentos reales en restaurantes de Guadalajara. Sé parte de la mejor comunidad estudiantil de México, hecha por Xtudy."
+              : "Sign up for free and unlock real discounts at restaurants in Guadalajara. Be part of the best student community in Mexico, made by Xtudy."}
           </p>
           <div style={styles.unlimitedPill}>
             <Sparkles size={13} color={colors.blue} />
@@ -2917,7 +2917,7 @@ function Register({ form, setForm, onSubmit, error, onBack, universities }) {
         <img src={SYMBOL_DATA} alt="Xtudy" style={styles.panelSymbol} />
         <div style={styles.eyebrow}>{lang === "es" ? "PASO 1 DE 1" : "STEP 1 OF 1"}</div>
         <h2 style={styles.h2}>{lang === "es" ? "Crea tu cuenta" : "Create your account"}</h2>
-        <p style={styles.formSub}>{lang === "es" ? "Toma menos de un minuto. Empiezas en el nivel gratis al instante." : "Takes less than a minute. You start on the free tier right away."}</p>
+        <p style={styles.formSub}>{lang === "es" ? "Toma menos de un minuto. Empiezas como Explorador al instante — y si vives con Xtudy, activas tu nivel Residente ahora mismo." : "Takes less than a minute. You start as an Explorer right away — and if you live with Xtudy, you activate your Resident tier now."}</p>
         <div style={styles.form}>
           <label style={styles.label}>{lang === "es" ? "Nombre completo" : "Full name"}
             <input style={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={lang === "es" ? "Ej. Ana Torres" : "E.g. Ana Torres"} />
