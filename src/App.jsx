@@ -2770,7 +2770,7 @@ export default function ClubDescuentos() {
                 <div style={styles.checkinCheck}><Check size={40} color="#fff" strokeWidth={3} /></div>
                 <div style={styles.checkinName}>{verifyResult.name}</div>
                 <div style={styles.checkinTier}>Miembro del Club Xtudy · {TIER_NAME_ES[verifyResult.tier] || verifyResult.tier}</div>
-                <div style={styles.checkinDiscountBig}>{verifyResult.restaurant.discount}</div>
+                <div style={styles.checkinDiscountBig}>{formatDiscount(verifyResult.restaurant, "es")}</div>
                 <div style={styles.checkinRest}>{verifyResult.restaurant.name}</div>
                 <p style={styles.checkinHint}>Este estudiante tiene acceso confirmado a este descuento.</p>
               </>
