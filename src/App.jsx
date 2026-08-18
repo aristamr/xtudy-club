@@ -8,10 +8,7 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
-import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, List } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin } from "lucide-react";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
 // Se ejecuta 100% en el navegador, sin llamadas externas.
@@ -2306,12 +2303,12 @@ var qrcode = function() {
 // --- Fin de la librería QR ---
 
 // Cuando quieras activar el cobro real con Stripe para el upgrade a Residente, cambia esto a true e integra el cobro.
-const SHOW_PLANS = true;
+const SHOW_PLANS = false;
 
 const DEFAULT_RESIDENT_CODE = "XTUDY2026";
 
 const TIERS = [
-  { id: "guest", name: "Guest", price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student" } },
+  { id: "guest", name: "Explorador", price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student" } },
   { id: "resident", name: "Residente Xtudy", price: 49, order: 1, tagline: { es: "Acceso a todos los restaurantes", en: "Access to every restaurant" } },
 ];
 
@@ -2765,7 +2762,7 @@ function AppHeader() {
   return (
     <div className="page-container" style={styles.appHeader}>
       <div />
-      <img src={WORDMARK_WHITE_DATA} alt="Xtudy" style={styles.headerWordmark} />
+      <div />
       <div style={styles.headerRight}>
         <a href="https://www.instagram.com/xtudy.mx" target="_blank" rel="noopener noreferrer" style={styles.igLink} aria-label="Instagram de Xtudy">
           <Instagram size={17} />
@@ -2944,129 +2941,6 @@ function Register({ form, setForm, onSubmit, error, onBack, universities }) {
   );
 }
 
-const GDL_CENTER = [20.6767, -103.3475];
-
-function isRealAddress(address) {
-  if (!address) return false;
-  const a = address.toLowerCase();
-  if (a.includes("pendiente")) return false;
-  if (a.includes("ejemplo")) return false;
-  return true;
-}
-
-function pinIcon(color) {
-  return L.divIcon({
-    className: "xtudy-map-pin",
-    html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 26],
-    popupAnchor: [0, -13],
-  });
-}
-
-async function geocodeAddress(address) {
-  const cacheKey = `geocode:${address}`;
-  try {
-    const cached = await storageGet(cacheKey, true);
-    if (cached) {
-      const p = JSON.parse(cached);
-      if (p && typeof p.lat === "number" && typeof p.lng === "number") return p;
-    }
-  } catch {}
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address + ", Guadalajara, Jalisco, México")}`;
-    const res = await fetch(url, { headers: { "Accept-Language": "es" } });
-    const data = await res.json();
-    if (data && data[0]) {
-      const point = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      persist(() => window.storage.set(cacheKey, JSON.stringify(point), true));
-      return point;
-    }
-  } catch (e) {
-    console.error("Error geocodificando dirección:", e);
-  }
-  return null;
-}
-
-function MapPinCard({ r, verifyUrl }) {
-  const { lang } = useContext(LangContext);
-  const [showQr, setShowQr] = useState(false);
-  return (
-    <div style={{ fontFamily: "'Inter', sans-serif", minWidth: 170 }}>
-      <div style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase" }}>{r.category}</div>
-      <div style={{ fontWeight: 700, fontSize: 14 }}>{r.name}</div>
-      {r.address && <div style={{ fontSize: 11, color: "#6B7280", marginTop: 2, lineHeight: 1.3 }}>📍 {r.address}</div>}
-      <div style={{ fontSize: 12.5, color: colors.blue, fontWeight: 600, marginTop: 4 }}>{r.discount}</div>
-      <button
-        onClick={() => setShowQr((v) => !v)}
-        style={{ marginTop: 8, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#fff", color: colors.blue, border: `1px solid ${colors.blue}`, borderRadius: 8, padding: "7px 8px", fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}
-      >
-        <QrCode size={13} /> {showQr ? (lang === "es" ? "Ocultar QR" : "Hide QR") : (lang === "es" ? "Mostrar QR" : "Show QR")}
-      </button>
-      {showQr && (
-        <div style={{ marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "#F5F9FC", borderRadius: 10, padding: 10 }}>
-          <QRCode value={verifyUrl(r.id)} size={130} />
-          <span style={{ fontSize: 10, color: "#6B7280", textAlign: "center" }}>
-            {lang === "es" ? "El mesero lo escanea con la cámara de su celular y confirma tu membresía al instante." : "The waiter scans it with their phone camera and confirms your membership instantly."}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function OffersMap({ restaurants, verifyUrl }) {
-  const { lang } = useContext(LangContext);
-  const [points, setPoints] = useState({});
-  const mappable = useMemo(() => restaurants.filter((r) => isRealAddress(r.address)), [restaurants]);
-  const unmappable = useMemo(() => restaurants.filter((r) => !isRealAddress(r.address)), [restaurants]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      for (const r of mappable) {
-        if (points[r.id]) continue;
-        const p = await geocodeAddress(r.address);
-        if (cancelled) return;
-        if (p) setPoints((prev) => ({ ...prev, [r.id]: p }));
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mappable]);
-
-  const located = mappable.filter((r) => points[r.id]);
-
-  return (
-    <div style={styles.mapWrap}>
-      <MapContainer center={GDL_CENTER} zoom={12} scrollWheelZoom={true} style={styles.mapBox}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {located.map((r) => (
-          <Marker key={r.id} position={[points[r.id].lat, points[r.id].lng]} icon={pinIcon(colors.blue)}>
-            <Popup>
-              <MapPinCard r={r} verifyUrl={verifyUrl} />
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-      {mappable.length > 0 && located.length < mappable.length && (
-        <p style={styles.mapNote}>
-          {lang === "es" ? "Ubicando algunos lugares en el mapa…" : "Locating some places on the map…"}
-        </p>
-      )}
-      {unmappable.length > 0 && (
-        <p style={styles.mapNote}>
-          {lang === "es"
-            ? `${unmappable.length} lugar(es) aún sin dirección confirmada, por eso no aparecen en el mapa todavía.`
-            : `${unmappable.length} place(s) still without a confirmed address, so they don't show on the map yet.`}
-        </p>
-      )}
-    </div>
-  );
-}
 
 
 function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
@@ -3075,7 +2949,6 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const unlocked = restaurants.filter((r) => tierOrder(r.tier) <= myOrder);
   const locked = restaurants.filter((r) => tierOrder(r.tier) > myOrder);
   const [openQrFor, setOpenQrFor] = useState(null);
-  const [showMap, setShowMap] = useState(false);
 
   const verifyUrl = (restaurantId) => {
     try {
@@ -3133,26 +3006,26 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         </>
       )}
 
-      <div style={styles.offersHeaderRow}>
-        <h3 style={{ ...styles.sectionTitle, margin: 0 }}><Utensils size={16} /> {lang === "es" ? "Tus descuentos desbloqueados" : "Your unlocked discounts"}</h3>
-        <div style={styles.viewToggle}>
-          <button style={{ ...styles.viewToggleBtn, ...(!showMap ? styles.viewToggleBtnActive : {}) }} onClick={() => setShowMap(false)}>
-            <List size={13} /> {lang === "es" ? "Lista" : "List"}
-          </button>
-          <button style={{ ...styles.viewToggleBtn, ...(showMap ? styles.viewToggleBtnActive : {}) }} onClick={() => setShowMap(true)}>
-            <MapPin size={13} /> {lang === "es" ? "Mapa" : "Map"}
-          </button>
-        </div>
-      </div>
+      <h3 style={styles.sectionTitle}><Utensils size={16} /> {lang === "es" ? "Tus descuentos desbloqueados" : "Your unlocked discounts"}</h3>
 
-      {showMap && <OffersMap restaurants={unlocked} verifyUrl={verifyUrl} />}
-
-      {!showMap && <div style={styles.restGrid}>
+      <div style={styles.restGrid}>
         {unlocked.map((r) => (
           <div key={r.id} style={styles.restCard}>
             <div style={styles.restCategory}>{r.category}</div>
             <div style={styles.restName}>{r.name}</div>
-            {r.address && <div style={styles.restAddress}>📍 {r.address}</div>}
+            {r.address && (
+              <>
+                <div style={styles.restAddress}>📍 {r.address}</div>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ", " + r.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={styles.locationLink}
+                >
+                  <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
+                </a>
+              </>
+            )}
             <div style={styles.restDiscount}>{r.discount}</div>
             <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
               <QrCode size={14} /> {openQrFor === r.id ? (lang === "es" ? "Ocultar QR" : "Hide QR") : (lang === "es" ? "Mostrar QR" : "Show QR")}
@@ -3168,11 +3041,11 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           </div>
         ))}
         {unlocked.length === 0 && <p style={styles.emptyText}>{lang === "es" ? "Aún no tienes descuentos activos." : "You don't have any active discounts yet."}</p>}
-      </div>}
+      </div>
 
       {locked.length > 0 && (
         <>
-          <h3 style={styles.sectionTitle}><Lock size={15} /> {lang === "es" ? "Exclusivo para Residentes Xtudy" : "Xtudy Resident exclusive"}</h3>
+          <h3 style={styles.sectionTitle}><Lock size={15} /> {lang === "es" ? "Próximamente" : "Coming soon"}</h3>
           <div style={styles.restGrid}>
             {locked.map((r) => (
               <div key={r.id} style={styles.restCardLocked}>
@@ -3415,7 +3288,7 @@ const styles = {
   app: { minHeight: "100vh", background: colors.navy, fontFamily: "'Inter', sans-serif", color: colors.card, padding: "24px 8px 60px", position: "relative" },
   loadingWrap: { minHeight: "300px", display: "flex", alignItems: "center", justifyContent: "center", background: colors.navy },
   stamp: { width: 40, height: 40, borderRadius: "50%", border: `3px dashed ${colors.blue}`, animation: "spin 1.2s linear infinite" },
-  landingWrap: { position: "relative", minHeight: "calc(100vh - 170px)", display: "flex", flexDirection: "column", justifyContent: "center" },
+  landingWrap: { position: "relative", minHeight: "auto", display: "flex", flexDirection: "column", justifyContent: "flex-start", paddingTop: "2vh" },
   landingContent: {},
   trianglePatch: { position: "absolute", top: "-10%", right: "-6%", width: "38%", height: "70%", background: colors.blue, opacity: 0.16, clipPath: "polygon(100% 0, 0 0, 100% 100%)", pointerEvents: "none" },
   fomoBanner: { display: "flex", alignItems: "center", gap: 8, background: "rgba(0,130,203,0.12)", border: `1px solid ${colors.blue}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "#CFE6F5", marginBottom: 18 },
@@ -3492,12 +3365,7 @@ const styles = {
   exportBtn: { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)", color: colors.card, borderRadius: 10, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" },
   sectionTitle: { display: "flex", alignItems: "center", gap: 7, fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, margin: "22px 0 12px", fontWeight: 700 },
   offersHeaderRow: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, margin: "22px 0 12px" },
-  viewToggle: { display: "flex", gap: 4, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
-  viewToggleBtn: { display: "flex", alignItems: "center", gap: 5, border: "none", background: "none", color: "#9FC0D6", fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, cursor: "pointer" },
-  viewToggleBtnActive: { background: colors.blue, color: "#fff" },
-  mapWrap: { marginBottom: 12 },
-  mapBox: { width: "100%", height: 380, borderRadius: 14, overflow: "hidden" },
-  mapNote: { fontSize: 11.5, color: "#9FC0D6", marginTop: 8, lineHeight: 1.5 },
+  locationLink: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: colors.blue, fontWeight: 600, textDecoration: "none", marginTop: 2 },
   restGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, alignItems: "start" },
   restCard: { background: colors.card, color: colors.ink, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 4 },
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
