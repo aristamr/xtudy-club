@@ -8,7 +8,7 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
-import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save } from "lucide-react";
+import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
@@ -3046,21 +3046,36 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {lang === "es" ? "Salir" : "Log out"}</button>
       </div>
 
-      <div style={styles.membershipCardBig}>
-        <div style={styles.cardTop}>
+      <div style={{ ...styles.membershipCardBig, ...(account.tier === "resident" ? styles.membershipCardResident : {}) }}>
+        {account.tier === "resident" && (
+          <>
+            <div style={styles.residentWatermarkWrap}>
+              <svg width="100" height="100%" viewBox="0 0 90 200" preserveAspectRatio="none" style={styles.residentWatermarkSvg} aria-hidden="true">
+                <path d="M0 0 L45 100 L0 200 L20 200 L65 100 L20 0 Z" fill={colors.blue} />
+                <path d="M55 0 L100 100 L55 200 L75 200 L100 155 L100 45 L75 0 Z" fill={colors.blue} />
+              </svg>
+            </div>
+            <span style={styles.residentBadge}>
+              <Crown size={11} /> {lang === "es" ? "Residente" : "Resident"}
+            </span>
+          </>
+        )}
+        <div style={{ ...styles.cardTop, position: "relative", zIndex: 1 }}>
           <img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} />
           <Star size={18} color={colors.blue} fill={colors.blue} />
         </div>
-        <div style={styles.cardName}>{account.name}</div>
-        <div style={styles.cardUni}>{account.university}</div>
-        <div style={styles.cardTierRow}>
-          <span style={styles.cardTierLabel}>{lang === "es" ? "Nivel actual" : "Current tier"}</span>
-          <span style={styles.cardTierValue}>{TIERS.find((t) => t.id === account.tier)?.name[lang]}</span>
-        </div>
-        <div style={styles.stampsRow}>
-          {TIERS.map((t) => (
-            <div key={t.id} style={{ ...styles.stampDot, ...(t.order <= myOrder ? styles.stampDotFilled : {}) }} />
-          ))}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={styles.cardName}>{account.name}</div>
+          <div style={styles.cardUni}>{account.university}</div>
+          <div style={styles.cardTierRow}>
+            <span style={styles.cardTierLabel}>{lang === "es" ? "Nivel actual" : "Current tier"}</span>
+            <span style={styles.cardTierValue}>{TIERS.find((t) => t.id === account.tier)?.name[lang]}</span>
+          </div>
+          <div style={styles.stampsRow}>
+            {TIERS.map((t) => (
+              <div key={t.id} style={{ ...styles.stampDot, ...(t.order <= myOrder ? styles.stampDotFilled : {}) }} />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -3446,7 +3461,11 @@ const styles = {
   unlimitedPill: { display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,130,203,0.14)", border: `1px solid ${colors.blue}`, color: "#CFE0EC", fontSize: 12.5, fontWeight: 600, borderRadius: 999, padding: "6px 12px", marginBottom: 18 },
   cardMock: { display: "flex", justifyContent: "center", margin: "8px 0 24px", position: "relative", zIndex: 1, width: "100%" },
   membershipCard: { background: colors.card, borderRadius: 20, padding: 26, width: "100%", maxWidth: 340, color: colors.ink, boxShadow: "0 12px 30px rgba(0,0,0,0.3)" },
-  membershipCardBig: { background: colors.card, borderRadius: 18, padding: 22, color: colors.ink, boxShadow: "0 12px 30px rgba(0,0,0,0.3)", maxWidth: 420, margin: "0 auto 22px" },
+  membershipCardBig: { background: colors.card, borderRadius: 18, padding: 22, color: colors.ink, boxShadow: "0 12px 30px rgba(0,0,0,0.3)", maxWidth: 420, margin: "0 auto 22px", position: "relative" },
+  membershipCardResident: { border: `1.5px solid ${colors.blue}` },
+  residentWatermarkWrap: { position: "absolute", inset: 0, borderRadius: 18, overflow: "hidden" },
+  residentWatermarkSvg: { position: "absolute", right: -3, top: 0, opacity: 0.07 },
+  residentBadge: { position: "absolute", top: -9, right: 16, background: colors.blue, color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, zIndex: 2 },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   cardBrand: { fontFamily: "'Host Grotesk', sans-serif", fontWeight: 800, letterSpacing: 1, fontSize: 13, color: colors.navy },
   cardBrandImg: { height: 20, width: "auto" },
