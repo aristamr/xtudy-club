@@ -2432,6 +2432,38 @@ function persist(fn) {
   Promise.resolve().then(fn).catch((e) => console.error("storage error", e));
 }
 
+// Estas 3 funciones usan funciones seguras en Supabase (RPC) en vez de leer
+// la tabla directamente, para no exponer todas las cuentas ni el código real.
+async function fetchAccountByEmail(email) {
+  try {
+    const { data, error } = await supabase.rpc("get_account_by_email", { p_email: email });
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchMemberById(memberId) {
+  try {
+    const { data, error } = await supabase.rpc("get_member_by_id", { p_member_id: memberId });
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function checkResidentCode(code) {
+  try {
+    const { data, error } = await supabase.rpc("check_resident_code", { p_code: code });
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
 export default function ClubDescuentos() {
   const [view, setView] = useState("landing");
   const [loading, setLoading] = useState(true);
@@ -2485,10 +2517,6 @@ export default function ClubDescuentos() {
         if (unis) { try { setUniversities(JSON.parse(unis)); } catch {} }
         else persist(() => window.storage.set("universities-list", JSON.stringify(DEFAULT_UNIVERSITIES), true));
 
-        const savedCode = await storageGet("resident-access-code", true);
-        if (savedCode) setResidentAccessCode(savedCode);
-        else persist(() => window.storage.set("resident-access-code", DEFAULT_RESIDENT_CODE, true));
-
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session) setAdminUnlocked(true);
@@ -2496,7 +2524,7 @@ export default function ClubDescuentos() {
 
         if (verifyParams) {
           const restaurant = restList.find((r) => r.id === verifyParams.r);
-          const val = await storageGet(`member:${verifyParams.m}`, true);
+          const val = await fetchMemberById(verifyParams.m);
           if (!restaurant) {
             setVerifyResult({ status: "notfound" });
           } else if (!val) {
@@ -2522,7 +2550,7 @@ export default function ClubDescuentos() {
         }
 
         if (myEmail) {
-          const acc = await storageGet(`account:${myEmail}`, true);
+          const acc = await fetchAccountByEmail(myEmail);
           if (acc) {
             try {
               let parsedAcc = JSON.parse(acc);
@@ -2563,15 +2591,18 @@ export default function ClubDescuentos() {
     persist(() => window.storage.set("resident-access-code", trimmed, true));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setFormError("");
     if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.studentId.trim()) {
       setFormError("Completa todos los campos para continuar.");
       return;
     }
-    if (form.isXtudy === "si" && form.residentCode.trim().toUpperCase() !== residentAccessCode.trim().toUpperCase()) {
-      setFormError("El código de residente Xtudy no es correcto. Verifícalo con administración.");
-      return;
+    if (form.isXtudy === "si") {
+      const codeOk = await checkResidentCode(form.residentCode);
+      if (!codeOk) {
+        setFormError("El código de residente Xtudy no es correcto. Verifícalo con administración.");
+        return;
+      }
     }
     const newAccount = {
       name: form.name.trim(),
@@ -2618,7 +2649,7 @@ export default function ClubDescuentos() {
       return;
     }
     (async () => {
-      const val = await storageGet(`account:${email}`, true);
+      const val = await fetchAccountByEmail(email);
       if (!val) {
         setLoginError("No encontramos una cuenta con ese correo. ¿Ya te registraste?");
         return;
@@ -2648,6 +2679,10 @@ export default function ClubDescuentos() {
       setAdminUnlocked(true);
       setView("admin");
       persist(async () => {
+        try {
+          const savedCode = await storageGet("resident-access-code", true);
+          if (savedCode) setResidentAccessCode(savedCode);
+        } catch {}
         try {
           const idx = await window.storage.list("account:", true);
           const keys = idx?.keys || [];
@@ -3133,6 +3168,7 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
 
 function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
   const [codeInput, setCodeInput] = useState(residentAccessCode);
+  useEffect(() => { setCodeInput(residentAccessCode); }, [residentAccessCode]);
   const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length, adminName: TIER_NAME_ES[t.id] }));
 
   const byRestaurant = {};
