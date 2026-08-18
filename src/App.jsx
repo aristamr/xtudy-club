@@ -2417,23 +2417,26 @@ function getBranches(r) {
   return [];
 }
 
-// Arma el link de "Ver ubicación". Prioridad:
-// 1) Si el admin pegó un link de Google Maps directo, se usa tal cual.
-// 2) Si es franquicia con varias sucursales, arma un link con todas como paradas
-//    (así se ven todas al mismo tiempo en Google Maps).
-// 3) Si no, arma la búsqueda normal con nombre + dirección.
+// Arma el link de "Ver ubicación" de una sucursal específica: usa su link de
+// Google Maps si lo tiene, o arma una búsqueda con nombre + dirección como respaldo.
+function getBranchUrl(restaurantName, branch) {
+  if (branch.mapsLink && branch.mapsLink.trim()) return branch.mapsLink.trim();
+  if (branch.address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurantName + " " + branch.name + ", " + branch.address)}`;
+  }
+  return null;
+}
+
+// Arma el link de "Ver ubicación" general del restaurante. Prioridad:
+// 1) Si el admin pegó un link de Google Maps directo a nivel restaurante, se usa tal cual.
+// 2) Si solo hay una sucursal, se usa el link de esa sucursal.
+// 3) Si no hay sucursales pero sí dirección normal, se arma la búsqueda de siempre.
+// (Si hay varias sucursales con links distintos, cada una se muestra por separado
+// en la tarjeta — no se pueden combinar links ya hechos en uno solo.)
 function getLocationUrl(r) {
   if (r.mapsLink && r.mapsLink.trim()) return r.mapsLink.trim();
   const branches = getBranches(r);
-  if (r.isFranchise && branches.length > 1) {
-    const stops = branches
-      .filter((b) => b.address)
-      .map((b) => encodeURIComponent(`${r.name} ${b.name}, ${b.address}`.trim()));
-    if (stops.length > 0) return `https://www.google.com/maps/dir/${stops.join("/")}`;
-  }
-  if (branches.length === 1 && branches[0].address) {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + " " + branches[0].name + ", " + branches[0].address)}`;
-  }
+  if (branches.length === 1) return getBranchUrl(r.name, branches[0]);
   if (r.address) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ", " + r.address)}`;
   }
@@ -3198,24 +3201,40 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
               const branches = getBranches(r);
               if (branches.length === 0) return null;
               if (branches.length === 1) {
-                return <div style={styles.franchiseBadge}>{lang === "es" ? "Solo en la siguiente sucursal" : "Only at this branch"}: {branches[0].name}</div>;
+                return (
+                  <>
+                    <div style={styles.franchiseBadge}>{lang === "es" ? "Solo en la siguiente sucursal" : "Only at this branch"}: {branches[0].name}</div>
+                    {getBranchUrl(r.name, branches[0]) && (
+                      <a href={getBranchUrl(r.name, branches[0])} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
+                        <MapPin size={12} /> {lang === "es" ? `Ubicación de sucursal ${branches[0].name}` : `Location of ${branches[0].name} branch`}
+                      </a>
+                    )}
+                  </>
+                );
               }
               return (
-                <div style={styles.franchiseBadge}>
-                  {lang === "es" ? "Disponible en" : "Available at"} {branches.length} {lang === "es" ? "sucursales" : "branches"}: {branches.map((b) => b.name).join(", ")}
-                </div>
+                <>
+                  <div style={styles.franchiseBadge}>{lang === "es" ? "Disponible en" : "Available at"} {branches.length} {lang === "es" ? "sucursales" : "branches"}</div>
+                  <div style={styles.branchLinksRow}>
+                    {branches.map((b, i) => {
+                      const url = getBranchUrl(r.name, b);
+                      return url ? (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
+                          <MapPin size={12} /> {lang === "es" ? `Ubicación de sucursal ${b.name}` : `Location of ${b.name} branch`}
+                        </a>
+                      ) : (
+                        <span key={i} style={styles.restAddress}>{b.name}</span>
+                      );
+                    })}
+                  </div>
+                </>
               );
             })()}
-            {(r.address || getBranches(r).length > 0) && (
+            {!r.isFranchise && (r.address || getLocationUrl(r)) && (
               <>
-                {!r.isFranchise && r.address && <div style={styles.restAddress}>📍 {r.address}</div>}
+                {r.address && <div style={styles.restAddress}>📍 {r.address}</div>}
                 {getLocationUrl(r) && (
-                  <a
-                    href={getLocationUrl(r)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.locationLink}
-                  >
+                  <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
                     <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
                   </a>
                 )}
@@ -3309,14 +3328,14 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       discount: r.discountPercent ? "" : (r.discount || ""),
       isFranchise: r.isFranchise || false,
       mapsLink: r.mapsLink || "",
-      branches: getBranches(r).length > 0 ? getBranches(r) : [{ name: "", address: "" }],
+      branches: getBranches(r).length > 0 ? getBranches(r) : [{ name: "", mapsLink: "" }],
     });
   };
   const saveEditRest = (id) => {
     const patch = { ...editDraft };
     if (patch.discountPercent === "") delete patch.discountPercent;
     if (patch.isFranchise) {
-      patch.branches = patch.branches.filter((b) => b.name.trim() || b.address.trim());
+      patch.branches = patch.branches.filter((b) => b.name.trim() || (b.mapsLink || "").trim() || (b.address || "").trim());
       patch.branch = patch.branches[0]?.name || "";
     } else {
       patch.branches = [];
@@ -3332,7 +3351,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       return { ...prev, branches };
     });
   };
-  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", address: "" }] }));
+  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", mapsLink: "" }] }));
   const removeBranchRow = (i) => setEditDraft((prev) => ({ ...prev, branches: prev.branches.filter((_, idx) => idx !== i) }));
 
   const [codeInput, setCodeInput] = useState(residentAccessCode);
@@ -3423,8 +3442,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         <input style={styles.input} placeholder="Categoría" value={newRest.category} onChange={(e) => setNewRest({ ...newRest, category: e.target.value })} />
         <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
-        <input style={styles.input} placeholder="Dirección de la sucursal" value={newRest.address} onChange={(e) => setNewRest({ ...newRest, address: e.target.value })} />
-        <input style={styles.input} placeholder="Link de Google Maps (opcional)" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
+        <input style={styles.input} placeholder="Link de Google Maps" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
           {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
@@ -3447,8 +3465,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                 <input style={styles.input} placeholder="% de descuento (solo el número)" type="number" value={editDraft.discountPercent} onChange={(e) => setEditDraft({ ...editDraft, discountPercent: e.target.value })} />
                 <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
                 <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
-                <input style={styles.input} placeholder="Dirección de la sucursal" value={editDraft.address} onChange={(e) => setEditDraft({ ...editDraft, address: e.target.value })} />
-                <input style={styles.input} placeholder="Link de Google Maps (opcional, para 'Ver ubicación')" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
+                <input style={styles.input} placeholder="Link de Google Maps" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
                 <label style={styles.franchiseCheckLabel}>
                   <input type="checkbox" checked={editDraft.isFranchise} onChange={(e) => setEditDraft({ ...editDraft, isFranchise: e.target.checked })} />
                   Es franquicia (varias sucursales)
@@ -3460,7 +3477,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                   {editDraft.branches.map((b, i) => (
                     <div key={i} style={styles.branchRow}>
                       <input style={styles.input} placeholder="Nombre de la sucursal (ej. Plaza Andares)" value={b.name} onChange={(e) => updateBranchField(i, "name", e.target.value)} />
-                      <input style={styles.input} placeholder="Dirección de esta sucursal" value={b.address} onChange={(e) => updateBranchField(i, "address", e.target.value)} />
+                      <input style={styles.input} placeholder="Link de Google Maps de esta sucursal" value={b.mapsLink || ""} onChange={(e) => updateBranchField(i, "mapsLink", e.target.value)} />
                       <button style={styles.removeBtn} onClick={() => removeBranchRow(i)} title="Quitar esta sucursal"><X size={14} /></button>
                     </div>
                   ))}
@@ -3688,6 +3705,7 @@ const styles = {
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
   franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#fff", gridColumn: "1 / -1" },
   branchListWrap: { marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.15)" },
+  branchLinksRow: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 2 },
   branchRow: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" },
   franchiseBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: colors.blue, padding: "5px 9px", borderRadius: 8, display: "inline-block", marginTop: 3, marginBottom: 2 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
