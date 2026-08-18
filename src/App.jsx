@@ -9,6 +9,7 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
 import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin } from "lucide-react";
+import { supabase } from "./lib/supabaseClient";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
 // Se ejecuta 100% en el navegador, sin llamadas externas.
@@ -2370,7 +2371,6 @@ const DEFAULT_UNIVERSITIES = [
   { name: "Otra universidad", tipo: "Otra" },
 ];
 
-const ADMIN_CODE = "xtudy-admin";
 
 function tierOrder(id) {
   if (id === "soon") return SOON_ORDER;
@@ -2444,7 +2444,8 @@ export default function ClubDescuentos() {
   const [residentAccessCode, setResidentAccessCode] = useState(DEFAULT_RESIDENT_CODE);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [adminInput, setAdminInput] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
@@ -2487,6 +2488,11 @@ export default function ClubDescuentos() {
         const savedCode = await storageGet("resident-access-code", true);
         if (savedCode) setResidentAccessCode(savedCode);
         else persist(() => window.storage.set("resident-access-code", DEFAULT_RESIDENT_CODE, true));
+
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) setAdminUnlocked(true);
+        } catch {}
 
         if (verifyParams) {
           const restaurant = restList.find((r) => r.id === verifyParams.r);
@@ -2628,8 +2634,17 @@ export default function ClubDescuentos() {
     })();
   };
 
-  const submitAdminCode = () => {
-    if (adminInput === ADMIN_CODE) {
+  const submitAdminLogin = async () => {
+    setFormError("");
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: adminPassword,
+      });
+      if (authError) {
+        setFormError("Correo o contraseña incorrectos.");
+        return;
+      }
       setAdminUnlocked(true);
       setView("admin");
       persist(async () => {
@@ -2655,8 +2670,8 @@ export default function ClubDescuentos() {
           setRedemptions(reds);
         } catch { setRedemptions([]); }
       });
-    } else {
-      setFormError("Código incorrecto.");
+    } catch {
+      setFormError("Ocurrió un problema al iniciar sesión. Intenta de nuevo.");
     }
   };
 
@@ -2756,7 +2771,7 @@ export default function ClubDescuentos() {
       )}
 
       {view === "admin-login" && (
-        <AdminLogin value={adminInput} setValue={setAdminInput} onSubmit={submitAdminCode} error={formError} onBack={() => { setFormError(""); setView("landing"); }} />
+        <AdminLogin email={adminEmail} setEmail={setAdminEmail} password={adminPassword} setPassword={setAdminPassword} onSubmit={submitAdminLogin} error={formError} onBack={() => { setFormError(""); setView("landing"); }} />
       )}
 
       {view === "admin" && adminUnlocked && (
@@ -3093,17 +3108,24 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   );
 }
 
-function AdminLogin({ value, setValue, onSubmit, error, onBack }) {
+function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, onBack }) {
   return (
     <div style={styles.centerWrap}>
       <div style={styles.panel}>
         <button style={styles.backLink} onClick={onBack}><X size={16} /></button>
         <div style={styles.eyebrow}>ACCESO RESTRINGIDO</div>
         <h2 style={styles.h2}>Panel de administrador</h2>
-        <p style={styles.formSub}>Solo para uso interno mientras validas el proyecto.</p>
-        <input style={styles.input} type="password" placeholder="Código de acceso" value={value} onChange={(e) => setValue(e.target.value)} />
-        {error && <div style={styles.errorText}>{error}</div>}
-        <button style={{ ...styles.ctaBtn, marginTop: 14 }} onClick={onSubmit}>Entrar</button>
+        <p style={styles.formSub}>Solo para uso interno del equipo Xtudy.</p>
+        <div style={styles.form}>
+          <label style={styles.label}>Correo
+            <input style={styles.input} type="email" placeholder="admin@xtudy.mx" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label style={styles.label}>Contraseña
+            <input style={styles.input} type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </label>
+          {error && <div style={styles.errorText}>{error}</div>}
+          <button style={styles.ctaBtn} onClick={onSubmit}>Entrar</button>
+        </div>
       </div>
     </div>
   );
