@@ -2347,6 +2347,27 @@ const DEFAULT_RESTAURANTS = [
   { id: "r17", name: "Little Caesars", category: "Pizza", discount: "Descuento por confirmar", code: "LITTLEC01", tier: "soon", address: "Pendiente de confirmar dirección" },
 ];
 
+// Códigos de país para el teléfono. México va primero por ser la mayoría de los estudiantes.
+const COUNTRY_CODES = [
+  { code: "+52", label: "🇲🇽 +52 México", name: "México", digits: 10 },
+  { code: "+1", label: "🇺🇸 +1 EE.UU. / Canadá", name: "EE.UU./Canadá", digits: 10 },
+  { code: "+57", label: "🇨🇴 +57 Colombia", name: "Colombia", digits: 10 },
+  { code: "+54", label: "🇦🇷 +54 Argentina", name: "Argentina", digits: 10 },
+  { code: "+56", label: "🇨🇱 +56 Chile", name: "Chile", digits: 9 },
+  { code: "+51", label: "🇵🇪 +51 Perú", name: "Perú", digits: 9 },
+  { code: "+34", label: "🇪🇸 +34 España", name: "España", digits: 9 },
+  { code: "+55", label: "🇧🇷 +55 Brasil", name: "Brasil", digits: 11 },
+  { code: "+49", label: "🇩🇪 +49 Alemania", name: "Alemania", digits: null },
+  { code: "+33", label: "🇫🇷 +33 Francia", name: "Francia", digits: 9 },
+  { code: "+44", label: "🇬🇧 +44 Reino Unido", name: "Reino Unido", digits: 10 },
+  { code: "+39", label: "🇮🇹 +39 Italia", name: "Italia", digits: null },
+  { code: "+86", label: "🇨🇳 +86 China", name: "China", digits: 11 },
+  { code: "+91", label: "🇮🇳 +91 India", name: "India", digits: 10 },
+  { code: "+81", label: "🇯🇵 +81 Japón", name: "Japón", digits: null },
+  { code: "+82", label: "🇰🇷 +82 Corea del Sur", name: "Corea del Sur", digits: null },
+  { code: "other", label: "🌎 Otro país", name: "tu país", digits: null },
+];
+
 const DEFAULT_UNIVERSITIES = [
   { name: "Universidad de Guadalajara (UDG)", tipo: "Pública" },
   { name: "CUCEI – Cs. Exactas e Ingenierías (UDG)", tipo: "Pública" },
@@ -2481,7 +2502,7 @@ export default function ClubDescuentos() {
   const [restaurants, setRestaurants] = useState(DEFAULT_RESTAURANTS);
   const [universities, setUniversities] = useState(DEFAULT_UNIVERSITIES);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", studentId: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no", residentCode: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", countryCode: "+52", studentId: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no", residentCode: "" });
   const [formError, setFormError] = useState("");
   const [residentAccessCode, setResidentAccessCode] = useState(DEFAULT_RESIDENT_CODE);
   const [loginEmail, setLoginEmail] = useState("");
@@ -2613,8 +2634,14 @@ export default function ClubDescuentos() {
       return;
     }
     const phoneDigits = form.phone.replace(/\D/g, "");
-    if (phoneDigits.length !== 10) {
-      setFormError("El teléfono debe tener 10 dígitos.");
+    const countryInfo = COUNTRY_CODES.find((c) => c.code === form.countryCode);
+    if (countryInfo && countryInfo.digits) {
+      if (phoneDigits.length !== countryInfo.digits) {
+        setFormError(`El teléfono debe tener ${countryInfo.digits} dígitos para ${countryInfo.name}.`);
+        return;
+      }
+    } else if (phoneDigits.length < 6 || phoneDigits.length > 15) {
+      setFormError("Escribe un número de teléfono válido.");
       return;
     }
     if (form.isXtudy === "si") {
@@ -2627,7 +2654,7 @@ export default function ClubDescuentos() {
     const newAccount = {
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
-      phone: form.phone.trim(),
+      phone: `${form.countryCode === "other" ? "" : form.countryCode + " "}${form.phone.trim()}`,
       studentId: form.studentId.trim(),
       university: form.university,
       isXtudy: form.isXtudy,
@@ -3011,7 +3038,12 @@ function Register({ form, setForm, onSubmit, error, onBack, universities }) {
             <input style={styles.input} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={lang === "es" ? "tucorreo@ejemplo.com" : "youremail@example.com"} />
           </label>
           <label style={styles.label}>{lang === "es" ? "Teléfono" : "Phone"}
-            <input style={styles.input} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={lang === "es" ? "10 dígitos" : "10 digits"} />
+            <div style={styles.phoneRow}>
+              <select style={styles.countrySelect} value={form.countryCode} onChange={(e) => setForm({ ...form, countryCode: e.target.value })}>
+                {COUNTRY_CODES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+              </select>
+              <input style={{ ...styles.input, flex: 1 }} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={lang === "es" ? "Número de teléfono" : "Phone number"} />
+            </div>
           </label>
           <label style={styles.label}>{lang === "es" ? "Matrícula / ID de estudiante" : "Student ID"}
             <input style={styles.input} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} placeholder={lang === "es" ? "Ej. A01234567" : "E.g. A01234567"} />
@@ -3525,6 +3557,8 @@ const styles = {
   form: { display: "flex", flexDirection: "column", gap: 14 },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, color: colors.muted, fontWeight: 500 },
   input: { width: "100%", padding: "11px 12px", borderRadius: 10, border: `1px solid ${colors.line}`, fontSize: 14.5, fontFamily: "'Inter', sans-serif", color: colors.ink, background: "#fff" },
+  phoneRow: { display: "flex", gap: 8 },
+  countrySelect: { padding: "11px 8px", borderRadius: 10, border: `1px solid ${colors.line}`, fontSize: 13, fontFamily: "'Inter', sans-serif", color: colors.ink, background: "#fff", maxWidth: 130 },
   radioRow: { display: "flex", gap: 8 },
   radioBtn: { flex: 1, padding: "9px 0", borderRadius: 10, border: `1px solid ${colors.line}`, background: "#fff", cursor: "pointer", fontSize: 13.5, color: colors.ink },
   radioBtnActive: { background: colors.blue, color: "#fff", borderColor: colors.blue },
