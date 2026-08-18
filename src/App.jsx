@@ -7,7 +7,10 @@ const SYMBOL_WHITE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMMAAAC
 
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
-import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles } from "lucide-react";
+import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, List } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
 // Se ejecuta 100% en el navegador, sin llamadas externas.
@@ -2422,7 +2425,7 @@ export default function ClubDescuentos() {
   const [restaurants, setRestaurants] = useState(DEFAULT_RESTAURANTS);
   const [universities, setUniversities] = useState(DEFAULT_UNIVERSITIES);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", studentId: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no" });
   const [formError, setFormError] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -2530,7 +2533,7 @@ export default function ClubDescuentos() {
 
   const handleRegister = () => {
     setFormError("");
-    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.studentId.trim()) {
       setFormError("Completa todos los campos para continuar.");
       return;
     }
@@ -2538,6 +2541,7 @@ export default function ClubDescuentos() {
       name: form.name.trim(),
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
+      studentId: form.studentId.trim(),
       university: form.university,
       isXtudy: form.isXtudy,
       tier: "free",
@@ -2742,7 +2746,12 @@ function AppHeader() {
   return (
     <div className="page-container" style={styles.appHeader}>
       <img src={SYMBOL_WHITE_DATA} alt="Xtudy" style={styles.headerSymbol} />
-      <LangToggle />
+      <div style={styles.headerRight}>
+        <a href="https://www.instagram.com/xtudy.mx" target="_blank" rel="noopener noreferrer" style={styles.igLink} aria-label="Instagram de Xtudy">
+          <Instagram size={17} />
+        </a>
+        <LangToggle />
+      </div>
     </div>
   );
 }
@@ -2775,6 +2784,15 @@ function Landing({ onStart, onAdmin, onLogin }) {
   const { lang } = useContext(LangContext);
   return (
     <div className="page-container" style={styles.landingWrap}>
+      <div style={styles.bigLogoWrap}>
+        <img src={LOGO_DATA} alt="Xtudy" style={styles.bigLogoImg} />
+      </div>
+      <div style={styles.poweredByRow}>
+        <div style={styles.poweredByBadge}>
+          <Star size={12} color={colors.blue} fill={colors.blue} />
+          {lang === "es" ? "Club de Estudiantes fundado a través de Xtudy" : "Student Club founded by Xtudy"}
+        </div>
+      </div>
       <FomoBanner />
       <div style={styles.trianglePatch} />
       <div className="landing-grid" style={styles.landingContent}>
@@ -2877,6 +2895,9 @@ function Register({ form, setForm, onSubmit, error, onBack, universities }) {
           <label style={styles.label}>{lang === "es" ? "Teléfono" : "Phone"}
             <input style={styles.input} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={lang === "es" ? "10 dígitos" : "10 digits"} />
           </label>
+          <label style={styles.label}>{lang === "es" ? "Matrícula / ID de estudiante" : "Student ID"}
+            <input style={styles.input} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} placeholder={lang === "es" ? "Ej. A01234567" : "E.g. A01234567"} />
+          </label>
           <label style={styles.label}>{lang === "es" ? "Universidad" : "University"}
             <select style={styles.input} value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })}>
               <optgroup label={lang === "es" ? "Públicas" : "Public"}>{publicas.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
@@ -2898,12 +2919,115 @@ function Register({ form, setForm, onSubmit, error, onBack, universities }) {
   );
 }
 
+const GDL_CENTER = [20.6767, -103.3475];
+
+function isRealAddress(address) {
+  if (!address) return false;
+  const a = address.toLowerCase();
+  if (a.includes("pendiente")) return false;
+  if (a.includes("ejemplo")) return false;
+  return true;
+}
+
+function pinIcon(color) {
+  return L.divIcon({
+    className: "xtudy-map-pin",
+    html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 26],
+    popupAnchor: [0, -13],
+  });
+}
+
+async function geocodeAddress(address) {
+  const cacheKey = `geocode:${address}`;
+  try {
+    const cached = await storageGet(cacheKey, true);
+    if (cached) {
+      const p = JSON.parse(cached);
+      if (p && typeof p.lat === "number" && typeof p.lng === "number") return p;
+    }
+  } catch {}
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address + ", Guadalajara, Jalisco, México")}`;
+    const res = await fetch(url, { headers: { "Accept-Language": "es" } });
+    const data = await res.json();
+    if (data && data[0]) {
+      const point = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      persist(() => window.storage.set(cacheKey, JSON.stringify(point), true));
+      return point;
+    }
+  } catch (e) {
+    console.error("Error geocodificando dirección:", e);
+  }
+  return null;
+}
+
+function OffersMap({ restaurants }) {
+  const { lang } = useContext(LangContext);
+  const [points, setPoints] = useState({});
+  const mappable = useMemo(() => restaurants.filter((r) => isRealAddress(r.address)), [restaurants]);
+  const unmappable = useMemo(() => restaurants.filter((r) => !isRealAddress(r.address)), [restaurants]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const r of mappable) {
+        if (points[r.id]) continue;
+        const p = await geocodeAddress(r.address);
+        if (cancelled) return;
+        if (p) setPoints((prev) => ({ ...prev, [r.id]: p }));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mappable]);
+
+  const located = mappable.filter((r) => points[r.id]);
+
+  return (
+    <div style={styles.mapWrap}>
+      <MapContainer center={GDL_CENTER} zoom={12} scrollWheelZoom={true} style={styles.mapBox}>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {located.map((r) => (
+          <Marker key={r.id} position={[points[r.id].lat, points[r.id].lng]} icon={pinIcon(colors.blue)}>
+            <Popup>
+              <div style={{ fontFamily: "'Inter', sans-serif" }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5 }}>{r.name}</div>
+                <div style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase" }}>{r.category}</div>
+                <div style={{ fontSize: 12.5, color: colors.blue, fontWeight: 600, marginTop: 4 }}>{r.discount}</div>
+                {r.address && <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>📍 {r.address}</div>}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+      {mappable.length > 0 && located.length < mappable.length && (
+        <p style={styles.mapNote}>
+          {lang === "es" ? "Ubicando algunos lugares en el mapa…" : "Locating some places on the map…"}
+        </p>
+      )}
+      {unmappable.length > 0 && (
+        <p style={styles.mapNote}>
+          {lang === "es"
+            ? `${unmappable.length} lugar(es) aún sin dirección confirmada, por eso no aparecen en el mapa todavía.`
+            : `${unmappable.length} place(s) still without a confirmed address, so they don't show on the map yet.`}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { lang } = useContext(LangContext);
   const myOrder = tierOrder(account.tier);
   const unlocked = restaurants.filter((r) => tierOrder(r.tier) <= myOrder);
   const locked = restaurants.filter((r) => tierOrder(r.tier) > myOrder);
   const [openQrFor, setOpenQrFor] = useState(null);
+  const [showMap, setShowMap] = useState(false);
 
   const verifyUrl = (restaurantId) => {
     try {
@@ -2979,8 +3103,21 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         </>
       )}
 
-      <h3 style={styles.sectionTitle}><Utensils size={16} /> {lang === "es" ? "Tus descuentos desbloqueados" : "Your unlocked discounts"}</h3>
-      <div style={styles.restGrid}>
+      <div style={styles.offersHeaderRow}>
+        <h3 style={{ ...styles.sectionTitle, margin: 0 }}><Utensils size={16} /> {lang === "es" ? "Tus descuentos desbloqueados" : "Your unlocked discounts"}</h3>
+        <div style={styles.viewToggle}>
+          <button style={{ ...styles.viewToggleBtn, ...(!showMap ? styles.viewToggleBtnActive : {}) }} onClick={() => setShowMap(false)}>
+            <List size={13} /> {lang === "es" ? "Lista" : "List"}
+          </button>
+          <button style={{ ...styles.viewToggleBtn, ...(showMap ? styles.viewToggleBtnActive : {}) }} onClick={() => setShowMap(true)}>
+            <MapPin size={13} /> {lang === "es" ? "Mapa" : "Map"}
+          </button>
+        </div>
+      </div>
+
+      {showMap && <OffersMap restaurants={unlocked} />}
+
+      {!showMap && <div style={styles.restGrid}>
         {unlocked.map((r) => (
           <div key={r.id} style={styles.restCard}>
             <div style={styles.restCategory}>{r.category}</div>
@@ -3001,7 +3138,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           </div>
         ))}
         {unlocked.length === 0 && <p style={styles.emptyText}>{lang === "es" ? "Aún no tienes descuentos activos." : "You don't have any active discounts yet."}</p>}
-      </div>
+      </div>}
 
       {locked.length > 0 && (
         <>
@@ -3062,8 +3199,8 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
   };
 
   const exportAccounts = () => {
-    const rows = [["Nombre", "Correo", "Teléfono", "Universidad", "Cliente Xtudy", "Nivel", "Fecha de registro"]];
-    accounts.forEach((a) => rows.push([a.name, a.email, a.phone, a.university, a.isXtudy === "si" ? "Sí" : "No", TIERS.find((t) => t.id === a.tier)?.name || a.tier, a.createdAt]));
+    const rows = [["Nombre", "Correo", "Teléfono", "Matrícula/ID", "Universidad", "Cliente Xtudy", "Nivel", "Fecha de registro"]];
+    accounts.forEach((a) => rows.push([a.name, a.email, a.phone, a.studentId || "", a.university, a.isXtudy === "si" ? "Sí" : "No", TIERS.find((t) => t.id === a.tier)?.name || a.tier, a.createdAt]));
     downloadCsv("registros_xtudy_club.csv", rows);
   };
 
@@ -3102,7 +3239,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
           <div key={a.email} style={styles.adminRow}>
             <div>
               <div style={styles.adminRowName}>{a.name}</div>
-              <div style={styles.adminRowMeta}>{a.email} · {a.phone} · {a.university} · Xtudy: {a.isXtudy === "si" ? "Sí" : "No"}</div>
+              <div style={styles.adminRowMeta}>{a.email} · {a.phone} · {a.studentId ? `ID: ${a.studentId} · ` : ""}{a.university} · Xtudy: {a.isXtudy === "si" ? "Sí" : "No"}</div>
             </div>
             <span style={styles.adminRowTier}>{TIERS.find((t) => t.id === a.tier)?.name}</span>
             <button style={styles.removeBtn} onClick={() => onRemoveAccount(a)} title="Borrar este registro"><X size={14} /></button>
@@ -3263,6 +3400,12 @@ const styles = {
   panelSymbol: { height: 26, width: "auto", marginBottom: 10 },
   appHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   headerSymbol: { height: 22, width: "auto" },
+  headerRight: { display: "flex", alignItems: "center", gap: 12 },
+  igLink: { display: "flex", alignItems: "center", justifyContent: "center", color: "#CFE0EC", opacity: 0.9 },
+  bigLogoWrap: { display: "flex", justifyContent: "center", padding: "6px 0 4px" },
+  bigLogoImg: { height: "clamp(56px, 9vw, 92px)", width: "auto", maxWidth: "90%" },
+  poweredByRow: { display: "flex", justifyContent: "center", marginBottom: 14 },
+  poweredByBadge: { display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.18)", color: "#CFE0EC", fontSize: 11.5, fontWeight: 600, borderRadius: 999, padding: "6px 14px", textAlign: "center" },
   langToggle: { display: "flex", gap: 4, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
   langBtn: { border: "none", background: "none", color: "#9FC0D6", fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 999, cursor: "pointer" },
   langBtnActive: { background: colors.blue, color: "#fff" },
@@ -3309,6 +3452,13 @@ const styles = {
   exportRow: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 },
   exportBtn: { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)", color: colors.card, borderRadius: 10, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" },
   sectionTitle: { display: "flex", alignItems: "center", gap: 7, fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, margin: "22px 0 12px", fontWeight: 700 },
+  offersHeaderRow: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, margin: "22px 0 12px" },
+  viewToggle: { display: "flex", gap: 4, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
+  viewToggleBtn: { display: "flex", alignItems: "center", gap: 5, border: "none", background: "none", color: "#9FC0D6", fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, cursor: "pointer" },
+  viewToggleBtnActive: { background: colors.blue, color: "#fff" },
+  mapWrap: { marginBottom: 12 },
+  mapBox: { width: "100%", height: 380, borderRadius: 14, overflow: "hidden" },
+  mapNote: { fontSize: 11.5, color: "#9FC0D6", marginTop: 8, lineHeight: 1.5 },
   restGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, alignItems: "start" },
   restCard: { background: colors.card, color: colors.ink, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 4 },
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
