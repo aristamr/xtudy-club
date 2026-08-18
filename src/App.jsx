@@ -3118,7 +3118,7 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
         <p style={styles.formSub}>Solo para uso interno del equipo Xtudy.</p>
         <div style={styles.form}>
           <label style={styles.label}>Correo
-            <input style={styles.input} type="email" placeholder="admin@xtudy.mx" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input style={styles.input} type="email" placeholder="ejemplo@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
           <label style={styles.label}>Contraseña
             <input style={styles.input} type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
