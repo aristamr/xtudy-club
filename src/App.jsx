@@ -2308,20 +2308,23 @@ const SHOW_PLANS = false;
 const DEFAULT_RESIDENT_CODE = "XTUDY2026";
 
 const TIERS = [
-  { id: "guest", name: "Explorador", price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student" } },
-  { id: "resident", name: "Residente Xtudy", price: 49, order: 1, tagline: { es: "Acceso a todos los restaurantes", en: "Access to every restaurant" } },
+  { id: "guest", name: { es: "Explorador", en: "Explorer" }, price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student" } },
+  { id: "resident", name: { es: "Residente Xtudy", en: "Xtudy Resident" }, price: 49, order: 1, tagline: { es: "Acceso a todos los restaurantes", en: "Access to every restaurant" } },
 ];
 
 // Nivel especial solo para restaurantes: no está ligado a ninguna membresía.
 // Sirve para mostrar "Próximamente" con candado, sin importar el nivel del estudiante.
-const SOON_TIER = { id: "soon", name: "Próximamente", order: 999 };
+const SOON_TIER_ID = "soon";
+const SOON_ORDER = 999;
 
-// Todas las opciones de nivel que puede tener un restaurante (para selects de administración)
-const RESTAURANT_TIER_OPTIONS = [...TIERS, SOON_TIER];
-
-function restaurantTierLabel(tierId) {
-  return RESTAURANT_TIER_OPTIONS.find((t) => t.id === tierId)?.name || tierId;
-}
+// El panel de administrador siempre se muestra en español, así que aquí usamos
+// nombres fijos (no bilingües) solo para esa parte de la app.
+const TIER_NAME_ES = { guest: "Explorador", resident: "Residente Xtudy", soon: "Próximamente" };
+const RESTAURANT_TIER_OPTIONS = [
+  { id: "guest", name: "Explorador" },
+  { id: "resident", name: "Residente Xtudy" },
+  { id: "soon", name: "Próximamente" },
+];
 
 const DEFAULT_RESTAURANTS = [
   { id: "r1", name: "Dogos Bravo", category: "Hot dogs", discount: "15% de descuento", code: "BRAVO15", tier: "guest", address: "Av. General Ramón Corona 2419, San Juan de Ocotán, 45019 Zapopan, Jal." },
@@ -2370,7 +2373,7 @@ const DEFAULT_UNIVERSITIES = [
 const ADMIN_CODE = "xtudy-admin";
 
 function tierOrder(id) {
-  if (id === "soon") return SOON_TIER.order;
+  if (id === "soon") return SOON_ORDER;
   return TIERS.find((t) => t.id === id)?.order ?? 0;
 }
 
@@ -2505,7 +2508,7 @@ export default function ClubDescuentos() {
                 true
               ));
             } else {
-              setVerifyResult({ status: "tier", name: acc.name, requiredTier: TIERS.find((t) => t.id === restaurant.tier)?.name });
+              setVerifyResult({ status: "tier", name: acc.name, requiredTier: TIER_NAME_ES[restaurant.tier] || restaurant.tier });
             }
           }
           setLoading(false);
@@ -2705,7 +2708,7 @@ export default function ClubDescuentos() {
               <>
                 <div style={styles.checkinCheck}><Check size={40} color="#fff" strokeWidth={3} /></div>
                 <div style={styles.checkinName}>{verifyResult.name}</div>
-                <div style={styles.checkinTier}>Miembro del Club Xtudy · {TIERS.find((t) => t.id === verifyResult.tier)?.name}</div>
+                <div style={styles.checkinTier}>Miembro del Club Xtudy · {TIER_NAME_ES[verifyResult.tier] || verifyResult.tier}</div>
                 <div style={styles.checkinDiscountBig}>{verifyResult.restaurant.discount}</div>
                 <div style={styles.checkinRest}>{verifyResult.restaurant.name}</div>
                 <p style={styles.checkinHint}>Este estudiante tiene acceso confirmado a este descuento.</p>
@@ -2960,7 +2963,8 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { lang } = useContext(LangContext);
   const myOrder = tierOrder(account.tier);
   const unlocked = restaurants.filter((r) => tierOrder(r.tier) <= myOrder);
-  const locked = restaurants.filter((r) => tierOrder(r.tier) > myOrder);
+  const lockedResidentOnly = restaurants.filter((r) => r.tier === "resident" && tierOrder(r.tier) > myOrder);
+  const lockedComingSoon = restaurants.filter((r) => r.tier === "soon");
   const [openQrFor, setOpenQrFor] = useState(null);
 
   const verifyUrl = (restaurantId) => {
@@ -2990,7 +2994,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <div style={styles.cardUni}>{account.university}</div>
         <div style={styles.cardTierRow}>
           <span style={styles.cardTierLabel}>{lang === "es" ? "Nivel actual" : "Current tier"}</span>
-          <span style={styles.cardTierValue}>{TIERS.find((t) => t.id === account.tier)?.name}</span>
+          <span style={styles.cardTierValue}>{TIERS.find((t) => t.id === account.tier)?.name[lang]}</span>
         </div>
         <div style={styles.stampsRow}>
           {TIERS.map((t) => (
@@ -3003,9 +3007,9 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <>
           <div style={styles.tierUpgradeRow}>
             {TIERS.map((t) => (
-              <button key={t.id} onClick={() => t.id !== "resident" || window.confirm(lang === "es" ? "¿Confirmar upgrade a Residente Xtudy por $49/mes? (modo de prueba, sin cobro real)" : "Confirm upgrade to Residente Xtudy for $49/mo? (test mode, no real charge)") ? onChangeTier(t.id) : null} style={{ ...styles.tierCard, ...(account.tier === t.id ? styles.tierCardActive : {}) }}>
+              <button key={t.id} onClick={() => t.id !== "resident" || window.confirm(lang === "es" ? "¿Confirmar upgrade a Residente Xtudy por $49/mes? (modo de prueba, sin cobro real)" : "Confirm upgrade to Xtudy Resident for $49/mo? (test mode, no real charge)") ? onChangeTier(t.id) : null} style={{ ...styles.tierCard, ...(account.tier === t.id ? styles.tierCardActive : {}) }}>
                 <span style={styles.tierCardPrice}>{t.price === 0 ? (lang === "es" ? "Gratis" : "Free") : (lang === "es" ? `$${t.price}/mes` : `$${t.price}/mo`)}</span>
-                <span style={styles.tierCardName}>{t.name}</span>
+                <span style={styles.tierCardName}>{t.name[lang]}</span>
                 <span style={styles.tierCardTag}>{t.tagline[lang]}</span>
                 {account.tier === t.id && <span style={styles.currentBadge}>{lang === "es" ? "Plan actual" : "Current plan"}</span>}
               </button>
@@ -3056,11 +3060,26 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         {unlocked.length === 0 && <p style={styles.emptyText}>{lang === "es" ? "Aún no tienes descuentos activos." : "You don't have any active discounts yet."}</p>}
       </div>
 
-      {locked.length > 0 && (
+      {lockedResidentOnly.length > 0 && (
+        <>
+          <h3 style={styles.sectionTitle}><Lock size={15} /> {lang === "es" ? "Solo para Residentes Xtudy" : "Xtudy Residents only"}</h3>
+          <div style={styles.restGrid}>
+            {lockedResidentOnly.map((r) => (
+              <div key={r.id} style={styles.restCardLocked}>
+                <Lock size={22} color="#8FA5B8" />
+                <div style={styles.restCategory}>{r.category}</div>
+                <div style={styles.restNameLocked}>{r.name}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {lockedComingSoon.length > 0 && (
         <>
           <h3 style={styles.sectionTitle}><Lock size={15} /> {lang === "es" ? "Próximamente" : "Coming soon"}</h3>
           <div style={styles.restGrid}>
-            {locked.map((r) => (
+            {lockedComingSoon.map((r) => (
               <div key={r.id} style={styles.restCardLocked}>
                 <Lock size={22} color="#8FA5B8" />
                 <div style={styles.restCategory}>{r.category}</div>
@@ -3092,7 +3111,7 @@ function AdminLogin({ value, setValue, onSubmit, error, onBack }) {
 
 function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onBack }) {
   const [codeInput, setCodeInput] = useState(residentAccessCode);
-  const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length }));
+  const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length, adminName: TIER_NAME_ES[t.id] }));
 
   const byRestaurant = {};
   const byUser = {};
@@ -3117,13 +3136,13 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
 
   const exportAccounts = () => {
     const rows = [["Nombre", "Correo", "Teléfono", "Matrícula/ID", "Universidad", "Cliente Xtudy", "Nivel", "Fecha de registro"]];
-    accounts.forEach((a) => rows.push([a.name, a.email, a.phone, a.studentId || "", a.university, a.isXtudy === "si" ? "Sí" : "No", TIERS.find((t) => t.id === a.tier)?.name || a.tier, a.createdAt]));
+    accounts.forEach((a) => rows.push([a.name, a.email, a.phone, a.studentId || "", a.university, a.isXtudy === "si" ? "Sí" : "No", TIER_NAME_ES[a.tier] || a.tier, a.createdAt]));
     downloadCsv("registros_xtudy_club.csv", rows);
   };
 
   const exportRedemptions = () => {
     const rows = [["Estudiante", "Correo", "Restaurante", "Nivel", "Fecha y hora"]];
-    (redemptions || []).forEach((r) => rows.push([r.name, r.email, r.restaurant, TIERS.find((t) => t.id === r.tier)?.name || r.tier, r.at]));
+    (redemptions || []).forEach((r) => rows.push([r.name, r.email, r.restaurant, TIER_NAME_ES[r.tier] || r.tier, r.at]));
     downloadCsv("canjes_xtudy_club.csv", rows);
   };
 
@@ -3151,7 +3170,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         {counts.map((c) => (
           <div key={c.id} style={styles.adminStatCard}>
             <span style={styles.adminStatNum}>{c.count}</span>
-            <span style={styles.adminStatLabel}>{c.name}</span>
+            <span style={styles.adminStatLabel}>{c.adminName}</span>
           </div>
         ))}
       </div>
@@ -3165,7 +3184,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
               <div style={styles.adminRowName}>{a.name}</div>
               <div style={styles.adminRowMeta}>{a.email} · {a.phone} · {a.studentId ? `ID: ${a.studentId} · ` : ""}{a.university} · Xtudy: {a.isXtudy === "si" ? "Sí" : "No"}</div>
             </div>
-            <span style={styles.adminRowTier}>{TIERS.find((t) => t.id === a.tier)?.name}</span>
+            <span style={styles.adminRowTier}>{TIER_NAME_ES[a.tier] || a.tier}</span>
             <button style={styles.removeBtn} onClick={() => onRemoveAccount(a)} title="Borrar este registro"><X size={14} /></button>
           </div>
         ))}
@@ -3232,7 +3251,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
           <div key={r._key || i} style={styles.adminRow}>
             <div>
               <div style={styles.adminRowName}>{r.name || r.email} — {r.restaurant}</div>
-              <div style={styles.adminRowMeta}>{new Date(r.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })} · nivel: {TIERS.find((t) => t.id === r.tier)?.name || r.tier}</div>
+              <div style={styles.adminRowMeta}>{new Date(r.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })} · nivel: {TIER_NAME_ES[r.tier] || r.tier}</div>
             </div>
             <button style={styles.removeBtn} onClick={() => onRemoveRedemption(r)} title="Borrar este canje"><X size={14} /></button>
           </div>
