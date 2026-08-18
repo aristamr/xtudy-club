@@ -3003,7 +3003,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <>
           <div style={styles.tierUpgradeRow}>
             {TIERS.map((t) => (
-              <button key={t.id} onClick={() => t.id !== "resident" || window.confirm(lang === "es" ? "¿Confirmar upgrade a Residente Xtudy por $49/mes? (modo de prueba, sin cobro real)" : "Confirm upgrade to Xtudy Resident for $49/mo? (test mode, no real charge)") ? onChangeTier(t.id) : null} style={{ ...styles.tierCard, ...(account.tier === t.id ? styles.tierCardActive : {}) }}>
+              <button key={t.id} onClick={() => t.id !== "resident" || window.confirm(lang === "es" ? "¿Confirmar upgrade a Residente Xtudy por $49/mes? (modo de prueba, sin cobro real)" : "Confirm upgrade to Residente Xtudy for $49/mo? (test mode, no real charge)") ? onChangeTier(t.id) : null} style={{ ...styles.tierCard, ...(account.tier === t.id ? styles.tierCardActive : {}) }}>
                 <span style={styles.tierCardPrice}>{t.price === 0 ? (lang === "es" ? "Gratis" : "Free") : (lang === "es" ? `$${t.price}/mes` : `$${t.price}/mo`)}</span>
                 <span style={styles.tierCardName}>{t.name}</span>
                 <span style={styles.tierCardTag}>{t.tagline[lang]}</span>
