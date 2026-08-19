@@ -2309,8 +2309,8 @@ const SHOW_PLANS = false;
 const DEFAULT_RESIDENT_CODE = "XTUDY2026";
 
 const TIERS = [
-  { id: "guest", name: { es: "Explorador", en: "Explorer" }, price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student" } },
-  { id: "resident", name: { es: "Residente Xtudy", en: "Xtudy Resident" }, price: 49, order: 1, tagline: { es: "Acceso a todos los restaurantes", en: "Access to every restaurant" } },
+  { id: "guest", name: { es: "Explorador", en: "Explorer", fr: "Explorateur", de: "Entdecker" }, price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student", fr: "Pour tout étudiant", de: "Für jeden Studenten" } },
+  { id: "resident", name: { es: "Residente Xtudy", en: "Xtudy Resident", fr: "Résident Xtudy", de: "Xtudy-Bewohner" }, price: 49, order: 1, tagline: { es: "Acceso a todos los restaurantes", en: "Access to every restaurant", fr: "Accès à tous les restaurants", de: "Zugang zu allen Restaurants" } },
 ];
 
 // Nivel especial solo para restaurantes: no está ligado a ninguna membresía.
@@ -2400,12 +2400,20 @@ function tierOrder(id) {
 
 // Le da formato automático al descuento: si hay un porcentaje numérico, arma el
 // texto solo (bilingüe). Si no, usa el texto libre o un mensaje por defecto.
+// Traduce un texto a uno de los 4 idiomas que soporta la app.
+function tr(lang, es, en, fr, de) {
+  if (lang === "es") return es;
+  if (lang === "fr") return fr;
+  if (lang === "de") return de;
+  return en;
+}
+
 function formatDiscount(r, lang) {
   if (r.discountPercent !== undefined && r.discountPercent !== null && r.discountPercent !== "") {
-    return lang === "es" ? `${r.discountPercent}% de descuento` : `${r.discountPercent}% off`;
+    return tr(lang, `${r.discountPercent}% de descuento`, `${r.discountPercent}% off`, `${r.discountPercent}% de réduction`, `${r.discountPercent}% Rabatt`);
   }
   if (r.discount) return r.discount;
-  return lang === "es" ? "Descuento por confirmar" : "Discount to be confirmed";
+  return tr(lang, "Descuento por confirmar", "Discount to be confirmed", "Réduction à confirmer", "Rabatt wird noch bestätigt");
 }
 
 // Devuelve la lista de sucursales de un restaurante, sin importar si se guardó
@@ -2906,7 +2914,7 @@ export default function ClubDescuentos() {
       )}
 
       {view === "register" && (
-        <Register form={form} setForm={setForm} onSubmit={handleRegister} error={formError} onBack={() => setView("landing")} universities={universities} onGoToLogin={(email) => { setFormError(""); setLoginError(""); setLoginEmail(email); setView("login"); }} />
+        <Register form={form} setForm={setForm} onSubmit={handleRegister} error={formError} onBack={() => setView("landing")} universities={universities} onGoToLogin={(email) => { setFormError(""); setLoginError(""); setLoginEmail(email); setView("login"); }} onClearError={() => setFormError("")} />
       )}
 
       {view === "login" && (
@@ -2954,10 +2962,17 @@ function AppHeader() {
 
 function LangToggle() {
   const { lang, setLang } = useContext(LangContext);
+  const langs = [
+    { code: "es", label: "ES" },
+    { code: "en", label: "EN" },
+    { code: "fr", label: "FR" },
+    { code: "de", label: "DE" },
+  ];
   return (
     <div style={styles.langToggle}>
-      <button style={{ ...styles.langBtn, ...(lang === "es" ? styles.langBtnActive : {}) }} onClick={() => setLang("es")}>ES</button>
-      <button style={{ ...styles.langBtn, ...(lang === "en" ? styles.langBtnActive : {}) }} onClick={() => setLang("en")}>EN</button>
+      {langs.map((l) => (
+        <button key={l.code} style={{ ...styles.langBtn, ...(lang === l.code ? styles.langBtnActive : {}) }} onClick={() => setLang(l.code)}>{l.label}</button>
+      ))}
     </div>
   );
 }
@@ -2968,9 +2983,12 @@ function FomoBanner() {
     <div style={styles.fomoBanner}>
       <Sparkles size={14} color={colors.blue} />
       <span>
-        {lang === "es"
-          ? (<>Ya hay estudiantes de GDL ahorrando cada semana en restaurantes. <b>No te quedes fuera.</b></>)
-          : (<>Students in GDL are already saving every week at local restaurants. <b>Don't miss out.</b></>)}
+        {tr(lang,
+          (<>Ya hay estudiantes de GDL ahorrando cada semana en restaurantes. <b>No te quedes fuera.</b></>),
+          (<>Students in GDL are already saving every week at local restaurants. <b>Don't miss out.</b></>),
+          (<>Des étudiants de GDL économisent déjà chaque semaine dans les restaurants. <b>Ne rate pas ça.</b></>),
+          (<>Studenten in GDL sparen schon jede Woche in Restaurants. <b>Verpass es nicht.</b></>)
+        )}
       </span>
     </div>
   );
@@ -2993,27 +3011,34 @@ function Landing({ onStart, onAdmin, onLogin }) {
       <div style={styles.trianglePatch} />
       <div className="landing-grid" style={styles.landingContent}>
         <div style={styles.landingHero}>
-          <div style={styles.eyebrow}>{lang === "es" ? "CLUB DE ESTUDIANTES" : "STUDENT CLUB"}</div>
+          <div style={styles.eyebrow}>{tr(lang, "CLUB DE ESTUDIANTES", "STUDENT CLUB", "CLUB ÉTUDIANT", "STUDENTENCLUB")}</div>
           <h1 style={styles.h1}>
             {lang === "es"
               ? (<>Descuentos que <span style={styles.accentText}>sí</span> vas a usar.</>)
+              : lang === "fr"
+              ? (<>Des réductions que tu vas <span style={styles.accentText}>vraiment</span> utiliser.</>)
+              : lang === "de"
+              ? (<>Rabatte, die du <span style={styles.accentText}>wirklich</span> nutzt.</>)
               : (<>Discounts you'll <span style={styles.accentText}>actually</span> use.</>)}
           </h1>
           <p style={styles.heroSub}>
-            {lang === "es"
-              ? "Regístrate gratis y desbloquea descuentos reales en restaurantes de Guadalajara. Sé parte de la mejor comunidad estudiantil de México, hecha por Xtudy."
-              : "Sign up for free and unlock real discounts at restaurants in Guadalajara. Be part of the best student community in Mexico, made by Xtudy."}
+            {tr(lang,
+              "Regístrate gratis y desbloquea descuentos reales en restaurantes de Guadalajara. Sé parte de la mejor comunidad estudiantil de México, hecha por Xtudy.",
+              "Sign up for free and unlock real discounts at restaurants in Guadalajara. Be part of the best student community in Mexico, made by Xtudy.",
+              "Inscris-toi gratuitement et débloque de vraies réductions dans les restaurants de Guadalajara. Rejoins la meilleure communauté étudiante du Mexique, créée par Xtudy.",
+              "Registriere dich kostenlos und schalte echte Rabatte in Restaurants in Guadalajara frei. Werde Teil der besten Studentencommunity Mexikos, erstellt von Xtudy."
+            )}
           </p>
           <div style={styles.unlimitedPill}>
             <Sparkles size={13} color={colors.blue} />
-            {lang === "es" ? "Úsalos las veces que quieras, sin límite" : "Use them as many times as you want, no limit"}
+            {tr(lang, "Úsalos las veces que quieras, sin límite", "Use them as many times as you want, no limit", "Utilise-les autant de fois que tu veux, sans limite", "Nutze sie so oft du willst, ohne Limit")}
           </div>
           <div style={styles.heroBtnRow}>
             <button style={styles.ctaBtn} onClick={onStart}>
-              {lang === "es" ? "Registrarme gratis" : "Sign up for free"} <ChevronRight size={18} strokeWidth={2.5} />
+              {tr(lang, "Registrarme gratis", "Sign up for free", "M'inscrire gratuitement", "Kostenlos registrieren")} <ChevronRight size={18} strokeWidth={2.5} />
             </button>
             <button style={styles.loginLink} onClick={onLogin}>
-              {lang === "es" ? "Ya tengo cuenta — iniciar sesión" : "I already have an account — log in"}
+              {tr(lang, "Ya tengo cuenta — iniciar sesión", "I already have an account — log in", "J'ai déjà un compte — se connecter", "Ich habe schon ein Konto — anmelden")}
             </button>
           </div>
         </div>
@@ -3024,8 +3049,8 @@ function Landing({ onStart, onAdmin, onLogin }) {
               <img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} />
               <Star size={18} color={colors.blue} fill={colors.blue} />
             </div>
-            <div style={styles.cardName}>{lang === "es" ? "Tu nombre aquí" : "Your name here"}</div>
-            <div style={styles.cardUni}>{lang === "es" ? "Tu universidad" : "Your university"}</div>
+            <div style={styles.cardName}>{tr(lang, "Tu nombre aquí", "Your name here", "Ton nom ici", "Dein Name hier")}</div>
+            <div style={styles.cardUni}>{tr(lang, "Tu universidad", "Your university", "Ton université", "Deine Universität")}</div>
             <div style={styles.stampsRow}>
               {TIERS.map((t, i) => (
                 <div key={t.id} style={{ ...styles.stampDot, ...(i === 0 ? styles.stampDotFilled : {}) }} />
@@ -3036,7 +3061,7 @@ function Landing({ onStart, onAdmin, onLogin }) {
       </div>
 
       <div style={styles.landingLinks}>
-        <button style={styles.adminLink} onClick={onAdmin}><ShieldCheck size={13} /> {lang === "es" ? "Acceso administrador" : "Admin access"}</button>
+        <button style={styles.adminLink} onClick={onAdmin}><ShieldCheck size={13} /> {tr(lang, "Acceso administrador", "Admin access", "Accès administrateur", "Administratorzugang")}</button>
       </div>
     </div>
   );
@@ -3049,26 +3074,29 @@ function Login({ email, setEmail, onSubmit, error, onBack }) {
       <div style={styles.panel}>
         <button style={styles.backLink} onClick={onBack}><X size={16} /></button>
         <img src={SYMBOL_DATA} alt="Xtudy" style={styles.panelSymbol} />
-        <div style={styles.eyebrow}>{lang === "es" ? "BIENVENIDO DE VUELTA" : "WELCOME BACK"}</div>
-        <h2 style={styles.h2}>{lang === "es" ? "Iniciar sesión" : "Log in"}</h2>
+        <div style={styles.eyebrow}>{tr(lang, "BIENVENIDO DE VUELTA", "WELCOME BACK", "CONTENT DE TE REVOIR", "WILLKOMMEN ZURÜCK")}</div>
+        <h2 style={styles.h2}>{tr(lang, "Iniciar sesión", "Log in", "Se connecter", "Anmelden")}</h2>
         <p style={styles.formSub}>
-          {lang === "es"
-            ? "Escribe el correo con el que te registraste — no necesitas contraseña."
-            : "Type the email you registered with — no password needed."}
+          {tr(lang,
+            "Escribe el correo con el que te registraste — no necesitas contraseña.",
+            "Type the email you registered with — no password needed.",
+            "Écris l'e-mail avec lequel tu t'es inscrit — pas besoin de mot de passe.",
+            "Gib die E-Mail-Adresse ein, mit der du dich registriert hast — kein Passwort nötig."
+          )}
         </p>
         <div style={styles.form}>
-          <label style={styles.label}>{lang === "es" ? "Correo electrónico" : "Email"}
-            <input style={styles.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={lang === "es" ? "tucorreo@ejemplo.com" : "youremail@example.com"} />
+          <label style={styles.label}>{tr(lang, "Correo electrónico", "Email", "E-mail", "E-Mail")}
+            <input style={styles.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={tr(lang, "tucorreo@ejemplo.com", "youremail@example.com", "tonemail@exemple.com", "deine-email@beispiel.com")} />
           </label>
           {error && <div style={styles.errorText}>{error}</div>}
-          <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{lang === "es" ? "Entrar" : "Log in"}</button>
+          <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{tr(lang, "Entrar", "Log in", "Entrer", "Anmelden")}</button>
         </div>
       </div>
     </div>
   );
 }
 
-function Register({ form, setForm, onSubmit, error, onBack, universities, onGoToLogin }) {
+function Register({ form, setForm, onSubmit, error, onBack, universities, onGoToLogin, onClearError }) {
   const { lang } = useContext(LangContext);
   const publicas = universities.filter((u) => u.tipo === "Pública");
   const privadas = universities.filter((u) => u.tipo === "Privada");
@@ -3078,60 +3106,63 @@ function Register({ form, setForm, onSubmit, error, onBack, universities, onGoTo
       <div style={styles.panel}>
         <button style={styles.backLink} onClick={onBack}><X size={16} /></button>
         <img src={SYMBOL_DATA} alt="Xtudy" style={styles.panelSymbol} />
-        <div style={styles.eyebrow}>{lang === "es" ? "PASO 1 DE 1" : "STEP 1 OF 1"}</div>
-        <h2 style={styles.h2}>{lang === "es" ? "Crea tu cuenta" : "Create your account"}</h2>
-        <p style={styles.formSub}>{lang === "es" ? "Toma menos de un minuto. Empiezas como Explorador al instante — y si vives con Xtudy, activas tu nivel Residente ahora mismo." : "Takes less than a minute. You start as an Explorer right away — and if you live with Xtudy, you activate your Resident tier now."}</p>
+        <div style={styles.eyebrow}>{tr(lang, "PASO 1 DE 1", "STEP 1 OF 1", "ÉTAPE 1 SUR 1", "SCHRITT 1 VON 1")}</div>
+        <h2 style={styles.h2}>{tr(lang, "Crea tu cuenta", "Create your account", "Crée ton compte", "Erstelle dein Konto")}</h2>
+        <p style={styles.formSub}>{tr(lang,
+          "Toma menos de un minuto. Empiezas como Explorador al instante — y si vives con Xtudy, activas tu nivel Residente ahora mismo.",
+          "Takes less than a minute. You start as an Explorer right away — and if you live with Xtudy, you activate your Resident tier now.",
+          "Ça prend moins d'une minute. Tu commences comme Explorateur tout de suite — et si tu vis avec Xtudy, active ton niveau Résident dès maintenant.",
+          "Dauert weniger als eine Minute. Du startest sofort als Entdecker — und wenn du bei Xtudy wohnst, aktivierst du jetzt deine Bewohner-Stufe."
+        )}</p>
         <div style={styles.form}>
-          <label style={styles.label}>{lang === "es" ? "Nombre completo" : "Full name"}
-            <input style={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={lang === "es" ? "Ej. Ana Torres" : "E.g. Ana Torres"} />
+          <label style={styles.label}>{tr(lang, "Nombre completo", "Full name", "Nom complet", "Vollständiger Name")}
+            <input style={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={tr(lang, "Ej. Ana Torres", "E.g. Ana Torres", "Ex. Ana Torres", "Z.B. Ana Torres")} />
           </label>
-          <label style={styles.label}>{lang === "es" ? "Correo electrónico" : "Email"}
-            <input style={styles.input} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={lang === "es" ? "tucorreo@ejemplo.com" : "youremail@example.com"} />
+          <label style={styles.label}>{tr(lang, "Correo electrónico", "Email", "E-mail", "E-Mail")}
+            <input style={styles.input} type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); if (error === "duplicate-email") onClearError(); }} placeholder={tr(lang, "tucorreo@ejemplo.com", "youremail@example.com", "tonemail@exemple.com", "deine-email@beispiel.com")} />
           </label>
-          <label style={styles.label}>{lang === "es" ? "Teléfono" : "Phone"}
+          <label style={styles.label}>{tr(lang, "Teléfono", "Phone", "Téléphone", "Telefon")}
             <div style={styles.phoneRow}>
               <select style={styles.countrySelect} value={form.countryCode} onChange={(e) => setForm({ ...form, countryCode: e.target.value })}>
                 {COUNTRY_CODES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
               </select>
-              <input style={{ ...styles.input, flex: 1 }} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={lang === "es" ? "Número de teléfono" : "Phone number"} />
+              <input style={{ ...styles.input, flex: 1 }} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={tr(lang, "Número de teléfono", "Phone number", "Numéro de téléphone", "Telefonnummer")} />
             </div>
           </label>
-          <label style={styles.label}>{lang === "es" ? "Matrícula / ID de estudiante" : "Student ID"}
-            <input style={styles.input} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} placeholder={lang === "es" ? "Ej. A01234567" : "E.g. A01234567"} />
+          <label style={styles.label}>{tr(lang, "Matrícula / ID de estudiante", "Student ID", "Numéro d'étudiant", "Studentenausweis-Nummer")}
+            <input style={styles.input} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} placeholder={tr(lang, "Ej. A01234567", "E.g. A01234567", "Ex. A01234567", "Z.B. A01234567")} />
           </label>
-          <label style={styles.label}>{lang === "es" ? "Universidad" : "University"}
+          <label style={styles.label}>{tr(lang, "Universidad", "University", "Université", "Universität")}
             <select style={styles.input} value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })}>
-              <optgroup label={lang === "es" ? "Públicas" : "Public"}>{publicas.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
-              <optgroup label={lang === "es" ? "Privadas" : "Private"}>{privadas.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
-              <optgroup label={lang === "es" ? "Otra" : "Other"}>{otras.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
+              <optgroup label={tr(lang, "Públicas", "Public", "Publiques", "Öffentlich")}>{publicas.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
+              <optgroup label={tr(lang, "Privadas", "Private", "Privées", "Privat")}>{privadas.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
+              <optgroup label={tr(lang, "Otra", "Other", "Autre", "Andere")}>{otras.map((u) => <option key={u.name} value={u.name}>{u.name}</option>)}</optgroup>
             </select>
           </label>
-          <label style={styles.label}>{lang === "es" ? "¿Eres cliente de Xtudy?" : "Are you an Xtudy tenant?"}
+          <label style={styles.label}>{tr(lang, "¿Eres cliente de Xtudy?", "Are you an Xtudy tenant?", "Es-tu locataire chez Xtudy ?", "Bist du Xtudy-Bewohner?")}
             <div style={styles.radioRow}>
-              <button type="button" style={{ ...styles.radioBtn, ...(form.isXtudy === "si" ? styles.radioBtnActive : {}) }} onClick={() => setForm({ ...form, isXtudy: "si" })}>{lang === "es" ? "Sí" : "Yes"}</button>
+              <button type="button" style={{ ...styles.radioBtn, ...(form.isXtudy === "si" ? styles.radioBtnActive : {}) }} onClick={() => setForm({ ...form, isXtudy: "si" })}>{tr(lang, "Sí", "Yes", "Oui", "Ja")}</button>
               <button type="button" style={{ ...styles.radioBtn, ...(form.isXtudy === "no" ? styles.radioBtnActive : {}) }} onClick={() => setForm({ ...form, isXtudy: "no" })}>No</button>
             </div>
           </label>
           {form.isXtudy === "si" && (
-            <label style={styles.label}>{lang === "es" ? "Código de residente Xtudy" : "Xtudy resident code"}
-              <input style={styles.input} value={form.residentCode} onChange={(e) => setForm({ ...form, residentCode: e.target.value })} placeholder={lang === "es" ? "Pídelo a tu administración Xtudy" : "Ask your Xtudy administration"} />
+            <label style={styles.label}>{tr(lang, "Código de residente Xtudy", "Xtudy resident code", "Code résident Xtudy", "Xtudy-Bewohner-Code")}
+              <input style={styles.input} value={form.residentCode} onChange={(e) => setForm({ ...form, residentCode: e.target.value })} placeholder={tr(lang, "Pídelo a tu administración Xtudy", "Ask your Xtudy administration", "Demande-le à ton administration Xtudy", "Frag deine Xtudy-Verwaltung danach")} />
             </label>
           )}
           {error === "duplicate-email" ? (
             <div style={styles.duplicateEmailBox}>
               <p style={styles.duplicateEmailText}>
-                {lang === "es"
-                  ? "Ya tienes una cuenta con este correo."
-                  : "You already have an account with this email."}
+                {tr(lang, "Ya tienes una cuenta con este correo.", "You already have an account with this email.", "Tu as déjà un compte avec cet e-mail.", "Du hast bereits ein Konto mit dieser E-Mail-Adresse.")}
               </p>
               <button type="button" style={styles.ctaBtn} onClick={() => onGoToLogin(form.email.trim())}>
-                {lang === "es" ? "Iniciar sesión" : "Log in"}
+                {tr(lang, "Iniciar sesión", "Log in", "Se connecter", "Anmelden")}
               </button>
             </div>
           ) : (
             <>
               {error && <div style={styles.errorText}>{error}</div>}
-              <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{lang === "es" ? "Crear mi cuenta" : "Create my account"}</button>
+              <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{tr(lang, "Crear mi cuenta", "Create my account", "Créer mon compte", "Mein Konto erstellen")}</button>
             </>
           )}
         </div>
@@ -3162,10 +3193,10 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
     <div className="page-container" style={styles.dashWrap}>
       <div style={styles.dashHeader}>
         <div>
-          <div style={styles.memberBadge}><Check size={12} /> {lang === "es" ? "Eres parte del Club Xtudy" : "You're part of the Xtudy Club"}</div>
-          <h2 style={styles.h2}>{lang === "es" ? "Hola" : "Hi"}, {account.name.split(" ")[0]}</h2>
+          <div style={styles.memberBadge}><Check size={12} /> {tr(lang, "Eres parte del Club Xtudy", "You're part of the Xtudy Club", "Tu fais partie du Club Xtudy", "Du bist Teil des Xtudy Clubs")}</div>
+          <h2 style={styles.h2}>{tr(lang, "Hola", "Hi", "Salut", "Hallo")}, {account.name.split(" ")[0]}</h2>
         </div>
-        <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {lang === "es" ? "Salir" : "Log out"}</button>
+        <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
       </div>
 
       <div style={{ ...styles.membershipCardBig, ...(account.tier === "resident" ? styles.membershipCardResident : {}) }}>
@@ -3178,7 +3209,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
               </svg>
             </div>
             <span style={styles.residentBadge}>
-              <Crown size={11} /> {lang === "es" ? "Residente" : "Resident"}
+              <Crown size={11} /> {tr(lang, "Residente", "Resident", "Résident", "Bewohner")}
             </span>
           </>
         )}
@@ -3190,7 +3221,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           <div style={styles.cardName}>{account.name}</div>
           <div style={styles.cardUni}>{account.university}</div>
           <div style={styles.cardTierRow}>
-            <span style={styles.cardTierLabel}>{lang === "es" ? "Nivel actual" : "Current tier"}</span>
+            <span style={styles.cardTierLabel}>{tr(lang, "Nivel actual", "Current tier", "Niveau actuel", "Aktuelle Stufe")}</span>
             <span style={styles.cardTierValue}>{TIERS.find((t) => t.id === account.tier)?.name[lang]}</span>
           </div>
           <div style={styles.stampsRow}>
@@ -3205,23 +3236,26 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <>
           <div style={styles.tierUpgradeRow}>
             {TIERS.map((t) => (
-              <button key={t.id} onClick={() => t.id !== "resident" || window.confirm(lang === "es" ? "¿Confirmar upgrade a Residente Xtudy por $49/mes? (modo de prueba, sin cobro real)" : "Confirm upgrade to Xtudy Resident for $49/mo? (test mode, no real charge)") ? onChangeTier(t.id) : null} style={{ ...styles.tierCard, ...(account.tier === t.id ? styles.tierCardActive : {}) }}>
-                <span style={styles.tierCardPrice}>{t.price === 0 ? (lang === "es" ? "Gratis" : "Free") : (lang === "es" ? `$${t.price}/mes` : `$${t.price}/mo`)}</span>
+              <button key={t.id} onClick={() => t.id !== "resident" || window.confirm(tr(lang, "¿Confirmar upgrade a Residente Xtudy por $49/mes? (modo de prueba, sin cobro real)", "Confirm upgrade to Xtudy Resident for $49/mo? (test mode, no real charge)", "Confirmer la mise à niveau vers Résident Xtudy pour 49 $/mois ? (mode test, aucun frais réel)", "Upgrade auf Xtudy-Bewohner für 49 $/Monat bestätigen? (Testmodus, keine echte Abbuchung)")) ? onChangeTier(t.id) : null} style={{ ...styles.tierCard, ...(account.tier === t.id ? styles.tierCardActive : {}) }}>
+                <span style={styles.tierCardPrice}>{t.price === 0 ? tr(lang, "Gratis", "Free", "Gratuit", "Kostenlos") : tr(lang, `$${t.price}/mes`, `$${t.price}/mo`, `${t.price} $/mois`, `${t.price} $/Monat`)}</span>
                 <span style={styles.tierCardName}>{t.name[lang]}</span>
                 <span style={styles.tierCardTag}>{t.tagline[lang]}</span>
-                {account.tier === t.id && <span style={styles.currentBadge}>{lang === "es" ? "Plan actual" : "Current plan"}</span>}
+                {account.tier === t.id && <span style={styles.currentBadge}>{tr(lang, "Plan actual", "Current plan", "Plan actuel", "Aktueller Plan")}</span>}
               </button>
             ))}
           </div>
           <p style={styles.demoNote}>
-            {lang === "es"
-              ? "Nota: en esta versión de prueba, el upgrade es instantáneo y sin cobro real — sirve para validar el interés. El cobro con tarjeta se integra después con Stripe."
-              : "Note: in this test version, the upgrade is instant with no real charge — it's here to validate interest. Card payments will be added later with Stripe."}
+            {tr(lang,
+              "Nota: en esta versión de prueba, el upgrade es instantáneo y sin cobro real — sirve para validar el interés. El cobro con tarjeta se integra después con Stripe.",
+              "Note: in this test version, the upgrade is instant with no real charge — it's here to validate interest. Card payments will be added later with Stripe.",
+              "Remarque : dans cette version de test, la mise à niveau est instantanée et sans frais réels — elle sert à valider l'intérêt. Le paiement par carte sera intégré plus tard avec Stripe.",
+              "Hinweis: In dieser Testversion erfolgt das Upgrade sofort und ohne echte Abbuchung — es dient nur zur Interessensvalidierung. Die Kartenzahlung wird später mit Stripe integriert."
+            )}
           </p>
         </>
       )}
 
-      <h3 style={styles.sectionTitle}><Utensils size={16} /> {lang === "es" ? "Tus descuentos desbloqueados" : "Your unlocked discounts"}</h3>
+      <h3 style={styles.sectionTitle}><Utensils size={16} /> {tr(lang, "Tus descuentos desbloqueados", "Your unlocked discounts", "Tes réductions débloquées", "Deine freigeschalteten Rabatte")}</h3>
 
       <div style={styles.restGrid}>
         {unlocked.map((r) => (
@@ -3234,10 +3268,10 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
               if (branches.length === 1) {
                 return (
                   <>
-                    <div style={styles.franchiseBadge}>{lang === "es" ? "Solo en la siguiente sucursal" : "Only at this branch"}: {branches[0].name}</div>
+                    <div style={styles.franchiseBadge}>{tr(lang, "Solo en la siguiente sucursal", "Only at this branch", "Seulement dans cette succursale", "Nur in dieser Filiale")}: {branches[0].name}</div>
                     {getBranchUrl(r.name, branches[0]) && (
                       <a href={getBranchUrl(r.name, branches[0])} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                        <MapPin size={12} /> {lang === "es" ? `Ubicación de sucursal ${branches[0].name}` : `Location of ${branches[0].name} branch`}
+                        <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${branches[0].name}`, `Location of ${branches[0].name} branch`, `Emplacement de la succursale ${branches[0].name}`, `Standort der Filiale ${branches[0].name}`)}
                       </a>
                     )}
                   </>
@@ -3245,13 +3279,13 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
               }
               return (
                 <>
-                  <div style={styles.franchiseBadge}>{lang === "es" ? "Disponible en" : "Available at"} {branches.length} {lang === "es" ? "sucursales" : "branches"}</div>
+                  <div style={styles.franchiseBadge}>{tr(lang, "Disponible en", "Available at", "Disponible dans", "Verfügbar in")} {branches.length} {tr(lang, "sucursales", "branches", "succursales", "Filialen")}</div>
                   <div style={styles.branchLinksRow}>
                     {branches.map((b, i) => {
                       const url = getBranchUrl(r.name, b);
                       return url ? (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                          <MapPin size={12} /> {lang === "es" ? `Ubicación de sucursal ${b.name}` : `Location of ${b.name} branch`}
+                          <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${b.name}`, `Location of ${b.name} branch`, `Emplacement de la succursale ${b.name}`, `Standort der Filiale ${b.name}`)}
                         </a>
                       ) : (
                         <span key={i} style={styles.restAddress}>{b.name}</span>
@@ -3263,29 +3297,34 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
             })()}
             {!r.isFranchise && getLocationUrl(r) && (
               <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
+                <MapPin size={12} /> {tr(lang, "Ver ubicación", "View location", "Voir l'emplacement", "Standort ansehen")}
               </a>
             )}
             <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
             <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
-              <QrCode size={14} /> {openQrFor === r.id ? (lang === "es" ? "Ocultar QR" : "Hide QR") : (lang === "es" ? "Mostrar QR" : "Show QR")}
+              <QrCode size={14} /> {openQrFor === r.id ? tr(lang, "Ocultar QR", "Hide QR", "Masquer le QR", "QR ausblenden") : tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}
             </button>
             {openQrFor === r.id && (
               <div style={styles.qrBox}>
                 <QRCode value={verifyUrl(r.id)} size={160} />
                 <span style={styles.qrHint}>
-                  {lang === "es" ? "El mesero lo escanea con la cámara de su celular y confirma tu membresía al instante." : "The waiter scans it with their phone camera and confirms your membership instantly."}
+                  {tr(lang,
+                    "El mesero lo escanea con la cámara de su celular y confirma tu membresía al instante.",
+                    "The waiter scans it with their phone camera and confirms your membership instantly.",
+                    "Le serveur le scanne avec l'appareil photo de son téléphone et confirme ton adhésion instantanément.",
+                    "Der Kellner scannt ihn mit der Handykamera und bestätigt deine Mitgliedschaft sofort."
+                  )}
                 </span>
               </div>
             )}
           </div>
         ))}
-        {unlocked.length === 0 && <p style={styles.emptyText}>{lang === "es" ? "Aún no tienes descuentos activos." : "You don't have any active discounts yet."}</p>}
+        {unlocked.length === 0 && <p style={styles.emptyText}>{tr(lang, "Aún no tienes descuentos activos.", "You don't have any active discounts yet.", "Tu n'as pas encore de réductions actives.", "Du hast noch keine aktiven Rabatte.")}</p>}
       </div>
 
       {lockedResidentOnly.length > 0 && (
         <>
-          <h3 style={styles.sectionTitle}><Lock size={15} /> {lang === "es" ? "Solo para Residentes Xtudy" : "Xtudy Residents only"}</h3>
+          <h3 style={styles.sectionTitle}><Lock size={15} /> {tr(lang, "Solo para Residentes Xtudy", "Xtudy Residents only", "Réservé aux Résidents Xtudy", "Nur für Xtudy-Bewohner")}</h3>
           <div style={styles.restGrid}>
             {lockedResidentOnly.map((r) => (
               <div key={r.id} style={styles.restCardLocked}>
@@ -3300,7 +3339,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
 
       {lockedComingSoon.length > 0 && (
         <>
-          <h3 style={styles.sectionTitle}><Lock size={15} /> {lang === "es" ? "Próximamente" : "Coming soon"}</h3>
+          <h3 style={styles.sectionTitle}><Lock size={15} /> {tr(lang, "Próximamente", "Coming soon", "Bientôt disponible", "Demnächst")}</h3>
           <div style={styles.restGrid}>
             {lockedComingSoon.map((r) => (
               <div key={r.id} style={styles.restCardLocked}>
@@ -3675,8 +3714,8 @@ const styles = {
   bigLogoImg: { height: "clamp(48px, 7vw, 72px)", width: "auto", maxWidth: "90%" },
   poweredByRow: { display: "flex", justifyContent: "center", marginBottom: 14 },
   poweredByBadge: { display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.18)", color: "#CFE0EC", fontSize: 11.5, fontWeight: 600, borderRadius: 999, padding: "6px 14px", textAlign: "center" },
-  langToggle: { display: "flex", gap: 4, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
-  langBtn: { border: "none", background: "none", color: "#9FC0D6", fontSize: 11, fontWeight: 700, padding: "4px 9px", borderRadius: 999, cursor: "pointer" },
+  langToggle: { display: "flex", gap: 2, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
+  langBtn: { border: "none", background: "none", color: "#9FC0D6", fontSize: 10.5, fontWeight: 700, padding: "4px 7px", borderRadius: 999, cursor: "pointer" },
   langBtnActive: { background: colors.blue, color: "#fff" },
   cardName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 19, fontWeight: 700 },
   cardUni: { fontSize: 12.5, color: colors.muted, marginTop: 2 },
