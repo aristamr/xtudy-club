@@ -2875,6 +2875,12 @@ export default function ClubDescuentos() {
     persist(() => window.storage.delete(item._key, true));
   };
 
+  const removeWaClick = (item) => {
+    if (!window.confirm(`¿Borrar este clic de ${item.name || item.email} en ${item.restaurant}?`)) return;
+    setWaClicks((prev) => prev.filter((c) => c._key !== item._key));
+    persist(() => window.storage.delete(item._key, true));
+  };
+
   const addRestaurant = () => {
     if (!newRest.name.trim() || !newRest.code.trim()) return;
     const toSave = { ...newRest };
@@ -2967,7 +2973,7 @@ export default function ClubDescuentos() {
           accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions} waClicks={waClicks}
           newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant} onUpdateRestTier={updateRestaurantTier} onUpdateRest={updateRestaurant}
           newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
-          onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption}
+          onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption} onRemoveWaClick={removeWaClick}
           residentAccessCode={residentAccessCode} onUpdateResidentCode={updateResidentCode}
           onRefresh={loadAdminData}
           onBack={() => setView("landing")}
@@ -3361,7 +3367,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                     // Registra el clic sin detener ni retrasar la apertura de WhatsApp.
                     window.storage.insertOnly(
                       `wa_click:${r.id}:${Date.now()}`,
-                      JSON.stringify({ restaurant: r.name, email: account.email, at: new Date().toISOString() }),
+                      JSON.stringify({ restaurant: r.name, name: account.name, email: account.email, at: new Date().toISOString() }),
                       true
                     ).catch(() => {});
                   }}
@@ -3449,7 +3455,7 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
   );
 }
 
-function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
+function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, onRemoveWaClick, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
   const [editingRestId, setEditingRestId] = useState(null);
   const [editDraft, setEditDraft] = useState({});
 
@@ -3770,6 +3776,20 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
           <div key={name} style={styles.adminRow}>
             <div style={styles.adminRowName}>{name}</div>
             <span style={styles.adminRowTier}>{count} clic{count === 1 ? "" : "s"}</span>
+          </div>
+        ))}
+      </div>
+
+      <p style={styles.demoNote}>Bitácora (más reciente primero):</p>
+      <div style={styles.adminTableWrap}>
+        {(waClicks || []).length === 0 && <p style={styles.emptyText}>Aún no hay clics registrados.</p>}
+        {(waClicks || []).map((c, i) => (
+          <div key={c._key || i} style={styles.adminRow}>
+            <div>
+              <div style={styles.adminRowName}>{c.name || c.email} — {c.restaurant}</div>
+              <div style={styles.adminRowMeta}>{new Date(c.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}{c.email ? ` · ${c.email}` : ""}</div>
+            </div>
+            <button style={styles.removeBtn} onClick={() => onRemoveWaClick(c)} title="Borrar este clic"><X size={14} /></button>
           </div>
         ))}
       </div>
