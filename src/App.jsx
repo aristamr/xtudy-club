@@ -2466,7 +2466,7 @@ function getReservationUrl(phone) {
   if (!phone || !phone.trim()) return null;
   const digits = phone.replace(/[^\d]/g, "");
   if (digits.length < 8) return null;
-  const message = "Hola, soy parte de la comunidad Xtudy y me gustaría hacer una reservación.";
+  const message = "Hola, soy parte de la Xtudy Club y me gustaría hacer una reservación.";
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
