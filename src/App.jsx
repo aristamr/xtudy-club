@@ -3230,15 +3230,10 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                 </>
               );
             })()}
-            {!r.isFranchise && (r.address || getLocationUrl(r)) && (
-              <>
-                {r.address && <div style={styles.restAddress}>📍 {r.address}</div>}
-                {getLocationUrl(r) && (
-                  <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                    <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
-                  </a>
-                )}
-              </>
+            {!r.isFranchise && getLocationUrl(r) && (
+              <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
+                <MapPin size={12} /> {lang === "es" ? "Ver ubicación" : "View location"}
+              </a>
             )}
             <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
             <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
