@@ -2690,6 +2690,11 @@ export default function ClubDescuentos() {
       setFormError("Escribe un número de teléfono válido.");
       return;
     }
+    const existing = await fetchAccountByEmail(form.email.trim().toLowerCase());
+    if (existing) {
+      setFormError("duplicate-email");
+      return;
+    }
     if (form.isXtudy === "si") {
       const codeOk = await checkResidentCode(form.residentCode);
       if (!codeOk) {
@@ -2901,7 +2906,7 @@ export default function ClubDescuentos() {
       )}
 
       {view === "register" && (
-        <Register form={form} setForm={setForm} onSubmit={handleRegister} error={formError} onBack={() => setView("landing")} universities={universities} />
+        <Register form={form} setForm={setForm} onSubmit={handleRegister} error={formError} onBack={() => setView("landing")} universities={universities} onGoToLogin={(email) => { setFormError(""); setLoginError(""); setLoginEmail(email); setView("login"); }} />
       )}
 
       {view === "login" && (
@@ -3063,7 +3068,7 @@ function Login({ email, setEmail, onSubmit, error, onBack }) {
   );
 }
 
-function Register({ form, setForm, onSubmit, error, onBack, universities }) {
+function Register({ form, setForm, onSubmit, error, onBack, universities, onGoToLogin }) {
   const { lang } = useContext(LangContext);
   const publicas = universities.filter((u) => u.tipo === "Pública");
   const privadas = universities.filter((u) => u.tipo === "Privada");
@@ -3112,8 +3117,23 @@ function Register({ form, setForm, onSubmit, error, onBack, universities }) {
               <input style={styles.input} value={form.residentCode} onChange={(e) => setForm({ ...form, residentCode: e.target.value })} placeholder={lang === "es" ? "Pídelo a tu administración Xtudy" : "Ask your Xtudy administration"} />
             </label>
           )}
-          {error && <div style={styles.errorText}>{error}</div>}
-          <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{lang === "es" ? "Crear mi cuenta" : "Create my account"}</button>
+          {error === "duplicate-email" ? (
+            <div style={styles.duplicateEmailBox}>
+              <p style={styles.duplicateEmailText}>
+                {lang === "es"
+                  ? "Ya tienes una cuenta con este correo."
+                  : "You already have an account with this email."}
+              </p>
+              <button type="button" style={styles.ctaBtn} onClick={() => onGoToLogin(form.email.trim())}>
+                {lang === "es" ? "Iniciar sesión" : "Log in"}
+              </button>
+            </div>
+          ) : (
+            <>
+              {error && <div style={styles.errorText}>{error}</div>}
+              <button type="button" style={styles.ctaBtn} onClick={onSubmit}>{lang === "es" ? "Crear mi cuenta" : "Create my account"}</button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -3710,6 +3730,8 @@ const styles = {
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
   franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#fff", gridColumn: "1 / -1" },
+  duplicateEmailBox: { background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "12px 14px" },
+  duplicateEmailText: { fontSize: 13.5, color: "#7A5A0A", margin: "0 0 10px" },
   branchListWrap: { marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.15)" },
   branchLinksRow: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 2 },
   branchRow: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" },
