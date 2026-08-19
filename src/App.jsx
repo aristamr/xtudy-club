@@ -2601,12 +2601,16 @@ export default function ClubDescuentos() {
             if (!acc) {
               setVerifyResult({ status: "notfound" });
             } else if (tierOrder(acc.tier) >= tierOrder(restaurant.tier)) {
+              try {
+                await window.storage.set(
+                  `redemption:${restaurant.id}:${Date.now()}`,
+                  JSON.stringify({ restaurant: restaurant.name, email: acc.email, name: acc.name, tier: acc.tier, at: new Date().toISOString() }),
+                  true
+                );
+              } catch (e) {
+                console.error("No se pudo guardar el canje", e);
+              }
               setVerifyResult({ status: "ok", name: acc.name, tier: acc.tier, restaurant });
-              persist(() => window.storage.set(
-                `redemption:${restaurant.id}:${Date.now()}`,
-                JSON.stringify({ restaurant: restaurant.name, email: acc.email, name: acc.name, tier: acc.tier, at: new Date().toISOString() }),
-                true
-              ));
             } else {
               setVerifyResult({ status: "tier", name: acc.name, requiredTier: TIER_NAME_ES[restaurant.tier] || restaurant.tier });
             }
