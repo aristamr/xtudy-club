@@ -2607,7 +2607,7 @@ export default function ClubDescuentos() {
               let saved = null;
               for (let attempt = 1; attempt <= 4 && !saved; attempt++) {
                 try {
-                  saved = await window.storage.set(redemptionKey, redemptionValue, true);
+                  saved = await window.storage.insertOnly(redemptionKey, redemptionValue, true);
                 } catch (e) {
                   console.error(`Intento ${attempt} de guardar el canje falló`, e);
                 }
@@ -2634,8 +2634,8 @@ export default function ClubDescuentos() {
               if (!parsedAcc.memberId) {
                 parsedAcc = { ...parsedAcc, memberId: genMemberId() };
                 persist(async () => {
-                  await window.storage.set(`account:${parsedAcc.email}`, JSON.stringify(parsedAcc), true);
-                  await window.storage.set(`member:${parsedAcc.memberId}`, JSON.stringify({ memberId: parsedAcc.memberId, name: parsedAcc.name, email: parsedAcc.email, tier: parsedAcc.tier }), true);
+                  await window.storage.updateOnly(`account:${parsedAcc.email}`, JSON.stringify(parsedAcc), true);
+                  await window.storage.insertOnly(`member:${parsedAcc.memberId}`, JSON.stringify({ memberId: parsedAcc.memberId, name: parsedAcc.name, email: parsedAcc.email, tier: parsedAcc.tier }), true);
                 });
               }
               setAccount(parsedAcc);
@@ -2712,8 +2712,8 @@ export default function ClubDescuentos() {
     setAccount(newAccount);
     setView("dashboard");
     persist(async () => {
-      await window.storage.set(`account:${newAccount.email}`, JSON.stringify(newAccount), true);
-      await window.storage.set(`member:${newAccount.memberId}`, JSON.stringify({ memberId: newAccount.memberId, name: newAccount.name, email: newAccount.email, tier: newAccount.tier }), true);
+      await window.storage.insertOnly(`account:${newAccount.email}`, JSON.stringify(newAccount), true);
+      await window.storage.insertOnly(`member:${newAccount.memberId}`, JSON.stringify({ memberId: newAccount.memberId, name: newAccount.name, email: newAccount.email, tier: newAccount.tier }), true);
       await window.storage.set("my-email", newAccount.email, false);
     });
   };
@@ -2723,8 +2723,8 @@ export default function ClubDescuentos() {
     const updated = { ...account, tier: tierId };
     setAccount(updated);
     persist(async () => {
-      await window.storage.set(`account:${account.email}`, JSON.stringify(updated), true);
-      if (updated.memberId) await window.storage.set(`member:${updated.memberId}`, JSON.stringify({ memberId: updated.memberId, name: updated.name, email: updated.email, tier: updated.tier }), true);
+      await window.storage.updateOnly(`account:${account.email}`, JSON.stringify(updated), true);
+      if (updated.memberId) await window.storage.updateOnly(`member:${updated.memberId}`, JSON.stringify({ memberId: updated.memberId, name: updated.name, email: updated.email, tier: updated.tier }), true);
     });
   };
 
