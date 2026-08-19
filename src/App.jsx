@@ -8,7 +8,7 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
-import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown } from "lucide-react";
+import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown, Clock, MessageCircle } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
@@ -2451,6 +2451,15 @@ function getLocationUrl(r) {
   return null;
 }
 
+// Arma el link de WhatsApp para reservar. Si el número no parece de WhatsApp
+// (por ejemplo, viene con letras), regresa un link normal de "llamar" (tel:).
+function getReservationUrl(phone) {
+  if (!phone || !phone.trim()) return null;
+  const digits = phone.replace(/[^\d]/g, "");
+  if (digits.length < 8) return null;
+  return `https://wa.me/${digits}`;
+}
+
 function genMemberId() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let id = "";
@@ -2555,7 +2564,7 @@ export default function ClubDescuentos() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "" });
+  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: "", reservationPhone: "" });
   const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
@@ -2847,7 +2856,7 @@ export default function ClubDescuentos() {
   const addRestaurant = () => {
     if (!newRest.name.trim() || !newRest.code.trim()) return;
     saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...newRest }]);
-    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "" });
+    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: "", reservationPhone: "" });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
   const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
@@ -3274,6 +3283,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                         <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${branches[0].name}`, `Location of ${branches[0].name} branch`, `Emplacement de la succursale ${branches[0].name}`, `Standort der Filiale ${branches[0].name}`)}
                       </a>
                     )}
+                    {branches[0].hours && <div style={styles.promoHoursRow}><Clock size={11} /> {branches[0].hours}</div>}
                   </>
                 );
               }
@@ -3283,12 +3293,17 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                   <div style={styles.branchLinksRow}>
                     {branches.map((b, i) => {
                       const url = getBranchUrl(r.name, b);
-                      return url ? (
-                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                          <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${b.name}`, `Location of ${b.name} branch`, `Emplacement de la succursale ${b.name}`, `Standort der Filiale ${b.name}`)}
-                        </a>
-                      ) : (
-                        <span key={i} style={styles.restAddress}>{b.name}</span>
+                      return (
+                        <div key={i}>
+                          {url ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
+                              <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${b.name}`, `Location of ${b.name} branch`, `Emplacement de la succursale ${b.name}`, `Standort der Filiale ${b.name}`)}
+                            </a>
+                          ) : (
+                            <span style={styles.restAddress}>{b.name}</span>
+                          )}
+                          {b.hours && <div style={styles.promoHoursRow}><Clock size={11} /> {b.hours}</div>}
+                        </div>
                       );
                     })}
                   </div>
@@ -3300,7 +3315,21 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                 <MapPin size={12} /> {tr(lang, "Ver ubicación", "View location", "Voir l'emplacement", "Standort ansehen")}
               </a>
             )}
+            {r.promoHours && (
+              <div style={styles.promoHoursRow}>
+                <Clock size={11} /> {r.promoHours}
+              </div>
+            )}
             <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
+            {getReservationUrl(r.reservationPhone) && (
+              <a href={getReservationUrl(r.reservationPhone)} target="_blank" rel="noopener noreferrer" style={styles.reservationBox}>
+                <MessageCircle size={14} />
+                <span>
+                  <b>{tr(lang, "Se requiere reservación", "Reservation required", "Réservation requise", "Reservierung erforderlich")}</b><br />
+                  {tr(lang, "Reservar por WhatsApp", "Book via WhatsApp", "Réserver via WhatsApp", "Über WhatsApp reservieren")}
+                </span>
+              </a>
+            )}
             <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
               <QrCode size={14} /> {openQrFor === r.id ? tr(lang, "Ocultar QR", "Hide QR", "Masquer le QR", "QR ausblenden") : tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}
             </button>
@@ -3393,7 +3422,9 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       discount: r.discountPercent ? "" : (r.discount || ""),
       isFranchise: r.isFranchise || false,
       mapsLink: r.mapsLink || "",
-      branches: getBranches(r).length > 0 ? getBranches(r) : [{ name: "", mapsLink: "" }],
+      promoHours: r.promoHours || "",
+      reservationPhone: r.reservationPhone || "",
+      branches: getBranches(r).length > 0 ? getBranches(r) : [{ name: "", mapsLink: "", hours: "" }],
     });
   };
   const saveEditRest = (id) => {
@@ -3416,7 +3447,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       return { ...prev, branches };
     });
   };
-  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", mapsLink: "" }] }));
+  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", mapsLink: "", hours: "" }] }));
   const removeBranchRow = (i) => setEditDraft((prev) => ({ ...prev, branches: prev.branches.filter((_, idx) => idx !== i) }));
 
   const [codeInput, setCodeInput] = useState(residentAccessCode);
@@ -3508,6 +3539,8 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
         <input style={styles.input} placeholder="Link de Google Maps" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
+        <input style={styles.input} placeholder="Horario de la promo (ej. Lun-vie 1pm-6pm)" value={newRest.promoHours} onChange={(e) => setNewRest({ ...newRest, promoHours: e.target.value })} />
+        <input style={styles.input} placeholder="WhatsApp/tel. para reservar (opcional)" value={newRest.reservationPhone} onChange={(e) => setNewRest({ ...newRest, reservationPhone: e.target.value })} />
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
           {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
@@ -3531,6 +3564,8 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                 <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
                 <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
                 <input style={styles.input} placeholder="Link de Google Maps" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
+                <input style={styles.input} placeholder="Horario de la promo (ej. Lun-vie 1pm-6pm)" value={editDraft.promoHours} onChange={(e) => setEditDraft({ ...editDraft, promoHours: e.target.value })} />
+                <input style={styles.input} placeholder="WhatsApp/tel. para reservar (opcional)" value={editDraft.reservationPhone} onChange={(e) => setEditDraft({ ...editDraft, reservationPhone: e.target.value })} />
                 <label style={styles.franchiseCheckLabel}>
                   <input type="checkbox" checked={editDraft.isFranchise} onChange={(e) => setEditDraft({ ...editDraft, isFranchise: e.target.checked })} />
                   Es franquicia (varias sucursales)
@@ -3538,11 +3573,12 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
               </div>
               {editDraft.isFranchise && (
                 <div style={styles.branchListWrap}>
-                  <p style={styles.demoNote}>Sucursales donde aplica la promo:</p>
+                  <p style={styles.demoNote}>Sucursales donde aplica la promo (cada una puede tener su propio horario):</p>
                   {editDraft.branches.map((b, i) => (
                     <div key={i} style={styles.branchRow}>
                       <input style={styles.input} placeholder="Nombre de la sucursal (ej. Plaza Andares)" value={b.name} onChange={(e) => updateBranchField(i, "name", e.target.value)} />
                       <input style={styles.input} placeholder="Link de Google Maps de esta sucursal" value={b.mapsLink || ""} onChange={(e) => updateBranchField(i, "mapsLink", e.target.value)} />
+                      <input style={styles.input} placeholder="Horario (opcional, si es distinto)" value={b.hours || ""} onChange={(e) => updateBranchField(i, "hours", e.target.value)} />
                       <button style={styles.removeBtn} onClick={() => removeBranchRow(i)} title="Quitar esta sucursal"><X size={14} /></button>
                     </div>
                   ))}
@@ -3562,6 +3598,8 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                   {formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}
                   {r.isFranchise && getBranches(r).length > 0 ? ` · ${getBranches(r).length === 1 ? "Sucursal" : getBranches(r).length + " sucursales"}: ${getBranches(r).map((b) => b.name).join(", ")}` : ""}
                   {r.mapsLink ? " · link de Maps personalizado ✓" : ""}
+                  {r.promoHours ? ` · horario: ${r.promoHours}` : ""}
+                  {r.reservationPhone ? ` · reservación: ${r.reservationPhone}` : ""}
                 </div>
               </div>
               <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
@@ -3775,6 +3813,8 @@ const styles = {
   branchLinksRow: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 2 },
   branchRow: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" },
   franchiseBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: colors.blue, padding: "5px 9px", borderRadius: 8, display: "inline-block", marginTop: 3, marginBottom: 2 },
+  promoHoursRow: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: colors.muted, marginTop: 3 },
+  reservationBox: { display: "flex", alignItems: "flex-start", gap: 8, background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "8px 10px", marginTop: 8, marginBottom: 6, textDecoration: "none", color: "#7A5A0A", fontSize: 11.5, lineHeight: 1.4 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
   restNameLocked: { fontSize: 13, color: "#CFE0EC", fontWeight: 600 },
   restAddress: { fontSize: 11, color: colors.muted, lineHeight: 1.3 },
