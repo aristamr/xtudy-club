@@ -2441,6 +2441,14 @@ function getBranchUrl(restaurantName, branch) {
 // 3) Si no hay sucursales pero sí dirección normal, se arma la búsqueda de siempre.
 // (Si hay varias sucursales con links distintos, cada una se muestra por separado
 // en la tarjeta — no se pueden combinar links ya hechos en uno solo.)
+// Lee el horario en el idioma actual; si no está traducido a ese idioma,
+// muestra el de español en su lugar (mejor eso que no mostrar nada).
+function trHours(hours, lang) {
+  if (!hours) return "";
+  if (typeof hours === "string") return hours; // por si quedó algo del formato viejo
+  return hours[lang] || hours.es || "";
+}
+
 function getLocationUrl(r) {
   if (r.mapsLink && r.mapsLink.trim()) return r.mapsLink.trim();
   const branches = getBranches(r);
@@ -2451,13 +2459,15 @@ function getLocationUrl(r) {
   return null;
 }
 
-// Arma el link de WhatsApp para reservar. Si el número no parece de WhatsApp
-// (por ejemplo, viene con letras), regresa un link normal de "llamar" (tel:).
+// Arma el link de WhatsApp para reservar, con un mensaje ya escrito que dice
+// que la persona viene del Club Xtudy. Siempre en español, ya que son
+// restaurantes mexicanos.
 function getReservationUrl(phone) {
   if (!phone || !phone.trim()) return null;
   const digits = phone.replace(/[^\d]/g, "");
   if (digits.length < 8) return null;
-  return `https://wa.me/${digits}`;
+  const message = "Hola, soy parte de la comunidad Xtudy 🎓 y me gustaría hacer una reservación.";
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
 function genMemberId() {
@@ -2564,7 +2574,8 @@ export default function ClubDescuentos() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: "", reservationPhone: "" });
+  const [waClicks, setWaClicks] = useState([]);
+  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false });
   const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
@@ -2807,6 +2818,17 @@ export default function ClubDescuentos() {
         reds.sort((a, b) => new Date(b.at) - new Date(a.at));
         setRedemptions(reds);
       } catch { setRedemptions([]); }
+      try {
+        const widx = await window.storage.list("wa_click:", true);
+        const wkeys = widx?.keys || [];
+        const clicks = [];
+        for (const k of wkeys) {
+          const val = await storageGet(k, true);
+          if (val) { try { clicks.push({ ...JSON.parse(val), _key: k }); } catch {} }
+        }
+        clicks.sort((a, b) => new Date(b.at) - new Date(a.at));
+        setWaClicks(clicks);
+      } catch { setWaClicks([]); }
     });
   };
 
@@ -2855,8 +2877,10 @@ export default function ClubDescuentos() {
 
   const addRestaurant = () => {
     if (!newRest.name.trim() || !newRest.code.trim()) return;
-    saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...newRest }]);
-    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: "", reservationPhone: "" });
+    const toSave = { ...newRest };
+    if (!toSave.needsReservation) toSave.reservationPhone = "";
+    saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...toSave }]);
+    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
   const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
@@ -2940,7 +2964,7 @@ export default function ClubDescuentos() {
 
       {view === "admin" && adminUnlocked && (
         <AdminPanel
-          accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions}
+          accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions} waClicks={waClicks}
           newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant} onUpdateRestTier={updateRestaurantTier} onUpdateRest={updateRestaurant}
           newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
           onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption}
@@ -3283,7 +3307,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                         <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${branches[0].name}`, `Location of ${branches[0].name} branch`, `Emplacement de la succursale ${branches[0].name}`, `Standort der Filiale ${branches[0].name}`)}
                       </a>
                     )}
-                    {branches[0].hours && <div style={styles.promoHoursRow}><Clock size={11} /> {branches[0].hours}</div>}
+                    {trHours(branches[0].hours, lang) && <div style={styles.promoHoursRow}><Clock size={11} /> {trHours(branches[0].hours, lang)}</div>}
                   </>
                 );
               }
@@ -3302,7 +3326,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                           ) : (
                             <span style={styles.restAddress}>{b.name}</span>
                           )}
-                          {b.hours && <div style={styles.promoHoursRow}><Clock size={11} /> {b.hours}</div>}
+                          {trHours(b.hours, lang) && <div style={styles.promoHoursRow}><Clock size={11} /> {trHours(b.hours, lang)}</div>}
                         </div>
                       );
                     })}
@@ -3315,20 +3339,38 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                 <MapPin size={12} /> {tr(lang, "Ver ubicación", "View location", "Voir l'emplacement", "Standort ansehen")}
               </a>
             )}
-            {r.promoHours && (
+            {trHours(r.promoHours, lang) && (
               <div style={styles.promoHoursRow}>
-                <Clock size={11} /> {r.promoHours}
+                <Clock size={11} /> {trHours(r.promoHours, lang)}
               </div>
             )}
             <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
-            {getReservationUrl(r.reservationPhone) && (
-              <a href={getReservationUrl(r.reservationPhone)} target="_blank" rel="noopener noreferrer" style={styles.reservationBox}>
-                <MessageCircle size={14} />
-                <span>
-                  <b>{tr(lang, "Se requiere reservación", "Reservation required", "Réservation requise", "Reservierung erforderlich")}</b><br />
-                  {tr(lang, "Reservar por WhatsApp", "Book via WhatsApp", "Réserver via WhatsApp", "Über WhatsApp reservieren")}
+            {r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
+              <div style={r.reservationRequired === false ? styles.reservationNoticeOptional : styles.reservationNotice}>
+                <span style={r.reservationRequired === false ? styles.reservationLabelOptional : styles.reservationLabel}>
+                  {r.reservationRequired === false
+                    ? tr(lang, "📅 Reservación recomendada", "📅 Reservation recommended", "📅 Réservation recommandée", "📅 Reservierung empfohlen")
+                    : (<>⚠️ {tr(lang, "Se requiere reservación", "Reservation required", "Réservation requise", "Reservierung erforderlich")}</>)}
                 </span>
-              </a>
+                <a
+                  href={getReservationUrl(r.reservationPhone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={styles.whatsappBtn}
+                  onClick={() => {
+                    // Registra el clic sin detener ni retrasar la apertura de WhatsApp.
+                    window.storage.insertOnly(
+                      `wa_click:${r.id}:${Date.now()}`,
+                      JSON.stringify({ restaurant: r.name, email: account.email, at: new Date().toISOString() }),
+                      true
+                    ).catch(() => {});
+                  }}
+                >
+                  <MessageCircle size={15} />
+                  {tr(lang, "Reservar por WhatsApp", "Book via WhatsApp", "Réserver via WhatsApp", "Über WhatsApp reservieren")}
+                  <ChevronRight size={14} />
+                </a>
+              </div>
             )}
             <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
               <QrCode size={14} /> {openQrFor === r.id ? tr(lang, "Ocultar QR", "Hide QR", "Masquer le QR", "QR ausblenden") : tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}
@@ -3407,7 +3449,7 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
   );
 }
 
-function AdminPanel({ accounts, restaurants, universities, redemptions, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
+function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
   const [editingRestId, setEditingRestId] = useState(null);
   const [editDraft, setEditDraft] = useState({});
 
@@ -3422,14 +3464,21 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       discount: r.discountPercent ? "" : (r.discount || ""),
       isFranchise: r.isFranchise || false,
       mapsLink: r.mapsLink || "",
-      promoHours: r.promoHours || "",
+      promoHours: typeof r.promoHours === "string"
+        ? { es: r.promoHours, en: "", fr: "", de: "" }
+        : (r.promoHours || { es: "", en: "", fr: "", de: "" }),
       reservationPhone: r.reservationPhone || "",
-      branches: getBranches(r).length > 0 ? getBranches(r) : [{ name: "", mapsLink: "", hours: "" }],
+      reservationRequired: r.reservationRequired !== undefined ? r.reservationRequired : true,
+      needsReservation: r.needsReservation !== undefined ? r.needsReservation : !!(r.reservationPhone && r.reservationPhone.trim()),
+      branches: getBranches(r).length > 0
+        ? getBranches(r).map((b) => ({ ...b, hours: typeof b.hours === "string" ? { es: b.hours, en: "", fr: "", de: "" } : (b.hours || { es: "", en: "", fr: "", de: "" }) }))
+        : [{ name: "", mapsLink: "", hours: { es: "", en: "", fr: "", de: "" } }],
     });
   };
   const saveEditRest = (id) => {
     const patch = { ...editDraft };
     if (patch.discountPercent === "") delete patch.discountPercent;
+    if (!patch.needsReservation) patch.reservationPhone = "";
     if (patch.isFranchise) {
       patch.branches = patch.branches.filter((b) => b.name.trim() || (b.mapsLink || "").trim() || (b.address || "").trim());
       patch.branch = patch.branches[0]?.name || "";
@@ -3447,7 +3496,15 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
       return { ...prev, branches };
     });
   };
-  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", mapsLink: "", hours: "" }] }));
+  const updateBranchHours = (i, hourLang, value) => {
+    setEditDraft((prev) => {
+      const branches = [...prev.branches];
+      const currentHours = typeof branches[i].hours === "object" && branches[i].hours ? branches[i].hours : { es: "", en: "", fr: "", de: "" };
+      branches[i] = { ...branches[i], hours: { ...currentHours, [hourLang]: value } };
+      return { ...prev, branches };
+    });
+  };
+  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", mapsLink: "", hours: { es: "", en: "", fr: "", de: "" } }] }));
   const removeBranchRow = (i) => setEditDraft((prev) => ({ ...prev, branches: prev.branches.filter((_, idx) => idx !== i) }));
 
   const [codeInput, setCodeInput] = useState(residentAccessCode);
@@ -3460,6 +3517,11 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
     byRestaurant[r.restaurant] = (byRestaurant[r.restaurant] || 0) + 1;
     const key = r.email || "sin identificar";
     byUser[key] = (byUser[key] || 0) + 1;
+  });
+
+  const waByRestaurant = {};
+  (waClicks || []).forEach((c) => {
+    waByRestaurant[c.restaurant] = (waByRestaurant[c.restaurant] || 0) + 1;
   });
 
   const downloadCsv = (filename, rows) => {
@@ -3539,8 +3601,19 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
         <input style={styles.input} placeholder="Link de Google Maps" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
-        <input style={styles.input} placeholder="Horario de la promo (ej. Lun-vie 1pm-6pm)" value={newRest.promoHours} onChange={(e) => setNewRest({ ...newRest, promoHours: e.target.value })} />
-        <input style={styles.input} placeholder="WhatsApp/tel. para reservar (opcional)" value={newRest.reservationPhone} onChange={(e) => setNewRest({ ...newRest, reservationPhone: e.target.value })} />
+        <label style={styles.franchiseCheckLabel}>
+          <input type="checkbox" checked={newRest.needsReservation} onChange={(e) => setNewRest({ ...newRest, needsReservation: e.target.checked })} />
+          ¿Este restaurante necesita reservación?
+        </label>
+        {newRest.needsReservation && (
+          <>
+            <input style={styles.input} placeholder="WhatsApp/tel. para reservar" value={newRest.reservationPhone} onChange={(e) => setNewRest({ ...newRest, reservationPhone: e.target.value })} />
+            <select style={styles.input} value={newRest.reservationRequired ? "si" : "no"} onChange={(e) => setNewRest({ ...newRest, reservationRequired: e.target.value === "si" })}>
+              <option value="si">Reservación requerida</option>
+              <option value="no">Reservación opcional/recomendada</option>
+            </select>
+          </>
+        )}
         <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
           {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
@@ -3551,6 +3624,15 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
         {newRest.isFranchise && (
           <input style={styles.input} placeholder="Sucursal donde aplica (ej. Plaza Andares)" value={newRest.branch} onChange={(e) => setNewRest({ ...newRest, branch: e.target.value })} />
         )}
+        <div style={styles.hoursGroup}>
+          <p style={styles.demoNote}>Horario de la promo (si varía por día, escríbelos separados con un punto, ej. "Lun-jue 1pm-6pm · Vie 1pm-4pm". Si dejas algún idioma vacío, se usa el de español):</p>
+          <div style={styles.hoursInputsRow}>
+            <input style={styles.input} placeholder="🇲🇽 Ej. Lun-jue 1pm-6pm · Vie 1pm-4pm" value={newRest.promoHours.es} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, es: e.target.value } })} />
+            <input style={styles.input} placeholder="🇺🇸 English, e.g. Mon-Fri 1pm-6pm" value={newRest.promoHours.en} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, en: e.target.value } })} />
+            <input style={styles.input} placeholder="🇫🇷 Français, ex. Lun-ven 13h-18h" value={newRest.promoHours.fr} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, fr: e.target.value } })} />
+            <input style={styles.input} placeholder="🇩🇪 Deutsch, z.B. Mo-Fr 13-18 Uhr" value={newRest.promoHours.de} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, de: e.target.value } })} />
+          </div>
+        </div>
         <button style={styles.ctaBtnSmall} onClick={onAddRest}><Plus size={15} /> Agregar restaurante</button>
       </div>
       <div style={styles.adminTableWrap}>
@@ -3564,22 +3646,49 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                 <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
                 <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
                 <input style={styles.input} placeholder="Link de Google Maps" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
-                <input style={styles.input} placeholder="Horario de la promo (ej. Lun-vie 1pm-6pm)" value={editDraft.promoHours} onChange={(e) => setEditDraft({ ...editDraft, promoHours: e.target.value })} />
-                <input style={styles.input} placeholder="WhatsApp/tel. para reservar (opcional)" value={editDraft.reservationPhone} onChange={(e) => setEditDraft({ ...editDraft, reservationPhone: e.target.value })} />
+                <label style={styles.franchiseCheckLabel}>
+                  <input type="checkbox" checked={editDraft.needsReservation} onChange={(e) => setEditDraft({ ...editDraft, needsReservation: e.target.checked })} />
+                  ¿Este restaurante necesita reservación?
+                </label>
+                {editDraft.needsReservation && (
+                  <>
+                    <input style={styles.input} placeholder="WhatsApp/tel. para reservar" value={editDraft.reservationPhone} onChange={(e) => setEditDraft({ ...editDraft, reservationPhone: e.target.value })} />
+                    <select style={styles.input} value={editDraft.reservationRequired ? "si" : "no"} onChange={(e) => setEditDraft({ ...editDraft, reservationRequired: e.target.value === "si" })}>
+                      <option value="si">Reservación requerida</option>
+                      <option value="no">Reservación opcional/recomendada</option>
+                    </select>
+                  </>
+                )}
                 <label style={styles.franchiseCheckLabel}>
                   <input type="checkbox" checked={editDraft.isFranchise} onChange={(e) => setEditDraft({ ...editDraft, isFranchise: e.target.checked })} />
                   Es franquicia (varias sucursales)
                 </label>
               </div>
+              <div style={styles.hoursGroup}>
+                <p style={styles.demoNote}>Horario de la promo (si varía por día, escríbelos separados con un punto, ej. "Lun-jue 1pm-6pm · Vie 1pm-4pm". Si dejas algún idioma vacío, se usa el de español):</p>
+                <div style={styles.hoursInputsRow}>
+                  <input style={styles.input} placeholder="🇲🇽 Ej. Lun-jue 1pm-6pm · Vie 1pm-4pm" value={editDraft.promoHours.es} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, es: e.target.value } })} />
+                  <input style={styles.input} placeholder="🇺🇸 English, e.g. Mon-Fri 1pm-6pm" value={editDraft.promoHours.en} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, en: e.target.value } })} />
+                  <input style={styles.input} placeholder="🇫🇷 Français, ex. Lun-ven 13h-18h" value={editDraft.promoHours.fr} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, fr: e.target.value } })} />
+                  <input style={styles.input} placeholder="🇩🇪 Deutsch, z.B. Mo-Fr 13-18 Uhr" value={editDraft.promoHours.de} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, de: e.target.value } })} />
+                </div>
+              </div>
               {editDraft.isFranchise && (
                 <div style={styles.branchListWrap}>
-                  <p style={styles.demoNote}>Sucursales donde aplica la promo (cada una puede tener su propio horario):</p>
+                  <p style={styles.demoNote}>Sucursales donde aplica la promo (cada una puede tener su propio horario, por idioma):</p>
                   {editDraft.branches.map((b, i) => (
-                    <div key={i} style={styles.branchRow}>
-                      <input style={styles.input} placeholder="Nombre de la sucursal (ej. Plaza Andares)" value={b.name} onChange={(e) => updateBranchField(i, "name", e.target.value)} />
-                      <input style={styles.input} placeholder="Link de Google Maps de esta sucursal" value={b.mapsLink || ""} onChange={(e) => updateBranchField(i, "mapsLink", e.target.value)} />
-                      <input style={styles.input} placeholder="Horario (opcional, si es distinto)" value={b.hours || ""} onChange={(e) => updateBranchField(i, "hours", e.target.value)} />
-                      <button style={styles.removeBtn} onClick={() => removeBranchRow(i)} title="Quitar esta sucursal"><X size={14} /></button>
+                    <div key={i} style={styles.branchRowWrap}>
+                      <div style={styles.branchRow}>
+                        <input style={styles.input} placeholder="Nombre de la sucursal (ej. Plaza Andares)" value={b.name} onChange={(e) => updateBranchField(i, "name", e.target.value)} />
+                        <input style={styles.input} placeholder="Link de Google Maps de esta sucursal" value={b.mapsLink || ""} onChange={(e) => updateBranchField(i, "mapsLink", e.target.value)} />
+                        <button style={styles.removeBtn} onClick={() => removeBranchRow(i)} title="Quitar esta sucursal"><X size={14} /></button>
+                      </div>
+                      <div style={styles.hoursInputsRow}>
+                        <input style={styles.input} placeholder="🇲🇽 Horario ES (opcional, si es distinto)" value={b.hours?.es || ""} onChange={(e) => updateBranchHours(i, "es", e.target.value)} />
+                        <input style={styles.input} placeholder="🇺🇸 EN" value={b.hours?.en || ""} onChange={(e) => updateBranchHours(i, "en", e.target.value)} />
+                        <input style={styles.input} placeholder="🇫🇷 FR" value={b.hours?.fr || ""} onChange={(e) => updateBranchHours(i, "fr", e.target.value)} />
+                        <input style={styles.input} placeholder="🇩🇪 DE" value={b.hours?.de || ""} onChange={(e) => updateBranchHours(i, "de", e.target.value)} />
+                      </div>
                     </div>
                   ))}
                   <button style={styles.exportBtn} onClick={addBranchRow}>+ Agregar otra sucursal</button>
@@ -3598,8 +3707,8 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
                   {formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}
                   {r.isFranchise && getBranches(r).length > 0 ? ` · ${getBranches(r).length === 1 ? "Sucursal" : getBranches(r).length + " sucursales"}: ${getBranches(r).map((b) => b.name).join(", ")}` : ""}
                   {r.mapsLink ? " · link de Maps personalizado ✓" : ""}
-                  {r.promoHours ? ` · horario: ${r.promoHours}` : ""}
-                  {r.reservationPhone ? ` · reservación: ${r.reservationPhone}` : ""}
+                  {trHours(r.promoHours, "es") ? ` · horario: ${trHours(r.promoHours, "es")}` : ""}
+                  {r.reservationPhone ? ` · reservación (${r.reservationRequired === false ? "opcional" : "requerida"}): ${r.reservationPhone}` : ""}
                 </div>
               </div>
               <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
@@ -3649,6 +3758,18 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, newRest,
               <div style={styles.adminRowMeta}>{new Date(r.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })} · nivel: {TIER_NAME_ES[r.tier] || r.tier}</div>
             </div>
             <button style={styles.removeBtn} onClick={() => onRemoveRedemption(r)} title="Borrar este canje"><X size={14} /></button>
+          </div>
+        ))}
+      </div>
+
+      <h3 style={styles.sectionTitle}><MessageCircle size={15} /> Clics en "Reservar por WhatsApp" ({(waClicks || []).length})</h3>
+      <p style={styles.demoNote}>Por restaurante:</p>
+      <div style={styles.adminTableWrap}>
+        {Object.keys(waByRestaurant).length === 0 && <p style={styles.emptyText}>Aún no hay clics registrados.</p>}
+        {Object.entries(waByRestaurant).map(([name, count]) => (
+          <div key={name} style={styles.adminRow}>
+            <div style={styles.adminRowName}>{name}</div>
+            <span style={styles.adminRowTier}>{count} clic{count === 1 ? "" : "s"}</span>
           </div>
         ))}
       </div>
@@ -3814,7 +3935,14 @@ const styles = {
   branchRow: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" },
   franchiseBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: colors.blue, padding: "5px 9px", borderRadius: 8, display: "inline-block", marginTop: 3, marginBottom: 2 },
   promoHoursRow: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: colors.muted, marginTop: 3 },
-  reservationBox: { display: "flex", alignItems: "flex-start", gap: 8, background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "8px 10px", marginTop: 8, marginBottom: 6, textDecoration: "none", color: "#7A5A0A", fontSize: 11.5, lineHeight: 1.4 },
+  reservationNotice: { background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "8px 10px", marginTop: 8, marginBottom: 6 },
+  reservationLabel: { display: "block", fontSize: 11.5, fontWeight: 700, color: "#7A5A0A", marginBottom: 6 },
+  reservationNoticeOptional: { background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "8px 10px", marginTop: 8, marginBottom: 6 },
+  reservationLabelOptional: { display: "block", fontSize: 11.5, fontWeight: 700, color: "#0C447C", marginBottom: 6 },
+  whatsappBtn: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#25D366", color: "#fff", fontWeight: 700, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, textDecoration: "none" },
+  hoursGroup: { gridColumn: "1 / -1", marginTop: 4 },
+  hoursInputsRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 8, marginTop: 6 },
+  branchRowWrap: { background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 10, marginBottom: 10 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
   restNameLocked: { fontSize: 13, color: "#CFE0EC", fontWeight: 600 },
   restAddress: { fontSize: 11, color: colors.muted, lineHeight: 1.3 },
