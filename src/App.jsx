@@ -2601,15 +2601,22 @@ export default function ClubDescuentos() {
             if (!acc) {
               setVerifyResult({ status: "notfound" });
             } else if (tierOrder(acc.tier) >= tierOrder(restaurant.tier)) {
-              try {
-                await window.storage.set(
-                  `redemption:${restaurant.id}:${Date.now()}`,
-                  JSON.stringify({ restaurant: restaurant.name, email: acc.email, name: acc.name, tier: acc.tier, at: new Date().toISOString() }),
-                  true
-                );
-              } catch (e) {
-                console.error("No se pudo guardar el canje", e);
+              const redemptionKey = `redemption:${restaurant.id}:${Date.now()}`;
+              const redemptionValue = JSON.stringify({ restaurant: restaurant.name, email: acc.email, name: acc.name, tier: acc.tier, at: new Date().toISOString() });
+              console.log("DIAGNOSTICO intentando guardar key:", redemptionKey);
+              let saved = null;
+              for (let attempt = 1; attempt <= 4 && !saved; attempt++) {
+                try {
+                  saved = await window.storage.set(redemptionKey, redemptionValue, true);
+                } catch (e) {
+                  console.error(`Intento ${attempt} de guardar el canje falló`, e);
+                }
+                if (!saved && attempt < 4) {
+                  await new Promise((r) => setTimeout(r, 500 * attempt));
+                }
               }
+              console.log("DIAGNOSTICO resultado final saved:", saved);
+              if (!saved) console.error("No se pudo guardar el canje tras varios intentos (posible mala conexión).");
               setVerifyResult({ status: "ok", name: acc.name, tier: acc.tier, restaurant });
             } else {
               setVerifyResult({ status: "tier", name: acc.name, requiredTier: TIER_NAME_ES[restaurant.tier] || restaurant.tier });
