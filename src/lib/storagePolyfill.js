@@ -42,6 +42,28 @@ async function set(key, value, shared) {
   }
 }
 
+// Igual que set(), pero solo INSERTA (nunca revisa si la llave ya existe).
+// Se usa para datos que siempre son nuevos (como los canjes de QR), porque
+// revisar si ya existe requeriría permiso de lectura que, por seguridad,
+// no le damos a cualquier visitante.
+async function insertOnly(key, value, shared) {
+  try {
+    if (!shared) {
+      localStorage.setItem(key, value);
+      return { key, value, shared: false };
+    }
+    const { error } = await supabase.from("kv_store").insert({ key, value });
+    if (error) {
+      console.error("storage.insertOnly error", error);
+      return null;
+    }
+    return { key, value, shared: true };
+  } catch (e) {
+    console.error("storage.insertOnly error", e);
+    return null;
+  }
+}
+
 async function del(key, shared) {
   try {
     if (!shared) {
@@ -78,6 +100,27 @@ async function list(prefix, shared) {
   }
 }
 
+// Igual que set(), pero para cuando SABEMOS que la llave ya existe (por
+// ejemplo, actualizar el nivel de una cuenta). Usa un UPDATE simple en vez de
+// upsert, así tampoco necesita permiso de lectura para revisar si ya existe.
+async function updateOnly(key, value, shared) {
+  try {
+    if (!shared) {
+      localStorage.setItem(key, value);
+      return { key, value, shared: false };
+    }
+    const { error } = await supabase.from("kv_store").update({ value }).eq("key", key);
+    if (error) {
+      console.error("storage.updateOnly error", error);
+      return null;
+    }
+    return { key, value, shared: true };
+  } catch (e) {
+    console.error("storage.updateOnly error", e);
+    return null;
+  }
+}
+
 if (typeof window !== "undefined") {
-  window.storage = { get, set, delete: del, list };
+  window.storage = { get, set, delete: del, list, insertOnly, updateOnly };
 }
