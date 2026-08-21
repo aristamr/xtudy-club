@@ -2470,6 +2470,30 @@ function getReservationUrl(phone) {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
+// Sube el logo de un restaurante al espacio de almacenamiento y regresa el link
+// público para guardarlo. Solo funciona si quien lo llama tiene sesión de admin.
+async function uploadRestaurantLogo(file, restaurantId) {
+  if (!file) return null;
+  if (!file.type.startsWith("image/")) {
+    alert("Ese archivo no es una imagen. Sube un JPG, PNG o similar.");
+    return null;
+  }
+  if (file.size > 3 * 1024 * 1024) {
+    alert("La imagen pesa demasiado (máximo 3MB). Intenta con una más ligera.");
+    return null;
+  }
+  const ext = file.name.split(".").pop();
+  const path = `${restaurantId}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("restaurant-logos").upload(path, file, { upsert: true });
+  if (error) {
+    console.error("Error subiendo logo:", error);
+    alert("No se pudo subir la imagen. Revisa tu conexión e intenta de nuevo.");
+    return null;
+  }
+  const { data } = supabase.storage.from("restaurant-logos").getPublicUrl(path);
+  return data?.publicUrl || null;
+}
+
 function genMemberId() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let id = "";
@@ -2575,7 +2599,7 @@ export default function ClubDescuentos() {
   const [allAccounts, setAllAccounts] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [waClicks, setWaClicks] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false });
+  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false, logoUrl: "" });
   const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
@@ -2887,7 +2911,7 @@ export default function ClubDescuentos() {
     const toSave = { ...newRest };
     if (!toSave.needsReservation) toSave.reservationPhone = "";
     saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...toSave }]);
-    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false });
+    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false, logoUrl: "" });
   };
   const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
   const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
@@ -3318,8 +3342,13 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
       <div style={styles.restGrid}>
         {unlocked.map((r) => (
           <div key={r.id} style={styles.restCard}>
-            <div style={styles.restCategory}>{r.category}</div>
-            <div style={styles.restName}>{r.name}</div>
+            <div style={styles.restCardHeader}>
+              <div>
+                <div style={styles.restCategory}>{r.category}</div>
+                <div style={styles.restName}>{r.name}</div>
+              </div>
+              {r.logoUrl && <img src={r.logoUrl} alt={r.name} style={styles.restLogo} />}
+            </div>
             {r.isFranchise && (() => {
               const branches = getBranches(r);
               if (branches.length === 0) return null;
@@ -3477,6 +3506,26 @@ function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, o
 function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, onRemoveWaClick, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
   const [editingRestId, setEditingRestId] = useState(null);
   const [editDraft, setEditDraft] = useState({});
+  const [uploadingLogoNew, setUploadingLogoNew] = useState(false);
+  const [uploadingLogoEdit, setUploadingLogoEdit] = useState(false);
+
+  const handleNewLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogoNew(true);
+    const url = await uploadRestaurantLogo(file, `new-${Date.now()}`);
+    if (url) setNewRest({ ...newRest, logoUrl: url });
+    setUploadingLogoNew(false);
+  };
+
+  const handleEditLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogoEdit(true);
+    const url = await uploadRestaurantLogo(file, editingRestId || `edit-${Date.now()}`);
+    if (url) setEditDraft({ ...editDraft, logoUrl: url });
+    setUploadingLogoEdit(false);
+  };
 
   const startEditRest = (r) => {
     setEditingRestId(r.id);
@@ -3495,6 +3544,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
       reservationPhone: r.reservationPhone || "",
       reservationRequired: r.reservationRequired !== undefined ? r.reservationRequired : true,
       needsReservation: r.needsReservation !== undefined ? r.needsReservation : !!(r.reservationPhone && r.reservationPhone.trim()),
+      logoUrl: r.logoUrl || "",
       branches: getBranches(r).length > 0
         ? getBranches(r).map((b) => ({ ...b, hours: typeof b.hours === "string" ? { es: b.hours, en: "", fr: "", de: "" } : (b.hours || { es: "", en: "", fr: "", de: "" }) }))
         : [{ name: "", mapsLink: "", hours: { es: "", en: "", fr: "", de: "" } }],
@@ -3626,6 +3676,13 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
         <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
         <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
         <input style={styles.input} placeholder="Link de Google Maps" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
+        <div style={styles.logoUploadRow}>
+          {newRest.logoUrl && <img src={newRest.logoUrl} alt="Logo" style={styles.logoPreview} />}
+          <label style={styles.logoUploadBtn}>
+            {uploadingLogoNew ? "Subiendo…" : newRest.logoUrl ? "Cambiar logo" : "Subir logo"}
+            <input type="file" accept="image/*" onChange={handleNewLogoUpload} style={{ display: "none" }} disabled={uploadingLogoNew} />
+          </label>
+        </div>
         <label style={styles.franchiseCheckLabel}>
           <input type="checkbox" checked={newRest.needsReservation} onChange={(e) => setNewRest({ ...newRest, needsReservation: e.target.checked })} />
           ¿Este restaurante necesita reservación?
@@ -3671,6 +3728,13 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
                 <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
                 <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
                 <input style={styles.input} placeholder="Link de Google Maps" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
+                <div style={styles.logoUploadRow}>
+                  {editDraft.logoUrl && <img src={editDraft.logoUrl} alt="Logo" style={styles.logoPreview} />}
+                  <label style={styles.logoUploadBtn}>
+                    {uploadingLogoEdit ? "Subiendo…" : editDraft.logoUrl ? "Cambiar logo" : "Subir logo"}
+                    <input type="file" accept="image/*" onChange={handleEditLogoUpload} style={{ display: "none" }} disabled={uploadingLogoEdit} />
+                  </label>
+                </div>
                 <label style={styles.franchiseCheckLabel}>
                   <input type="checkbox" checked={editDraft.needsReservation} onChange={(e) => setEditDraft({ ...editDraft, needsReservation: e.target.checked })} />
                   ¿Este restaurante necesita reservación?
@@ -3726,6 +3790,7 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
             </div>
           ) : (
             <div key={r.id} style={styles.adminRow}>
+              {r.logoUrl && <img src={r.logoUrl} alt={r.name} style={styles.logoPreview} />}
               <div>
                 <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
                 <div style={styles.adminRowMeta}>
@@ -3970,6 +4035,8 @@ const styles = {
   restCard: { background: colors.card, color: colors.ink, borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 4 },
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
+  restCardHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 2 },
+  restLogo: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: `1px solid ${colors.line}`, flexShrink: 0 },
   franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#fff", gridColumn: "1 / -1" },
   termsNotice: { fontSize: 11.5, color: colors.muted, lineHeight: 1.5, margin: "2px 0 0" },
   termsLink: { color: colors.blue, fontWeight: 600, textDecoration: "underline" },
@@ -3986,6 +4053,9 @@ const styles = {
   reservationLabelOptional: { display: "block", fontSize: 11.5, fontWeight: 700, color: "#0C447C", marginBottom: 6 },
   whatsappBtn: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#25D366", color: "#fff", fontWeight: 700, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, textDecoration: "none" },
   hoursGroup: { gridColumn: "1 / -1", marginTop: 4 },
+  logoUploadRow: { display: "flex", alignItems: "center", gap: 10 },
+  logoPreview: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(255,255,255,0.2)" },
+  logoUploadBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" },
   hoursInputsRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 8, marginTop: 6 },
   branchRowWrap: { background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 10, marginBottom: 10 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
