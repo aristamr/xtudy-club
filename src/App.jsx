@@ -3682,6 +3682,9 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
             {uploadingLogoNew ? "Subiendo…" : newRest.logoUrl ? "Cambiar logo" : "Subir logo"}
             <input type="file" accept="image/*" onChange={handleNewLogoUpload} style={{ display: "none" }} disabled={uploadingLogoNew} />
           </label>
+          {newRest.logoUrl && (
+            <button type="button" style={styles.removeLogoBtn} onClick={() => setNewRest({ ...newRest, logoUrl: "" })}>Quitar logo</button>
+          )}
         </div>
         <label style={styles.franchiseCheckLabel}>
           <input type="checkbox" checked={newRest.needsReservation} onChange={(e) => setNewRest({ ...newRest, needsReservation: e.target.checked })} />
@@ -3734,6 +3737,9 @@ function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks
                     {uploadingLogoEdit ? "Subiendo…" : editDraft.logoUrl ? "Cambiar logo" : "Subir logo"}
                     <input type="file" accept="image/*" onChange={handleEditLogoUpload} style={{ display: "none" }} disabled={uploadingLogoEdit} />
                   </label>
+                  {editDraft.logoUrl && (
+                    <button type="button" style={styles.removeLogoBtn} onClick={() => setEditDraft({ ...editDraft, logoUrl: "" })}>Quitar logo</button>
+                  )}
                 </div>
                 <label style={styles.franchiseCheckLabel}>
                   <input type="checkbox" checked={editDraft.needsReservation} onChange={(e) => setEditDraft({ ...editDraft, needsReservation: e.target.checked })} />
@@ -4056,6 +4062,7 @@ const styles = {
   logoUploadRow: { display: "flex", alignItems: "center", gap: 10 },
   logoPreview: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(255,255,255,0.2)" },
   logoUploadBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" },
+  removeLogoBtn: { background: "none", border: "none", color: "#FF8A8A", fontSize: 12, fontWeight: 600, textDecoration: "underline", cursor: "pointer", padding: 0 },
   hoursInputsRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 8, marginTop: 6 },
   branchRowWrap: { background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 10, marginBottom: 10 },
   restName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 700 },
