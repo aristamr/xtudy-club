@@ -2466,7 +2466,7 @@ function getReservationUrl(phone) {
   if (!phone || !phone.trim()) return null;
   const digits = phone.replace(/[^\d]/g, "");
   if (digits.length < 8) return null;
-  const message = "Hola, soy parte de Xtudy Club y me gustaría hacer una reservación";
+  const message = "Hola, soy parte de Students Club y me gustaría hacer una reservación";
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
@@ -2740,6 +2740,7 @@ export default function ClubDescuentos() {
       tier: form.isXtudy === "si" ? "resident" : "guest",
       createdAt: new Date().toISOString(),
       memberId: genMemberId(),
+      acceptedTermsAt: new Date().toISOString(),
     };
     // Avanza de inmediato: nunca deja al usuario atorado esperando la red.
     setAccount(newAccount);
@@ -2911,13 +2912,19 @@ export default function ClubDescuentos() {
         <style>{fontImport}</style>
         <div style={styles.checkinWrap}>
           <div style={styles.checkinCard}>
-            <img src={SYMBOL_DATA} alt="Xtudy" style={{ height: 28, marginBottom: 14 }} />
+            <div style={styles.checkinPoweredBy}>
+              <span>Powered by</span>
+              <img src={SYMBOL_DATA} alt="Xtudy" style={{ height: 14 }} />
+              <span style={{ fontWeight: 700, color: colors.ink }}>Xtudy</span>
+            </div>
             {!verifyResult && <p style={styles.formSub}>Verificando…</p>}
             {verifyResult && verifyResult.status === "ok" && (
               <>
                 <div style={styles.checkinCheck}><Check size={40} color="#fff" strokeWidth={3} /></div>
                 <div style={styles.checkinName}>{verifyResult.name}</div>
-                <div style={styles.checkinTier}>Miembro del Club Xtudy · {TIER_NAME_ES[verifyResult.tier] || verifyResult.tier}</div>
+                <div style={styles.checkinTier}>
+                  Miembro de Students Club{verifyResult.tier === "resident" ? " · Residente Xtudy" : ""}
+                </div>
                 <div style={styles.checkinDiscountBig}>{formatDiscount(verifyResult.restaurant, "es")}</div>
                 <div style={styles.checkinRest}>{verifyResult.restaurant.name}</div>
                 <p style={styles.checkinHint}>Este estudiante tiene acceso confirmado a este descuento.</p>
@@ -2988,7 +2995,9 @@ function AppHeader() {
   return (
     <div className="page-container" style={styles.appHeader}>
       <div />
-      <div />
+      <div style={styles.headerWordmarkText}>
+        <span style={{ fontWeight: 400 }}>Students</span><span style={{ fontWeight: 700, color: colors.blue }}>Club</span>
+      </div>
       <div style={styles.headerRight}>
         <a href="https://www.instagram.com/xtudy.mx" target="_blank" rel="noopener noreferrer" style={styles.igLink} aria-label="Instagram de Xtudy">
           <Instagram size={17} />
@@ -3038,11 +3047,12 @@ function Landing({ onStart, onAdmin, onLogin }) {
   return (
     <div className="page-container" style={styles.landingWrap}>
       <div style={styles.bigLogoWrap}>
-        <img src={WORDMARK_WHITE_DATA} alt="Xtudy" style={styles.bigLogoImg} />
+        <div style={styles.bigWordmarkText}>
+          <span style={{ fontWeight: 400 }}>Students</span><span style={{ fontWeight: 700, color: colors.blue }}>Club</span>
+        </div>
       </div>
       <div style={styles.poweredByRow}>
-        <div style={styles.poweredByBadge}>
-          <Star size={12} color={colors.blue} fill={colors.blue} />
+        <div style={styles.poweredByBadgeSmall}>
           Powered by Xtudy
         </div>
       </div>
@@ -3062,10 +3072,10 @@ function Landing({ onStart, onAdmin, onLogin }) {
           </h1>
           <p style={styles.heroSub}>
             {tr(lang,
-              "Regístrate gratis y desbloquea descuentos reales en restaurantes de Guadalajara. Sé parte de la mejor comunidad estudiantil de México, hecha por Xtudy.",
-              "Sign up for free and unlock real discounts at restaurants in Guadalajara. Be part of the best student community in Mexico, made by Xtudy.",
-              "Inscris-toi gratuitement et débloque de vraies réductions dans les restaurants de Guadalajara. Rejoins la meilleure communauté étudiante du Mexique, créée par Xtudy.",
-              "Registriere dich kostenlos und schalte echte Rabatte in Restaurants in Guadalajara frei. Werde Teil der besten Studentencommunity Mexikos, erstellt von Xtudy."
+              "Regístrate gratis y desbloquea descuentos reales en restaurantes de Guadalajara. Sé parte de la mejor comunidad estudiantil de México.",
+              "Sign up for free and unlock real discounts at restaurants in Guadalajara. Be part of the best student community in Mexico.",
+              "Inscris-toi gratuitement et débloque de vraies réductions dans les restaurants de Guadalajara. Rejoins la meilleure communauté étudiante du Mexique.",
+              "Registriere dich kostenlos und schalte echte Rabatte in Restaurants in Guadalajara frei. Werde Teil der besten Studentencommunity Mexikos."
             )}
           </p>
           <div style={styles.unlimitedPill}>
@@ -3084,6 +3094,7 @@ function Landing({ onStart, onAdmin, onLogin }) {
 
         <div style={styles.cardMock}>
           <div style={styles.membershipCard}>
+            <div style={styles.cardPoweredBy}>Powered by</div>
             <div style={styles.cardTop}>
               <img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} />
               <Star size={18} color={colors.blue} fill={colors.blue} />
@@ -3189,6 +3200,13 @@ function Register({ form, setForm, onSubmit, error, onBack, universities, onGoTo
               <input style={styles.input} value={form.residentCode} onChange={(e) => setForm({ ...form, residentCode: e.target.value })} placeholder={tr(lang, "Pídelo a tu administración Xtudy", "Ask your Xtudy administration", "Demande-le à ton administration Xtudy", "Frag deine Xtudy-Verwaltung danach")} />
             </label>
           )}
+          <p style={styles.termsNotice}>
+            {tr(lang, "Al crear tu cuenta, aceptas nuestros ", "By creating your account, you accept our ", "En créant ton compte, tu acceptes nos ", "Mit der Erstellung deines Kontos akzeptierst du unsere ")}
+            <a href="/terminos-y-condiciones.pdf" target="_blank" rel="noopener noreferrer" style={styles.termsLink}>
+              {tr(lang, "Términos y Condiciones y el Aviso de Privacidad", "Terms and Conditions and Privacy Notice", "Conditions Générales et l'Avis de Confidentialité", "Nutzungsbedingungen und Datenschutzhinweis")}
+            </a>
+            {tr(lang, " de Students Club.", " of Students Club.", " de Students Club.", " von Students Club.")}
+          </p>
           {error === "duplicate-email" ? (
             <div style={styles.duplicateEmailBox}>
               <p style={styles.duplicateEmailText}>
@@ -3232,7 +3250,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
     <div className="page-container" style={styles.dashWrap}>
       <div style={styles.dashHeader}>
         <div>
-          <div style={styles.memberBadge}><Check size={12} /> {tr(lang, "Eres parte del Club Xtudy", "You're part of the Xtudy Club", "Tu fais partie du Club Xtudy", "Du bist Teil des Xtudy Clubs")}</div>
+          <div style={styles.memberBadge}><Check size={12} /> {tr(lang, "Eres parte de Students Club", "You're part of Students Club", "Tu fais partie de Students Club", "Du bist Teil von Students Club")}</div>
           <h2 style={styles.h2}>{tr(lang, "Hola", "Hi", "Salut", "Hallo")}, {account.name.split(" ")[0]}</h2>
         </div>
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
@@ -3252,6 +3270,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
             </span>
           </>
         )}
+        <div style={{ ...styles.cardPoweredBy, position: "relative", zIndex: 1 }}>Powered by</div>
         <div style={{ ...styles.cardTop, position: "relative", zIndex: 1 }}>
           <img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} />
           <Star size={18} color={colors.blue} fill={colors.blue} />
@@ -3883,16 +3902,20 @@ const styles = {
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   cardBrand: { fontFamily: "'Host Grotesk', sans-serif", fontWeight: 800, letterSpacing: 1, fontSize: 13, color: colors.navy },
   cardBrandImg: { height: 20, width: "auto" },
+  cardPoweredBy: { fontSize: 9.5, fontWeight: 600, color: "#9AA5AD", marginBottom: 4 },
   panelSymbol: { height: 26, width: "auto", marginBottom: 10 },
   appHeader: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", marginBottom: 18 },
   headerSymbol: { height: 22, width: "auto" },
   headerWordmark: { height: 22, width: "auto", justifySelf: "center" },
+  headerWordmarkText: { justifySelf: "center", fontFamily: "'Host Grotesk', sans-serif", fontSize: 16, color: "#fff", letterSpacing: 0.2, marginRight: 14 },
   headerRight: { display: "flex", alignItems: "center", gap: 12, justifySelf: "end" },
   igLink: { display: "flex", alignItems: "center", justifyContent: "center", color: "#CFE0EC", opacity: 0.9 },
   bigLogoWrap: { display: "flex", justifyContent: "center", padding: "6px 0 4px" },
   bigLogoImg: { height: "clamp(48px, 7vw, 72px)", width: "auto", maxWidth: "90%" },
+  bigWordmarkText: { fontFamily: "'Host Grotesk', sans-serif", fontSize: "clamp(28px, 5vw, 40px)", color: "#fff", letterSpacing: 0.2 },
   poweredByRow: { display: "flex", justifyContent: "center", marginBottom: 14 },
   poweredByBadge: { display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.18)", color: "#CFE0EC", fontSize: 11.5, fontWeight: 600, borderRadius: 999, padding: "6px 14px", textAlign: "center" },
+  poweredByBadgeSmall: { display: "inline-flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.14)", color: "#9FC0D6", fontSize: 9.5, fontWeight: 600, borderRadius: 999, padding: "3px 10px", textAlign: "center" },
   langToggle: { display: "flex", gap: 2, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 999, padding: 3 },
   langBtn: { border: "none", background: "none", color: "#9FC0D6", fontSize: 10.5, fontWeight: 700, padding: "4px 7px", borderRadius: 999, cursor: "pointer" },
   langBtnActive: { background: colors.blue, color: "#fff" },
@@ -3948,6 +3971,8 @@ const styles = {
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
   franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#fff", gridColumn: "1 / -1" },
+  termsNotice: { fontSize: 11.5, color: colors.muted, lineHeight: 1.5, margin: "2px 0 0" },
+  termsLink: { color: colors.blue, fontWeight: 600, textDecoration: "underline" },
   duplicateEmailBox: { background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "12px 14px" },
   duplicateEmailText: { fontSize: 13.5, color: "#7A5A0A", margin: "0 0 10px" },
   branchListWrap: { marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.15)" },
@@ -3975,6 +4000,7 @@ const styles = {
   checkinCheck: { width: 64, height: 64, borderRadius: "50%", background: colors.blue, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" },
   checkinName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 22, fontWeight: 800 },
   checkinTier: { fontSize: 13, color: colors.blue, fontWeight: 600, marginTop: 4 },
+  checkinPoweredBy: { display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 11, color: colors.muted, marginBottom: 16 },
   checkinDiscountBig: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 26, fontWeight: 800, color: colors.blue, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${colors.line}` },
   checkinRest: { fontSize: 14, color: colors.muted, marginTop: 4 },
   checkinHint: { fontSize: 12, color: colors.muted, marginTop: 8, lineHeight: 1.5 },
