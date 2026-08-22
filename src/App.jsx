@@ -3019,9 +3019,7 @@ function AppHeader() {
   return (
     <div className="page-container" style={styles.appHeader}>
       <div />
-      <div style={styles.headerWordmarkText}>
-        <span style={{ fontWeight: 400 }}>Students</span><span style={{ fontWeight: 700, color: colors.blue }}>Club</span>
-      </div>
+      <img src={WORDMARK_WHITE_DATA} alt="Xtudy" style={styles.headerWordmark} />
       <div style={styles.headerRight}>
         <a href="https://www.instagram.com/xtudy.mx" target="_blank" rel="noopener noreferrer" style={styles.igLink} aria-label="Instagram de Xtudy">
           <Instagram size={17} />
