@@ -35,7 +35,11 @@ struct AppBlockingCard: View {
                     .buttonStyle(.secondary)
             } else {
                 Toggle(isOn: Binding(get: { screenTime.isEnabled }, set: { screenTime.setEnabled($0) })) {
-                    Text("Apps elegidas: \(screenTime.selectedAppCount)")
+                    if screenTime.selectedCategoryCount > 0 {
+                        Text("Apps elegidas: \(screenTime.selectedAppCount) · categorías: \(screenTime.selectedCategoryCount)")
+                    } else {
+                        Text("Apps elegidas: \(screenTime.selectedAppCount)")
+                    }
                 }
                 Button("Cambiar apps", action: openPicker)
                     .font(.subheadline)

@@ -31,6 +31,7 @@ final class SubscriptionStore: ObservableObject {
     }
 
     func loadProduct() async {
+        message = nil
         isLoadingProduct = true
         defer { isLoadingProduct = false }
         do {
@@ -45,6 +46,7 @@ final class SubscriptionStore: ObservableObject {
 
     func purchase() async {
         guard let product, !isPurchasing else { return }
+        message = nil
         isPurchasing = true
         defer { isPurchasing = false }
         do {
@@ -69,6 +71,7 @@ final class SubscriptionStore: ObservableObject {
     }
 
     func restore() async {
+        message = nil
         do {
             try await AppStore.sync()
         } catch {
@@ -102,6 +105,7 @@ final class SubscriptionStore: ObservableObject {
         }
         state = EntitlementEvaluator.evaluate(productID: Self.productID, transactions: facts,
                                               inGracePeriod: inGrace, willRenew: willRenew)
+        if state.unlocksFilters { message = nil }
     }
 
     private func handle(_ result: VerificationResult<Transaction>) async {

@@ -6,7 +6,7 @@ final class UnlockWindowTests: XCTestCase {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let w = UnlockWindow(now: now)
         XCTAssertEqual(w.end, now.addingTimeInterval(300))
-        XCTAssertEqual(w.monitoringInterval, 15 * 60)
+        XCTAssertEqual(w.monitoringInterval, 16 * 60)
         XCTAssertLessThan(w.scheduleStart, now)
         XCTAssertTrue(w.isActive(at: now))
         XCTAssertFalse(w.isActive(at: now.addingTimeInterval(301)))
@@ -28,6 +28,7 @@ final class UnlockWindowTests: XCTestCase {
         let end = UnlockWindow.components(w.end, calendar: cal)
         XCTAssertEqual(start.day, 9)
         XCTAssertEqual(start.hour, 23)
+        XCTAssertEqual(start.minute, 51)
         XCTAssertEqual(end.day, 10)
         XCTAssertEqual(end.minute, 7)
     }

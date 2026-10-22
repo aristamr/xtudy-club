@@ -31,7 +31,9 @@ targets:
     platform: iOS
     sources:
       - path: Presente
+        excludes: ["Resources/Presente.storekit"]
       - path: Shared
+      - path: Localization
     dependencies:
       - package: PresenteCore
         product: PresenteCore
@@ -43,6 +45,8 @@ targets:
       path: Presente/Info.plist
       properties:
         CFBundleDisplayName: Presente
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDevelopmentRegion: es
         CFBundleLocalizations: [es, en]
         UILaunchScreen: {}
@@ -55,7 +59,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: mx.xtudy.presente
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        INFOPLIST_KEY_CFBundleDisplayName: Presente
 
   PresenteMonitor:
     type: app-extension
@@ -69,6 +72,8 @@ targets:
       path: PresenteMonitor/Info.plist
       properties:
         CFBundleDisplayName: Presente Monitor
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.deviceactivity.monitor-extension
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PresenteMonitor
@@ -81,14 +86,15 @@ targets:
     platform: iOS
     sources:
       - path: PresenteShield
-      - path: Presente/Resources/es.lproj
-      - path: Presente/Resources/en.lproj
+      - path: Localization
     entitlements:
       path: PresenteShield/PresenteShield.entitlements
     info:
       path: PresenteShield/Info.plist
       properties:
         CFBundleDisplayName: Presente Shield
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration-service
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShieldConfigurationExtension

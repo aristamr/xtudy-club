@@ -7,10 +7,12 @@ struct LifeWeeksGrid: View {
     let breakdown: LifeWeeksBreakdown
     let columns = LifeWeeksBreakdown.weeksPerYear
 
+    private var rows: Int { max(1, Int(ceil(Double(breakdown.total) / Double(columns)))) }
+
     var body: some View {
         GeometryReader { geo in
-            let rows = max(1, Int(ceil(Double(breakdown.total) / Double(columns))))
-            let cell = min(geo.size.width / CGFloat(columns), geo.size.height / CGFloat(rows))
+            let rows = self.rows
+            let cell = geo.size.width / CGFloat(columns)
             let gap = max(0.6, cell * 0.18)
             let width = cell * CGFloat(columns)
             Canvas { context, _ in
@@ -22,8 +24,9 @@ struct LifeWeeksGrid: View {
                 }
             }
             .frame(width: width, height: cell * CGFloat(rows))
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        // El alto se deriva del ancho: dentro de un ScrollView no hay alto propuesto.
+        .aspectRatio(CGFloat(columns) / CGFloat(rows), contentMode: .fit)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Tu vida en semanas"))
         .accessibilityValue(Text("\(breakdown.lived) semanas vividas, \(breakdown.free) libres, \(breakdown.scroll) equivalentes de scroll y \(breakdown.sleep) de sueño."))
@@ -83,7 +86,8 @@ struct LifeWeeksView: View {
                 .foregroundStyle(.secondary)
 
             LifeWeeksGrid(breakdown: breakdown)
-                .frame(minHeight: 200)
+                .frame(maxWidth: 420)
+                .frame(maxWidth: .infinity)
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.4), value: breakdown)
 
             LifeWeeksLegend(breakdown: breakdown)

@@ -15,7 +15,10 @@ struct PresenteApp: App {
                 .environmentObject(store)
                 .environmentObject(screenTime)
                 .tint(Theme.accent)
-                .task { await store.start() }
+                .task {
+                    screenTime.refresh()
+                    await store.start()
+                }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     // Si el desbloqueo temporal ya venció (o la extensión no corrió), se restablece aquí.

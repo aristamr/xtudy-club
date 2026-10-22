@@ -6,7 +6,7 @@ Marca cada casilla con fecha, versión de iOS y resultado. **Una función no se 
 
 | Suite | Comando | Cubre | Último resultado |
 |---|---|---|---|
-| PresenteCore | `cd Packages/PresenteCore && swift test` | Política de navegación (Reels, Explore, inicio, Shorts, youtu.be, dominios externos, login), opciones apagadas, script sin acceso a credenciales, matemática de semanas, proyección a 10 años, ventana de desbloqueo (mínimo de 15 min, medianoche), estados de suscripción, canales guardados | ✅ 32/32 (Swift 6.1.3, Linux) |
+| PresenteCore | `cd Packages/PresenteCore && swift test` | Política de navegación (Reels, Explore, inicio, Shorts, youtu.be, dominios externos, login), opciones apagadas, script sin acceso a credenciales, matemática de semanas, proyección a 10 años, ventana de desbloqueo (mínimo de 15 min con margen, medianoche), estados de suscripción, canales guardados | ✅ 32/32 (Swift 6.1.3, Linux) |
 | Filtro web | `cd web-tests && npm test` | Inicio en "Siguiendo", Reels oculto en navegación, sugerencias ocultas (también las que llegan con scroll), SPA hacia Reels, Explore → búsqueda, reel de amigo → publicación, DMs intactos, opción apagada, script inactivo en Facebook; YouTube: inicio tranquilo + buscador, Shorts ocultos, `/shorts/id` → video, relacionados/pantalla final ocultos, autoplay apagado y revertido, video elegido sí abre; protección contra bucles de redirección | ✅ 19/19 (Chromium 1194) |
 | StoreKit | `xcodebuild test -scheme Presente …` | Producto y precio $39 MXN mensual, sin compra = bloqueado, compra activa, expiración, reembolso, renovación cancelada sigue activa hasta vencer, restaurar sin compra, compra fallida | ⏳ Pendiente de correr en Mac |
 

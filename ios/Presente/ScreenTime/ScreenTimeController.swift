@@ -1,3 +1,4 @@
+import Combine
 import DeviceActivity
 import FamilyControls
 import Foundation
@@ -20,6 +21,7 @@ final class ScreenTimeController: ObservableObject {
 
     private let shield = ShieldStore()
     private let center = DeviceActivityCenter()
+    private var authorizationObserver: AnyCancellable?
 
     init() {
         let stored = ShieldStore()
@@ -27,11 +29,21 @@ final class ScreenTimeController: ObservableObject {
         selection = stored.selection
         isEnabled = stored.isEnabled
         unlockedUntil = stored.unlockedUntil
+
+        // iOS publica el estado real de forma asíncrona; al arrancar puede leerse .notDetermined.
+        authorizationObserver = AuthorizationCenter.shared.$authorizationStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self else { return }
+                self.authorization = status
+                if status == .approved { self.refresh() }
+            }
     }
 
     var isAuthorized: Bool { authorization == .approved }
     var hasSelection: Bool { shield.hasSelection }
-    var selectedAppCount: Int { selection.applicationTokens.count + selection.categoryTokens.count }
+    var selectedAppCount: Int { selection.applicationTokens.count }
+    var selectedCategoryCount: Int { selection.categoryTokens.count }
 
     /// Bloqueo activo y vigente (no está en un desbloqueo temporal).
     var isBlocking: Bool {
@@ -66,9 +78,15 @@ final class ScreenTimeController: ObservableObject {
     }
 
     func save(selection newValue: FamilyActivitySelection) {
+        let wasEmpty = !shield.hasSelection
         shield.selection = newValue
         let hasApps = !newValue.applicationTokens.isEmpty || !newValue.categoryTokens.isEmpty
-        shield.isEnabled = hasApps
+        // Cancelar el selector no debe volver a encender un bloqueo que la persona apagó.
+        if !hasApps {
+            shield.isEnabled = false
+        } else if wasEmpty {
+            shield.isEnabled = true
+        }
         refresh()
     }
 

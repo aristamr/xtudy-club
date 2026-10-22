@@ -8,7 +8,8 @@ import Foundation
 /// intervalo, la extensión DeviceActivityMonitor vuelve a aplicar el bloqueo.
 public struct UnlockWindow: Equatable, Codable, Sendable {
     public static let defaultDuration: TimeInterval = 5 * 60
-    public static let minimumMonitoringInterval: TimeInterval = 15 * 60
+    /// iOS exige 15 min; usamos 16 para no quedar justo en el límite (`intervalTooShort`).
+    public static let minimumMonitoringInterval: TimeInterval = 16 * 60
 
     /// Inicio del intervalo de monitoreo (puede estar en el pasado).
     public let scheduleStart: Date

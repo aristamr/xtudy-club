@@ -7,6 +7,9 @@ final class PresenteMonitor: DeviceActivityMonitor {
         super.intervalDidEnd(for: activity)
         guard activity == .temporaryUnlock else { return }
         let shield = ShieldStore()
+        // Si ya hay un desbloqueo más reciente en curso (p. ej. se pidió otro), no lo cortamos.
+        // Tolerancia de 2 s porque la programación trunca los segundos.
+        if let until = shield.unlockedUntil, until.timeIntervalSinceNow > 2 { return }
         shield.unlockedUntil = nil
         shield.applyIfNeeded()
     }
