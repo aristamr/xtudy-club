@@ -20,6 +20,16 @@ final class SubscriptionStoreTests: XCTestCase {
         session.clearTransactions()
     }
 
+    /// StoreKit Test aplica expiraciones y reembolsos de forma asíncrona; en la app,
+    /// `Transaction.updates` dispara `refresh()`. Aquí refrescamos hasta que cambie o venza el plazo.
+    private func waitUntilLocked(_ store: SubscriptionStore, timeout: TimeInterval = 15) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while store.state.unlocksFilters, Date() < deadline {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            await store.refresh()
+        }
+    }
+
     func testProductLoadsWithMexicanPrice() async throws {
         let store = SubscriptionStore()
         await store.loadProduct()
@@ -51,7 +61,7 @@ final class SubscriptionStoreTests: XCTestCase {
         await store.purchase()
         XCTAssertTrue(store.state.unlocksFilters)
         try session.expireSubscription(productIdentifier: SubscriptionStore.productID)
-        await store.refresh()
+        await waitUntilLocked(store)
         XCTAssertFalse(store.state.unlocksFilters)
     }
 
@@ -61,7 +71,7 @@ final class SubscriptionStoreTests: XCTestCase {
         await store.purchase()
         let transaction = try XCTUnwrap(session.allTransactions().first)
         try session.refundTransaction(identifier: UInt(transaction.identifier))
-        await store.refresh()
+        await waitUntilLocked(store)
         XCTAssertFalse(store.state.unlocksFilters)
     }
 
