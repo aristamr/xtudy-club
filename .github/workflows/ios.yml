@@ -1,0 +1,56 @@
+name: iOS (Presente)
+
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+jobs:
+  core-and-web:
+    name: PresenteCore + filtro web
+    runs-on: ubuntu-24.04
+    container: swift:6.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pruebas de PresenteCore
+        working-directory: ios/Packages/PresenteCore
+        run: swift test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pruebas del filtro web (Playwright + Chromium)
+        working-directory: ios/web-tests
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+          npm test
+
+  app:
+    name: App iOS (Xcode)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generar proyecto
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen
+      - name: Compilar y probar en Simulador
+        working-directory: ios
+        shell: bash
+        run: |
+          DEST=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")))')
+          set -o pipefail
+          xcodebuild test \
+            -project Presente.xcodeproj \
+            -scheme Presente \
+            -destination "id=$DEST" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee build.log | grep -E "error:|Test Case .*(passed|failed)|\*\* (BUILD|TEST)"
+      - name: Log de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ios/build.log

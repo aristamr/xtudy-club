@@ -1,0 +1,69 @@
+{
+  "platform": "instagram",
+  "version": 1,
+  "notes": "Selectores verificados contra la versión web móvil. Si Instagram cambia su HTML, edita solo este archivo y vuelve a correr las pruebas (ios/web-tests).",
+  "routes": [
+    {
+      "id": "reels-feed",
+      "option": "shortForm",
+      "pattern": "^/reels/?(\\?.*)?$",
+      "redirect": "/?variant=following"
+    },
+    {
+      "id": "reel-single-as-post",
+      "option": "shortForm",
+      "pattern": "^/reels?/([A-Za-z0-9_-]+)/?(\\?.*)?$",
+      "redirect": "/p/$1/"
+    },
+    {
+      "id": "explore-grid-to-search",
+      "option": "explore",
+      "pattern": "^/explore/?(\\?.*)?$",
+      "redirect": "/explore/search/"
+    },
+    {
+      "id": "explore-topics",
+      "option": "explore",
+      "pattern": "^/explore/(tags|locations)/.*$",
+      "redirect": "/explore/search/"
+    },
+    {
+      "id": "home-following-only",
+      "option": "recommendations",
+      "pattern": "^/(\\?(?!.*variant=following).*)?$",
+      "redirect": "/?variant=following"
+    }
+  ],
+  "hide": {
+    "shortForm": [
+      "a[href^=\"/reels/\"]",
+      "a[href^=\"https://www.instagram.com/reels/\"]"
+    ],
+    "explore": [
+      "a[href^=\"/explore/tags/\"]",
+      "a[href^=\"/explore/locations/\"]"
+    ],
+    "recommendations": [
+      "a[href^=\"/explore/people/\"]",
+      "a[href=\"/?variant=home\"]",
+      "a[href=\"/?variant=favorites\"]"
+    ]
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Suggested for you",
+        "Suggested posts",
+        "Suggested reels",
+        "Sugerencias para ti",
+        "Publicaciones sugeridas",
+        "Reels sugeridos",
+        "Sugerencias"
+      ],
+      "containers": ["article"],
+      "maxDepth": 4
+    }
+  ],
+  "behaviors": []
+}

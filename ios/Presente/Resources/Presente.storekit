@@ -1,0 +1,71 @@
+{
+  "identifier" : "6C1E4A3B",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6740000000",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "es_MX",
+    "_storefront" : "MEX",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21500001",
+      "localizations" : [
+        {
+          "description" : "Instagram y YouTube sin distracciones",
+          "displayName" : "Presente",
+          "locale" : "es_MX"
+        }
+      ],
+      "name" : "Presente",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "39",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6740000001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Filtros para Instagram y YouTube, bloqueo opcional de las apps originales.",
+              "displayName" : "Presente mensual",
+              "locale" : "es_MX"
+            },
+            {
+              "description" : "Filters for Instagram and YouTube, optional blocking of the original apps.",
+              "displayName" : "Presente monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "mx.xtudy.presente.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Presente mensual",
+          "subscriptionGroupID" : "21500001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

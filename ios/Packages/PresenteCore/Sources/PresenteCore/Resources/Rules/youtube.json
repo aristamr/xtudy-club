@@ -1,0 +1,59 @@
+{
+  "platform": "youtube",
+  "version": 1,
+  "notes": "Selectores para m.youtube.com. Si YouTube cambia su HTML, edita solo este archivo y vuelve a correr las pruebas (ios/web-tests).",
+  "routes": [
+    {
+      "id": "short-as-video",
+      "option": "shortForm",
+      "pattern": "^/shorts/([A-Za-z0-9_-]+)/?(\\?.*)?$",
+      "redirect": "/watch?v=$1"
+    },
+    {
+      "id": "shorts-feed",
+      "option": "shortForm",
+      "pattern": "^/(shorts|feed/shorts)/?(\\?.*)?$",
+      "redirect": "/"
+    },
+    {
+      "id": "trending",
+      "option": "recommendations",
+      "pattern": "^/feed/(trending|explore)/?(\\?.*)?$",
+      "redirect": "/"
+    }
+  ],
+  "hide": {
+    "shortForm": [
+      "ytm-reel-shelf-renderer",
+      "ytm-shorts-lockup-view-model",
+      "ytm-shorts-lockup-view-model-v2",
+      "grid-shelf-view-model:has(ytm-shorts-lockup-view-model)",
+      "grid-shelf-view-model:has(ytm-shorts-lockup-view-model-v2)",
+      "ytm-pivot-bar-item-renderer:has(.pivot-shorts)",
+      "ytm-rich-item-renderer:has(a[href^=\"/shorts/\"])",
+      "ytm-video-with-context-renderer:has(a[href^=\"/shorts/\"])",
+      "ytm-compact-video-renderer:has(a[href^=\"/shorts/\"])",
+      "a[href^=\"/shorts\"]"
+    ],
+    "explore": [
+      "ytm-pivot-bar-item-renderer:has(.pivot-explore)",
+      "ytm-pivot-bar-item-renderer:has(.pivot-trending)"
+    ],
+    "recommendations": [
+      "ytm-item-section-renderer[section-identifier=\"related-items\"]",
+      "ytm-watch-next-secondary-results-renderer",
+      "ytm-single-column-watch-next-results-renderer ytm-item-section-renderer[data-content-type=\"related\"]",
+      ".related-chips-slot-wrapper",
+      ".ytp-endscreen-content",
+      ".ytp-autonav-endscreen-countdown-overlay",
+      ".ytm-autonav-bar",
+      "ytm-autonav-toggle-button-container",
+      ".ytp-ce-element"
+    ]
+  },
+  "textRules": [],
+  "behaviors": [
+    { "name": "calmHome", "option": "recommendations" },
+    { "name": "autoplayGuard", "option": "recommendations" }
+  ]
+}

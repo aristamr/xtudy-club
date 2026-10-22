@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Watch (fixture)</title></head>
+<body>
+<ytm-app id="app">
+  <div id="player"><video id="video"></video><div class="ytp-endscreen-content" id="endscreen">Siguiente…</div></div>
+  <button id="autoplay-toggle" aria-label="Autoplay is on">Autoplay</button>
+  <ytm-single-column-watch-next-results-renderer>
+    <ytm-slim-video-metadata-section-renderer id="metadata">Título del video</ytm-slim-video-metadata-section-renderer>
+    <ytm-item-section-renderer section-identifier="comment-item-section" id="comments">Comentarios</ytm-item-section-renderer>
+    <ytm-item-section-renderer section-identifier="related-items" id="related">
+      <ytm-video-with-context-renderer id="related-video"><a href="/watch?v=next">Siguiente video</a></ytm-video-with-context-renderer>
+      <ytm-video-with-context-renderer id="related-short"><a href="/shorts/zz">Short relacionado</a></ytm-video-with-context-renderer>
+    </ytm-item-section-renderer>
+  </ytm-single-column-watch-next-results-renderer>
+  <a id="user-link" href="/watch?v=chosen">Video elegido</a>
+</ytm-app>
+<script>
+  // Simula la navegación SPA de YouTube.
+  document.getElementById('user-link').addEventListener('click', function (e) {
+    e.preventDefault(); history.pushState({}, '', '/watch?v=chosen');
+  });
+</script>
+</body></html>

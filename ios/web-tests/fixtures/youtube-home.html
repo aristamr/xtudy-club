@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>YouTube (fixture)</title></head>
+<body>
+<ytm-app id="app">
+  <header id="topbar">YouTube</header>
+  <ytm-browse>
+    <ytm-feed-filter-chip-bar-renderer id="chips">Todo · Música</ytm-feed-filter-chip-bar-renderer>
+    <ytm-rich-grid-renderer id="grid">
+      <ytm-rich-item-renderer id="rec-1"><a href="/watch?v=rec1">Video recomendado</a></ytm-rich-item-renderer>
+      <ytm-reel-shelf-renderer id="shorts-shelf"><a href="/shorts/s1">Short</a></ytm-reel-shelf-renderer>
+    </ytm-rich-grid-renderer>
+  </ytm-browse>
+  <ytm-pivot-bar-renderer>
+    <ytm-pivot-bar-item-renderer id="pivot-home"><div class="pivot-w2w"></div>Inicio</ytm-pivot-bar-item-renderer>
+    <ytm-pivot-bar-item-renderer id="pivot-shorts"><div class="pivot-shorts"></div>Shorts</ytm-pivot-bar-item-renderer>
+    <ytm-pivot-bar-item-renderer id="pivot-subs"><div class="pivot-subs"></div>Suscripciones</ytm-pivot-bar-item-renderer>
+  </ytm-pivot-bar-renderer>
+</ytm-app>
+</body></html>
