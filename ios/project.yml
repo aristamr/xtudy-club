@@ -17,6 +17,8 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""          # Pon aquí tu Team ID (Xcode › Signing & Capabilities)
     CODE_SIGN_STYLE: Automatic
+    # En el Simulador no hace falta firmar: se puede probar sin cuenta de Apple Developer.
+    "CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]": "NO"
     TARGETED_DEVICE_FAMILY: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     LOCALIZATION_PREFERS_STRING_CATALOGS: NO
