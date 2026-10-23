@@ -1,0 +1,1538 @@
+{
+  "%@ / month": {
+    "de": "%@ / Monat",
+    "en": "%@ / month",
+    "es": "%@ / mes",
+    "fr": "%@ / mois",
+    "it": "%@ / mese",
+    "pt": "%@ / mês"
+  },
+  "%@ once": {
+    "de": "%@ einmalig",
+    "en": "%@ once",
+    "es": "%@ en un solo pago",
+    "fr": "%@ en une fois",
+    "it": "%@ una tantum",
+    "pt": "%@ uma única vez"
+  },
+  "%@ one-time payment, charged to your Apple Account when you confirm. No subscription; nothing renews.": {
+    "de": "Einmalzahlung von %@, wird bei Bestätigung über deinen Apple Account abgerechnet. Kein Abo; nichts verlängert sich.",
+    "en": "%@ one-time payment, charged to your Apple Account when you confirm. No subscription; nothing renews.",
+    "es": "Pago único de %@, cargado a tu cuenta de Apple al confirmar. Sin suscripción; no se renueva.",
+    "fr": "Paiement unique de %@, débité sur votre compte Apple lors de la confirmation. Aucun abonnement ; rien ne se renouvelle.",
+    "it": "Pagamento unico di %@, addebitato sul tuo Account Apple alla conferma. Nessun abbonamento; nulla si rinnova.",
+    "pt": "Pagamento único de %@, cobrado na sua Conta Apple ao confirmar. Sem assinatura; nada é renovado."
+  },
+  "%@ per month, charged to your Apple Account when you confirm. Renews automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel anytime in Settings › your name › Subscriptions.": {
+    "de": "%@ pro Monat, wird bei Bestätigung über deinen Apple Account abgerechnet. Verlängert sich automatisch, wenn du nicht mindestens 24 Stunden vor Ende des Zeitraums kündigst. Verwalten oder kündigen jederzeit unter Einstellungen › dein Name › Abonnements.",
+    "en": "%@ per month, charged to your Apple Account when you confirm. Renews automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel anytime in Settings › your name › Subscriptions.",
+    "es": "%@ al mes, cargado a tu cuenta de Apple al confirmar. Se renueva automáticamente salvo que lo canceles al menos 24 horas antes del final del periodo. Gestiona o cancela cuando quieras en Ajustes › tu nombre › Suscripciones.",
+    "fr": "%@ par mois, débité sur votre compte Apple lors de la confirmation. Renouvellement automatique sauf résiliation au moins 24 heures avant la fin de la période. Gérez ou résiliez à tout moment dans Réglages › votre nom › Abonnements.",
+    "it": "%@ al mese, addebitati sul tuo Account Apple alla conferma. Si rinnova automaticamente se non viene annullato almeno 24 ore prima della fine del periodo. Gestisci o annulla quando vuoi in Impostazioni › il tuo nome › Abbonamenti.",
+    "pt": "%@ por mês, cobrado na sua Conta Apple ao confirmar. Renova automaticamente, a menos que seja cancelado pelo menos 24 horas antes do fim do período. Gerencie ou cancele quando quiser em Ajustes › seu nome › Assinaturas."
+  },
+  "%@, filters on": {
+    "de": "%@, Filter aktiv",
+    "en": "%@, filters on",
+    "es": "%@, filtros activos",
+    "fr": "%@, filtres activés",
+    "it": "%@, filtri attivi",
+    "pt": "%@, filtros ativos"
+  },
+  "%lld days free": {
+    "de": "%lld Tage gratis",
+    "en": "%lld days free",
+    "es": "%lld días gratis",
+    "fr": "%lld jours gratuits",
+    "it": "%lld giorni gratis",
+    "pt": "%lld dias grátis"
+  },
+  "%lld full days": {
+    "de": "%lld volle Tage",
+    "en": "%lld full days",
+    "es": "%lld días completos",
+    "fr": "%lld jours entiers",
+    "it": "%lld giorni interi",
+    "pt": "%lld dias inteiros"
+  },
+  "%lld hours": {
+    "de": "%lld Stunden",
+    "en": "%lld hours",
+    "es": "%lld horas",
+    "fr": "%lld heures",
+    "it": "%lld ore",
+    "pt": "%lld horas"
+  },
+  "%lld hours · %lld full days": {
+    "de": "%lld Stunden · %lld volle Tage",
+    "en": "%lld hours · %lld full days",
+    "es": "%lld horas · %lld días completos",
+    "fr": "%lld heures · %lld jours entiers",
+    "it": "%lld ore · %lld giorni interi",
+    "pt": "%lld horas · %lld dias inteiros"
+  },
+  "%lld weeks": {
+    "de": "%lld Wochen",
+    "en": "%lld weeks",
+    "es": "%lld semanas",
+    "fr": "%lld semaines",
+    "it": "%lld settimane",
+    "pt": "%lld semanas"
+  },
+  "%lld weeks lived, %lld equivalent to sleep, %lld equivalent to scrolling and %lld left for everything else.": {
+    "de": "%lld Wochen gelebt, %lld entsprechen Schlaf, %lld entsprechen Scrollen und %lld bleiben für alles andere.",
+    "en": "%lld weeks lived, %lld equivalent to sleep, %lld equivalent to scrolling and %lld left for everything else.",
+    "es": "%lld semanas vividas, %lld equivalentes a dormir, %lld equivalentes a hacer scroll y %lld para todo lo demás.",
+    "fr": "%lld semaines vécues, %lld équivalentes au sommeil, %lld équivalentes au défilement et %lld pour tout le reste.",
+    "it": "%lld settimane vissute, %lld equivalenti al sonno, %lld equivalenti allo scroll e %lld per tutto il resto.",
+    "pt": "%lld semanas vividas, %lld equivalentes a dormir, %lld equivalentes a rolar a tela e %lld para todo o resto."
+  },
+  "Add a network": {
+    "de": "Netzwerk hinzufügen",
+    "en": "Add a network",
+    "es": "Añadir una red",
+    "fr": "Ajouter un réseau",
+    "it": "Aggiungi un social",
+    "pt": "Adicionar uma rede"
+  },
+  "After": {
+    "de": "Nachher",
+    "en": "After",
+    "es": "Después",
+    "fr": "Après",
+    "it": "Dopo",
+    "pt": "Depois"
+  },
+  "All filters are off": {
+    "de": "Alle Filter sind aus",
+    "en": "All filters are off",
+    "es": "Todos los filtros apagados",
+    "fr": "Tous les filtres désactivés",
+    "it": "Tutti i filtri disattivati",
+    "pt": "Todos os filtros desligados"
+  },
+  "Allow Screen Time": {
+    "de": "Bildschirmzeit erlauben",
+    "en": "Allow Screen Time",
+    "es": "Permitir Tiempo en pantalla",
+    "fr": "Autoriser Temps d’écran",
+    "it": "Consenti Tempo di utilizzo",
+    "pt": "Permitir Tempo de Uso"
+  },
+  "Ana": {
+    "de": "Ana",
+    "en": "Ana",
+    "es": "Ana",
+    "fr": "Ana",
+    "it": "Ana",
+    "pt": "Ana"
+  },
+  "Apple will ask for permission. Presente can't see which apps you use or for how long: it can only pause the apps you choose.": {
+    "de": "Apple fragt dich um Erlaubnis. Presente sieht nicht, welche Apps du wie lange nutzt: Es kann nur die Apps pausieren, die du auswählst.",
+    "en": "Apple will ask for permission. Presente can't see which apps you use or for how long: it can only pause the apps you choose.",
+    "es": "Apple te pedirá permiso. Presente no puede ver qué apps usas ni durante cuánto tiempo: solo puede pausar las apps que elijas.",
+    "fr": "Apple vous demandera l’autorisation. Presente ne peut pas voir quelles apps vous utilisez ni combien de temps : il peut seulement mettre en pause les apps choisies.",
+    "it": "Apple ti chiederà il permesso. Presente non può vedere quali app usi né per quanto tempo: può solo mettere in pausa le app che scegli.",
+    "pt": "A Apple vai pedir permissão. O Presente não vê quais apps você usa nem por quanto tempo: ele só pode pausar os apps que você escolher."
+  },
+  "Apple will keep charging the monthly plan until you cancel it in your Apple Account settings. Presente can't cancel it for you.": {
+    "de": "Apple berechnet den Monatsplan weiter, bis du ihn in den Einstellungen deines Apple Account kündigst. Presente kann ihn nicht für dich kündigen.",
+    "en": "Apple will keep charging the monthly plan until you cancel it in your Apple Account settings. Presente can't cancel it for you.",
+    "es": "Apple seguirá cobrando el plan mensual hasta que lo canceles en los ajustes de tu cuenta de Apple. Presente no puede cancelarlo por ti.",
+    "fr": "Apple continuera de facturer la formule mensuelle jusqu’à ce que vous la résiliiez dans les réglages de votre compte Apple. Presente ne peut pas la résilier pour vous.",
+    "it": "Apple continuerà ad addebitare il piano mensile finché non lo annulli nelle impostazioni del tuo Account Apple. Presente non può annullarlo al posto tuo.",
+    "pt": "A Apple continuará cobrando o plano mensal até você cancelá-lo nos ajustes da sua Conta Apple. O Presente não pode cancelá-lo por você."
+  },
+  "Apps chosen: %lld": {
+    "de": "Ausgewählte Apps: %lld",
+    "en": "Apps chosen: %lld",
+    "es": "Apps elegidas: %lld",
+    "fr": "Apps choisies : %lld",
+    "it": "App scelte: %lld",
+    "pt": "Apps escolhidos: %lld"
+  },
+  "Apps chosen: %lld · categories: %lld": {
+    "de": "Ausgewählte Apps: %lld · Kategorien: %lld",
+    "en": "Apps chosen: %lld · categories: %lld",
+    "es": "Apps elegidas: %lld · categorías: %lld",
+    "fr": "Apps choisies : %lld · catégories : %lld",
+    "it": "App scelte: %lld · categorie: %lld",
+    "pt": "Apps escolhidos: %lld · categorias: %lld"
+  },
+  "At %@ a day, scrolling adds up to:": {
+    "de": "Bei %@ am Tag summiert sich das Scrollen auf:",
+    "en": "At %@ a day, scrolling adds up to:",
+    "es": "Con %@ al día, el scroll suma:",
+    "fr": "À %@ par jour, le défilement représente :",
+    "it": "Con %@ al giorno, lo scroll arriva a:",
+    "pt": "Com %@ por dia, a rolagem soma:"
+  },
+  "Autoplay was stopped": {
+    "de": "Autoplay wurde gestoppt",
+    "en": "Autoplay was stopped",
+    "es": "Reproducción automática detenida",
+    "fr": "Lecture automatique arrêtée",
+    "it": "Riproduzione automatica fermata",
+    "pt": "Reprodução automática parada"
+  },
+  "Back": {
+    "de": "Zurück",
+    "en": "Back",
+    "es": "Atrás",
+    "fr": "Retour",
+    "it": "Indietro",
+    "pt": "Voltar"
+  },
+  "Before": {
+    "de": "Vorher",
+    "en": "Before",
+    "es": "Antes",
+    "fr": "Avant",
+    "it": "Prima",
+    "pt": "Antes"
+  },
+  "Before and after comparison": {
+    "de": "Vorher-Nachher-Vergleich",
+    "en": "Before and after comparison",
+    "es": "Comparación antes y después",
+    "fr": "Comparaison avant/après",
+    "it": "Confronto prima e dopo",
+    "pt": "Comparação antes e depois"
+  },
+  "Before: Reels, Explore and suggested posts. After: posts from people you follow, search and messages.": {
+    "de": "Vorher: Reels, Explore und vorgeschlagene Beiträge. Nachher: Beiträge von Leuten, denen du folgst, Suche und Nachrichten.",
+    "en": "Before: Reels, Explore and suggested posts. After: posts from people you follow, search and messages.",
+    "es": "Antes: Reels, Explore y publicaciones sugeridas. Después: publicaciones de quienes sigues, búsqueda y mensajes.",
+    "fr": "Avant : Reels, Explore et publications suggérées. Après : publications des personnes que vous suivez, recherche et messages.",
+    "it": "Prima: Reels, Explore e post suggeriti. Dopo: post di chi segui, ricerca e messaggi.",
+    "pt": "Antes: Reels, Explore e posts sugeridos. Depois: posts de quem você segue, busca e mensagens."
+  },
+  "Before: Shorts and recommended videos. After: a calm search and your channels.": {
+    "de": "Vorher: Shorts und empfohlene Videos. Nachher: eine ruhige Suche und deine Kanäle.",
+    "en": "Before: Shorts and recommended videos. After: a calm search and your channels.",
+    "es": "Antes: Shorts y videos recomendados. Después: una búsqueda tranquila y tus canales.",
+    "fr": "Avant : Shorts et vidéos recommandées. Après : une recherche apaisée et vos chaînes.",
+    "it": "Prima: Shorts e video consigliati. Dopo: una ricerca tranquilla e i tuoi canali.",
+    "pt": "Antes: Shorts e vídeos recomendados. Depois: uma busca tranquila e seus canais."
+  },
+  "Beta": {
+    "de": "Beta",
+    "en": "Beta",
+    "es": "Beta",
+    "fr": "Beta",
+    "it": "Beta",
+    "pt": "Beta"
+  },
+  "Beta networks use filters that haven't been verified on a real iPhone yet. Some distractions may slip through.": {
+    "de": "Beta-Netzwerke nutzen Filter, die noch nicht auf einem echten iPhone geprüft wurden. Manche Ablenkungen könnten durchrutschen.",
+    "en": "Beta networks use filters that haven't been verified on a real iPhone yet. Some distractions may slip through.",
+    "es": "Las redes en Beta usan filtros que aún no se han verificado en un iPhone real. Puede colarse alguna distracción.",
+    "fr": "Les réseaux en Beta utilisent des filtres pas encore vérifiés sur un vrai iPhone. Certaines distractions peuvent passer.",
+    "it": "I social in Beta usano filtri non ancora verificati su un iPhone reale. Qualche distrazione potrebbe passare.",
+    "pt": "Redes em Beta usam filtros que ainda não foram verificados em um iPhone real. Algumas distrações podem passar."
+  },
+  "Beta: filters for %@ haven't been verified yet. Some distractions may slip through.": {
+    "de": "Beta: Die Filter für %@ wurden noch nicht geprüft. Manche Ablenkungen könnten durchrutschen.",
+    "en": "Beta: filters for %@ haven't been verified yet. Some distractions may slip through.",
+    "es": "Beta: los filtros para %@ aún no se han verificado. Puede colarse alguna distracción.",
+    "fr": "Beta : les filtres pour %@ n’ont pas encore été vérifiés. Certaines distractions peuvent passer.",
+    "it": "Beta: i filtri per %@ non sono ancora stati verificati. Qualche distrazione potrebbe passare.",
+    "pt": "Beta: os filtros para %@ ainda não foram verificados. Algumas distrações podem passar."
+  },
+  "Both plans include the same features.": {
+    "de": "Beide Pläne bieten dieselben Funktionen.",
+    "en": "Both plans include the same features.",
+    "es": "Ambos planes incluyen las mismas funciones.",
+    "fr": "Les deux formules incluent les mêmes fonctionnalités.",
+    "it": "Entrambi i piani includono le stesse funzioni.",
+    "pt": "Os dois planos incluem os mesmos recursos."
+  },
+  "Buy Lifetime": {
+    "de": "Lebenslangen Zugang kaufen",
+    "en": "Buy Lifetime",
+    "es": "Comprar acceso de por vida",
+    "fr": "Acheter l’accès à vie",
+    "it": "Acquista l’accesso a vita",
+    "pt": "Comprar acesso vitalício"
+  },
+  "Buy Lifetime for %@": {
+    "de": "Lebenslang für %@ kaufen",
+    "en": "Buy Lifetime for %@",
+    "es": "Comprar de por vida por %@",
+    "fr": "Acheter l’accès à vie pour %@",
+    "it": "Acquista a vita per %@",
+    "pt": "Comprar vitalício por %@"
+  },
+  "Cancel": {
+    "de": "Abbrechen",
+    "en": "Cancel",
+    "es": "Cancelar",
+    "fr": "Annuler",
+    "it": "Annulla",
+    "pt": "Cancelar"
+  },
+  "Change apps": {
+    "de": "Apps ändern",
+    "en": "Change apps",
+    "es": "Cambiar apps",
+    "fr": "Changer d’apps",
+    "it": "Cambia app",
+    "pt": "Alterar apps"
+  },
+  "Changes apply the next time you open a network.": {
+    "de": "Änderungen gelten, wenn du das nächste Mal ein Netzwerk öffnest.",
+    "en": "Changes apply the next time you open a network.",
+    "es": "Los cambios se aplican la próxima vez que abras una red.",
+    "fr": "Les changements s’appliquent à la prochaine ouverture d’un réseau.",
+    "it": "Le modifiche valgono la prossima volta che apri un social.",
+    "pt": "As mudanças valem na próxima vez que você abrir uma rede."
+  },
+  "Choose a plan": {
+    "de": "Wähle einen Plan",
+    "en": "Choose a plan",
+    "es": "Elige un plan",
+    "fr": "Choisissez une formule",
+    "it": "Scegli un piano",
+    "pt": "Escolha um plano"
+  },
+  "Choose a plan to see its billing terms.": {
+    "de": "Wähle einen Plan, um die Abrechnungsbedingungen zu sehen.",
+    "en": "Choose a plan to see its billing terms.",
+    "es": "Elige un plan para ver sus condiciones de cobro.",
+    "fr": "Choisissez une formule pour voir ses conditions de facturation.",
+    "it": "Scegli un piano per vedere le condizioni di addebito.",
+    "pt": "Escolha um plano para ver os termos de cobrança."
+  },
+  "Choose apps": {
+    "de": "Apps auswählen",
+    "en": "Choose apps",
+    "es": "Elegir apps",
+    "fr": "Choisir des apps",
+    "it": "Scegli app",
+    "pt": "Escolher apps"
+  },
+  "Close": {
+    "de": "Schließen",
+    "en": "Close",
+    "es": "Cerrar",
+    "fr": "Fermer",
+    "it": "Chiudi",
+    "pt": "Fechar"
+  },
+  "Continue": {
+    "de": "Weiter",
+    "en": "Continue",
+    "es": "Continuar",
+    "fr": "Continuer",
+    "it": "Continua",
+    "pt": "Continuar"
+  },
+  "Daily time on social media": {
+    "de": "Tägliche Zeit in sozialen Medien",
+    "en": "Daily time on social media",
+    "es": "Tiempo diario en redes sociales",
+    "fr": "Temps quotidien sur les réseaux sociaux",
+    "it": "Tempo giornaliero sui social",
+    "pt": "Tempo diário nas redes sociais"
+  },
+  "Diego": {
+    "de": "Diego",
+    "en": "Diego",
+    "es": "Diego",
+    "fr": "Diego",
+    "it": "Diego",
+    "pt": "Diego"
+  },
+  "Done": {
+    "de": "Fertig",
+    "en": "Done",
+    "es": "Listo",
+    "fr": "OK",
+    "it": "Fine",
+    "pt": "OK"
+  },
+  "Each square is one week of a 90-year life.": {
+    "de": "Jedes Quadrat ist eine Woche eines 90-jährigen Lebens.",
+    "en": "Each square is one week of a 90-year life.",
+    "es": "Cada cuadro es una semana de una vida de 90 años.",
+    "fr": "Chaque carré représente une semaine d’une vie de 90 ans.",
+    "it": "Ogni quadrato è una settimana di una vita di 90 anni.",
+    "pt": "Cada quadrado é uma semana de uma vida de 90 anos."
+  },
+  "Ends on %@. You won't be charged again.": {
+    "de": "Endet am %@. Dir wird nichts mehr berechnet.",
+    "en": "Ends on %@. You won't be charged again.",
+    "es": "Termina el %@. No se te volverá a cobrar.",
+    "fr": "Prend fin le %@. Vous ne serez plus facturé.",
+    "it": "Termina il %@. Non ti verrà più addebitato nulla.",
+    "pt": "Termina em %@. Você não será cobrado novamente."
+  },
+  "Estimates based on your answer. A book ≈ 6 h, a workout 45 min, a lesson 30 min, an afternoon 3 h, a night of rest 8 h. Presente helps you scroll less; it can't promise how much time you'll get back.": {
+    "de": "Schätzungen auf Basis deiner Antwort. Ein Buch ≈ 6 h, ein Workout 45 min, eine Lektion 30 min, ein Nachmittag 3 h, eine erholsame Nacht 8 h. Presente hilft dir, weniger zu scrollen; wie viel Zeit du zurückgewinnst, kann es nicht versprechen.",
+    "en": "Estimates based on your answer. A book ≈ 6 h, a workout 45 min, a lesson 30 min, an afternoon 3 h, a night of rest 8 h. Presente helps you scroll less; it can't promise how much time you'll get back.",
+    "es": "Estimaciones según tu respuesta. Un libro ≈ 6 h, un entrenamiento 45 min, una clase 30 min, una tarde 3 h, una noche de descanso 8 h. Presente te ayuda a hacer menos scroll; no puede prometer cuánto tiempo recuperarás.",
+    "fr": "Estimations selon votre réponse. Un livre ≈ 6 h, une séance de sport 45 min, une leçon 30 min, un après-midi 3 h, une nuit de repos 8 h. Presente vous aide à moins faire défiler ; il ne peut pas promettre combien de temps vous récupérerez.",
+    "it": "Stime basate sulla tua risposta. Un libro ≈ 6 h, un allenamento 45 min, una lezione 30 min, un pomeriggio 3 h, una notte di riposo 8 h. Presente ti aiuta a scorrere meno; non può promettere quanto tempo recupererai.",
+    "pt": "Estimativas com base na sua resposta. Um livro ≈ 6 h, um treino 45 min, uma aula 30 min, uma tarde 3 h, uma noite de descanso 8 h. O Presente ajuda você a rolar menos; não pode prometer quanto tempo você vai recuperar."
+  },
+  "Everything else": {
+    "de": "Alles andere",
+    "en": "Everything else",
+    "es": "Todo lo demás",
+    "fr": "Tout le reste",
+    "it": "Tutto il resto",
+    "pt": "Todo o resto"
+  },
+  "Explore is off. Search still works.": {
+    "de": "Explore ist aus. Die Suche funktioniert weiterhin.",
+    "en": "Explore is off. Search still works.",
+    "es": "Explore está desactivado. La búsqueda sigue funcionando.",
+    "fr": "Explore est désactivé. La recherche fonctionne toujours.",
+    "it": "Explore è disattivato. La ricerca funziona ancora.",
+    "pt": "O Explore está desativado. A busca continua funcionando."
+  },
+  "Filters": {
+    "de": "Filter",
+    "en": "Filters",
+    "es": "Filtros",
+    "fr": "Filtres",
+    "it": "Filtri",
+    "pt": "Filtros"
+  },
+  "Filters on": {
+    "de": "Filter aktiv",
+    "en": "Filters on",
+    "es": "Filtros activos",
+    "fr": "Filtres activés",
+    "it": "Filtri attivi",
+    "pt": "Filtros ativos"
+  },
+  "Filters unlock with a plan": {
+    "de": "Filter werden mit einem Plan freigeschaltet",
+    "en": "Filters unlock with a plan",
+    "es": "Los filtros se desbloquean con un plan",
+    "fr": "Les filtres se débloquent avec une formule",
+    "it": "I filtri si sbloccano con un piano",
+    "pt": "Os filtros são liberados com um plano"
+  },
+  "Following, messages and search": {
+    "de": "Abos, Nachrichten und Suche",
+    "en": "Following, messages and search",
+    "es": "Seguidos, mensajes y búsqueda",
+    "fr": "Abonnements, messages et recherche",
+    "it": "Seguiti, messaggi e ricerca",
+    "pt": "Seguindo, mensagens e busca"
+  },
+  "Following, profiles and search": {
+    "de": "Abos, Profile und Suche",
+    "en": "Following, profiles and search",
+    "es": "Seguidos, perfiles y búsqueda",
+    "fr": "Abonnements, profils et recherche",
+    "it": "Seguiti, profili e ricerca",
+    "pt": "Seguindo, perfis e busca"
+  },
+  "Following, search and profiles": {
+    "de": "Abos, Suche und Profile",
+    "en": "Following, search and profiles",
+    "es": "Seguidos, búsqueda y perfiles",
+    "fr": "Abonnements, recherche et profils",
+    "it": "Seguiti, ricerca e profili",
+    "pt": "Seguindo, busca e perfis"
+  },
+  "For privacy, iOS doesn't tell us which app is which, so all the apps you chose are unlocked.": {
+    "de": "Aus Datenschutzgründen verrät iOS nicht, welche App welche ist, daher sind alle ausgewählten Apps entsperrt.",
+    "en": "For privacy, iOS doesn't tell us which app is which, so all the apps you chose are unlocked.",
+    "es": "Por privacidad, iOS no nos dice qué app es cuál, así que todas las apps que elegiste están desbloqueadas.",
+    "fr": "Confidentialité oblige, iOS ne nous dit pas quelle app est laquelle : toutes les apps choisies sont déverrouillées.",
+    "it": "Per privacy, iOS non ci dice quale app è quale, quindi tutte le app che hai scelto sono sbloccate.",
+    "pt": "Por privacidade, o iOS não nos diz qual app é qual, então todos os apps que você escolheu estão desbloqueados."
+  },
+  "Free for %lld days, then %@ per month. Cancel anytime.": {
+    "de": "%lld Tage gratis, danach %@ pro Monat. Jederzeit kündbar.",
+    "en": "Free for %lld days, then %@ per month. Cancel anytime.",
+    "es": "Gratis durante %lld días, luego %@ al mes. Cancela cuando quieras.",
+    "fr": "Gratuit pendant %lld jours, puis %@ par mois. Résiliable à tout moment.",
+    "it": "Gratis per %lld giorni, poi %@ al mese. Annulla quando vuoi.",
+    "pt": "Grátis por %lld dias, depois %@ por mês. Cancele quando quiser."
+  },
+  "Free trial": {
+    "de": "Kostenlose Testphase",
+    "en": "Free trial",
+    "es": "Prueba gratis",
+    "fr": "Essai gratuit",
+    "it": "Prova gratuita",
+    "pt": "Teste grátis"
+  },
+  "Free until %@. Then %@ per month, charged to your Apple Account and renewed automatically until you cancel. Cancel at least 24 hours before the trial ends to avoid being charged. Manage or cancel anytime in Settings › your name › Subscriptions.": {
+    "de": "Gratis bis zum %@. Danach %@ pro Monat, abgerechnet über deinen Apple Account und automatisch verlängert, bis du kündigst. Kündige mindestens 24 Stunden vor Ende der Testphase, damit dir nichts berechnet wird. Verwalten oder kündigen jederzeit unter Einstellungen › dein Name › Abonnements.",
+    "en": "Free until %@. Then %@ per month, charged to your Apple Account and renewed automatically until you cancel. Cancel at least 24 hours before the trial ends to avoid being charged. Manage or cancel anytime in Settings › your name › Subscriptions.",
+    "es": "Gratis hasta el %@. Después, %@ al mes, cargado a tu cuenta de Apple y renovado automáticamente hasta que lo canceles. Cancela al menos 24 horas antes de que termine la prueba para que no se te cobre. Gestiona o cancela cuando quieras en Ajustes › tu nombre › Suscripciones.",
+    "fr": "Gratuit jusqu’au %@. Puis %@ par mois, débité sur votre compte Apple et renouvelé automatiquement jusqu’à résiliation. Résiliez au moins 24 heures avant la fin de l’essai pour ne pas être facturé. Gérez ou résiliez à tout moment dans Réglages › votre nom › Abonnements.",
+    "it": "Gratis fino al %@. Poi %@ al mese, addebitati sul tuo Account Apple e rinnovati automaticamente finché non annulli. Annulla almeno 24 ore prima della fine della prova per evitare l’addebito. Gestisci o annulla quando vuoi in Impostazioni › il tuo nome › Abbonamenti.",
+    "pt": "Grátis até %@. Depois, %@ por mês, cobrado na sua Conta Apple e renovado automaticamente até você cancelar. Cancele pelo menos 24 horas antes do fim do teste para não ser cobrado. Gerencie ou cancele quando quiser em Ajustes › seu nome › Assinaturas."
+  },
+  "Friends' posts, groups and profiles": {
+    "de": "Beiträge von Freunden, Gruppen und Profile",
+    "en": "Friends' posts, groups and profiles",
+    "es": "Publicaciones de amigos, grupos y perfiles",
+    "fr": "Publications d’amis, groupes et profils",
+    "it": "Post degli amici, gruppi e profili",
+    "pt": "Posts de amigos, grupos e perfis"
+  },
+  "Got it": {
+    "de": "Verstanden",
+    "en": "Got it",
+    "es": "Entendido",
+    "fr": "Compris",
+    "it": "Ho capito",
+    "pt": "Entendi"
+  },
+  "Hide recommendations": {
+    "de": "Empfehlungen ausblenden",
+    "en": "Hide recommendations",
+    "es": "Ocultar recomendaciones",
+    "fr": "Masquer les recommandations",
+    "it": "Nascondi consigli",
+    "pt": "Ocultar recomendações"
+  },
+  "How much time do you spend on social media every day?": {
+    "de": "Wie viel Zeit verbringst du täglich in sozialen Medien?",
+    "en": "How much time do you spend on social media every day?",
+    "es": "¿Cuánto tiempo pasas en redes sociales cada día?",
+    "fr": "Combien de temps passez-vous sur les réseaux sociaux chaque jour ?",
+    "it": "Quanto tempo passi sui social ogni giorno?",
+    "pt": "Quanto tempo você passa nas redes sociais por dia?"
+  },
+  "I need to post": {
+    "de": "Ich muss etwas posten",
+    "en": "I need to post",
+    "es": "Necesito publicar",
+    "fr": "Je dois publier",
+    "it": "Devo pubblicare",
+    "pt": "Preciso postar"
+  },
+  "If you took back just half, one year could hold:": {
+    "de": "Holst du nur die Hälfte zurück, passen in ein Jahr:",
+    "en": "If you took back just half, one year could hold:",
+    "es": "Si recuperaras solo la mitad, un año podría incluir:",
+    "fr": "Si vous en récupériez la moitié, une année pourrait contenir :",
+    "it": "Se ne recuperassi solo metà, un anno potrebbe contenere:",
+    "pt": "Se você recuperasse só metade, um ano poderia ter:"
+  },
+  "In 10 years": {
+    "de": "In 10 Jahren",
+    "en": "In 10 years",
+    "es": "En 10 años",
+    "fr": "En 10 ans",
+    "it": "In 10 anni",
+    "pt": "Em 10 anos"
+  },
+  "In the next window, choose the social apps you want to pause.": {
+    "de": "Wähle im nächsten Fenster die sozialen Apps, die du pausieren möchtest.",
+    "en": "In the next window, choose the social apps you want to pause.",
+    "es": "En la siguiente ventana, elige las apps sociales que quieres pausar.",
+    "fr": "Dans la fenêtre suivante, choisissez les apps sociales à mettre en pause.",
+    "it": "Nella prossima finestra, scegli le app social da mettere in pausa.",
+    "pt": "Na próxima janela, escolha os apps sociais que você quer pausar."
+  },
+  "Instagram, YouTube and more without Reels, Shorts or suggested posts": {
+    "de": "Instagram, YouTube und mehr ohne Reels, Shorts oder vorgeschlagene Beiträge",
+    "en": "Instagram, YouTube and more without Reels, Shorts or suggested posts",
+    "es": "Instagram, YouTube y más sin Reels, Shorts ni publicaciones sugeridas",
+    "fr": "Instagram, YouTube et plus, sans Reels, Shorts ni publications suggérées",
+    "it": "Instagram, YouTube e altro senza Reels, Shorts o post suggeriti",
+    "pt": "Instagram, YouTube e mais, sem Reels, Shorts ou posts sugeridos"
+  },
+  "Its website only works on computers. You can still pause the app with Screen Time.": {
+    "de": "Die Website funktioniert nur auf Computern. Du kannst die App trotzdem mit Bildschirmzeit pausieren.",
+    "en": "Its website only works on computers. You can still pause the app with Screen Time.",
+    "es": "Su sitio web solo funciona en computadoras. Aún puedes pausar la app con Tiempo en pantalla.",
+    "fr": "Son site ne fonctionne que sur ordinateur. Vous pouvez quand même mettre l’app en pause avec Temps d’écran.",
+    "it": "Il sito funziona solo su computer. Puoi comunque mettere in pausa l’app con Tempo di utilizzo.",
+    "pt": "O site só funciona em computadores. Você ainda pode pausar o app com o Tempo de Uso."
+  },
+  "Kept: messages, people you follow, profiles and search.": {
+    "de": "Bleibt: Nachrichten, Leute, denen du folgst, Profile und Suche.",
+    "en": "Kept: messages, people you follow, profiles and search.",
+    "es": "Se quedan: mensajes, quienes sigues, perfiles y búsqueda.",
+    "fr": "Conservés : messages, personnes suivies, profils et recherche.",
+    "it": "Restano: messaggi, persone che segui, profili e ricerca.",
+    "pt": "Mantidos: mensagens, quem você segue, perfis e busca."
+  },
+  "Kept: search, your saved channels and full videos.": {
+    "de": "Bleibt: Suche, deine gespeicherten Kanäle und ganze Videos.",
+    "en": "Kept: search, your saved channels and full videos.",
+    "es": "Se quedan: búsqueda, tus canales guardados y videos completos.",
+    "fr": "Conservés : recherche, vos chaînes enregistrées et vidéos complètes.",
+    "it": "Restano: ricerca, i tuoi canali salvati e video completi.",
+    "pt": "Mantidos: busca, seus canais salvos e vídeos completos."
+  },
+  "Less scrolling. More living.": {
+    "de": "Weniger scrollen. Mehr leben.",
+    "en": "Less scrolling. More living.",
+    "es": "Menos scroll. Más vida.",
+    "fr": "Moins de défilement. Plus de vie.",
+    "it": "Meno scroll. Più vita.",
+    "pt": "Menos rolagem. Mais vida."
+  },
+  "Lifetime": {
+    "de": "Lebenslang",
+    "en": "Lifetime",
+    "es": "De por vida",
+    "fr": "À vie",
+    "it": "A vita",
+    "pt": "Vitalício"
+  },
+  "Lifetime — yours to keep": {
+    "de": "Lebenslang — gehört für immer dir",
+    "en": "Lifetime — yours to keep",
+    "es": "De por vida — tuyo para siempre",
+    "fr": "À vie — à vous pour toujours",
+    "it": "A vita — tuo per sempre",
+    "pt": "Vitalício — seu para sempre"
+  },
+  "Lived": {
+    "de": "Gelebt",
+    "en": "Lived",
+    "es": "Vividas",
+    "fr": "Vécues",
+    "it": "Vissute",
+    "pt": "Vividas"
+  },
+  "MXN": {
+    "de": "MXN",
+    "en": "MXN",
+    "es": "MXN",
+    "fr": "MXN",
+    "it": "MXN",
+    "pt": "MXN"
+  },
+  "Make space for what matters.": {
+    "de": "Schaff Raum für das, was zählt.",
+    "en": "Make space for what matters.",
+    "es": "Haz espacio para lo que importa.",
+    "fr": "Faites de la place pour l’essentiel.",
+    "it": "Fai spazio a ciò che conta.",
+    "pt": "Abra espaço para o que importa."
+  },
+  "Manage subscription": {
+    "de": "Abo verwalten",
+    "en": "Manage subscription",
+    "es": "Gestionar suscripción",
+    "fr": "Gérer l’abonnement",
+    "it": "Gestisci abbonamento",
+    "pt": "Gerenciar assinatura"
+  },
+  "Monthly": {
+    "de": "Monatlich",
+    "en": "Monthly",
+    "es": "Mensual",
+    "fr": "Mensuel",
+    "it": "Mensile",
+    "pt": "Mensal"
+  },
+  "Monthly plan": {
+    "de": "Monatsplan",
+    "en": "Monthly plan",
+    "es": "Plan mensual",
+    "fr": "Formule mensuelle",
+    "it": "Piano mensile",
+    "pt": "Plano mensal"
+  },
+  "My channels": {
+    "de": "Meine Kanäle",
+    "en": "My channels",
+    "es": "Mis canales",
+    "fr": "Mes chaînes",
+    "it": "I miei canali",
+    "pt": "Meus canais"
+  },
+  "Ninety years is an illustration, not a prediction. Assumes 8 hours of sleep. Squares show equivalent time, not specific weeks.": {
+    "de": "Neunzig Jahre sind eine Veranschaulichung, keine Vorhersage. Annahme: 8 Stunden Schlaf. Die Quadrate zeigen gleichwertige Zeit, keine bestimmten Wochen.",
+    "en": "Ninety years is an illustration, not a prediction. Assumes 8 hours of sleep. Squares show equivalent time, not specific weeks.",
+    "es": "Noventa años es una ilustración, no una predicción. Supone 8 horas de sueño. Los cuadros muestran tiempo equivalente, no semanas concretas.",
+    "fr": "Quatre-vingt-dix ans est une illustration, pas une prédiction. Base : 8 heures de sommeil. Les carrés montrent un temps équivalent, pas des semaines précises.",
+    "it": "Novant’anni sono un’illustrazione, non una previsione. Si assumono 8 ore di sonno. I quadrati mostrano tempo equivalente, non settimane specifiche.",
+    "pt": "Noventa anos é uma ilustração, não uma previsão. Considera 8 horas de sono. Os quadrados mostram tempo equivalente, não semanas específicas."
+  },
+  "No more endless short videos.": {
+    "de": "Keine endlosen Kurzvideos mehr.",
+    "en": "No more endless short videos.",
+    "es": "Se acabaron los videos cortos infinitos.",
+    "fr": "Fini les vidéos courtes à l’infini.",
+    "it": "Basta video brevi senza fine.",
+    "pt": "Chega de vídeos curtos sem fim."
+  },
+  "No plan yet": {
+    "de": "Noch kein Plan",
+    "en": "No plan yet",
+    "es": "Aún sin plan",
+    "fr": "Pas encore de formule",
+    "it": "Nessun piano per ora",
+    "pt": "Ainda sem plano"
+  },
+  "No recommendations. Only what you choose.": {
+    "de": "Keine Empfehlungen. Nur, was du auswählst.",
+    "en": "No recommendations. Only what you choose.",
+    "es": "Sin recomendaciones. Solo lo que tú eliges.",
+    "fr": "Aucune recommandation. Seulement ce que vous choisissez.",
+    "it": "Nessun consiglio. Solo ciò che scegli tu.",
+    "pt": "Sem recomendações. Só o que você escolhe."
+  },
+  "Not available": {
+    "de": "Nicht verfügbar",
+    "en": "Not available",
+    "es": "No disponible",
+    "fr": "Non disponible",
+    "it": "Non disponibile",
+    "pt": "Indisponível"
+  },
+  "Not now": {
+    "de": "Nicht jetzt",
+    "en": "Not now",
+    "es": "Ahora no",
+    "fr": "Plus tard",
+    "it": "Non ora",
+    "pt": "Agora não"
+  },
+  "One-time payment. No subscription.": {
+    "de": "Einmalzahlung. Kein Abo.",
+    "en": "One-time payment. No subscription.",
+    "es": "Pago único. Sin suscripción.",
+    "fr": "Paiement unique. Aucun abonnement.",
+    "it": "Pagamento unico. Nessun abbonamento.",
+    "pt": "Pagamento único. Sem assinatura."
+  },
+  "Only accounts you follow. No autoplay, no endless feeds.": {
+    "de": "Nur Konten, denen du folgst. Kein Autoplay, keine endlosen Feeds.",
+    "en": "Only accounts you follow. No autoplay, no endless feeds.",
+    "es": "Solo cuentas que sigues. Sin reproducción automática ni feeds infinitos.",
+    "fr": "Seulement les comptes suivis. Ni lecture automatique, ni fil sans fin.",
+    "it": "Solo account che segui. Niente riproduzione automatica, niente feed infiniti.",
+    "pt": "Só contas que você segue. Sem reprodução automática nem feeds infinitos."
+  },
+  "Only app pausing is available": {
+    "de": "Nur das Pausieren von Apps ist verfügbar",
+    "en": "Only app pausing is available",
+    "es": "Solo está disponible pausar apps",
+    "fr": "Seule la pause des apps est disponible",
+    "it": "È disponibile solo la pausa delle app",
+    "pt": "Só a pausa de apps está disponível"
+  },
+  "Open %@": {
+    "de": "%@ öffnen",
+    "en": "Open %@",
+    "es": "Abrir %@",
+    "fr": "Ouvrir %@",
+    "it": "Apri %@",
+    "pt": "Abrir %@"
+  },
+  "Open Presente to see your people without the noise. Need to post? Tap “I need to post” in Presente.": {
+    "de": "Öffne Presente, um deine Leute ohne Lärm zu sehen. Musst du posten? Tippe in Presente auf „Ich muss etwas posten“.",
+    "en": "Open Presente to see your people without the noise. Need to post? Tap “I need to post” in Presente.",
+    "es": "Abre Presente para ver a tu gente sin ruido. ¿Necesitas publicar? Toca “Necesito publicar” en Presente.",
+    "fr": "Ouvrez Presente pour voir vos proches sans le bruit. Besoin de publier ? Touchez « Je dois publier » dans Presente.",
+    "it": "Apri Presente per vedere le tue persone senza rumore. Devi pubblicare? Tocca “Devo pubblicare” in Presente.",
+    "pt": "Abra o Presente para ver suas pessoas sem o ruído. Precisa postar? Toque em “Preciso postar” no Presente."
+  },
+  "Open a channel's page and save it here. You'll see its latest videos, in order, with no recommendations.": {
+    "de": "Öffne die Seite eines Kanals und speichere ihn hier. Du siehst seine neuesten Videos der Reihe nach, ohne Empfehlungen.",
+    "en": "Open a channel's page and save it here. You'll see its latest videos, in order, with no recommendations.",
+    "es": "Abre la página de un canal y guárdalo aquí. Verás sus últimos videos, en orden y sin recomendaciones.",
+    "fr": "Ouvrez la page d’une chaîne et enregistrez-la ici. Vous verrez ses dernières vidéos, dans l’ordre, sans recommandations.",
+    "it": "Apri la pagina di un canale e salvalo qui. Vedrai i suoi ultimi video, in ordine, senza consigli.",
+    "pt": "Abra a página de um canal e salve aqui. Você verá os vídeos mais recentes, em ordem, sem recomendações."
+  },
+  "Opens %@ without distractions": {
+    "de": "Öffnet %@ ohne Ablenkungen",
+    "en": "Opens %@ without distractions",
+    "es": "Abre %@ sin distracciones",
+    "fr": "Ouvre %@ sans distractions",
+    "it": "Apre %@ senza distrazioni",
+    "pt": "Abre %@ sem distrações"
+  },
+  "Optional pausing of the original apps, with 5 minutes to post": {
+    "de": "Optionales Pausieren der Original-Apps, mit 5 Minuten zum Posten",
+    "en": "Optional pausing of the original apps, with 5 minutes to post",
+    "es": "Pausa opcional de las apps originales, con 5 minutos para publicar",
+    "fr": "Pause facultative des apps d’origine, avec 5 minutes pour publier",
+    "it": "Pausa facoltativa delle app originali, con 5 minuti per pubblicare",
+    "pt": "Pausa opcional dos apps originais, com 5 minutos para postar"
+  },
+  "Optional. Uses Apple's Screen Time permission to pause the apps you choose, so you open them here, without the noise.": {
+    "de": "Optional. Nutzt Apples Bildschirmzeit-Berechtigung, um die gewählten Apps zu pausieren, damit du sie hier öffnest, ohne Lärm.",
+    "en": "Optional. Uses Apple's Screen Time permission to pause the apps you choose, so you open them here, without the noise.",
+    "es": "Opcional. Usa el permiso de Tiempo en pantalla de Apple para pausar las apps que elijas, así las abres aquí, sin ruido.",
+    "fr": "Facultatif. Utilise l’autorisation Temps d’écran d’Apple pour mettre en pause les apps choisies : vous les ouvrez ici, sans le bruit.",
+    "it": "Facoltativo. Usa il permesso Tempo di utilizzo di Apple per mettere in pausa le app che scegli, così le apri qui, senza rumore.",
+    "pt": "Opcional. Usa a permissão do Tempo de Uso da Apple para pausar os apps que você escolher, e você os abre aqui, sem ruído."
+  },
+  "Original apps": {
+    "de": "Original-Apps",
+    "en": "Original apps",
+    "es": "Apps originales",
+    "fr": "Apps d’origine",
+    "it": "App originali",
+    "pt": "Apps originais"
+  },
+  "Original apps not paused": {
+    "de": "Original-Apps nicht pausiert",
+    "en": "Original apps not paused",
+    "es": "Apps originales sin pausar",
+    "fr": "Apps d’origine non mises en pause",
+    "it": "App originali non in pausa",
+    "pt": "Apps originais não pausados"
+  },
+  "Original apps open for %lld:%@": {
+    "de": "Original-Apps noch %lld:%@ offen",
+    "en": "Original apps open for %lld:%@",
+    "es": "Apps originales abiertas por %lld:%@",
+    "fr": "Apps d’origine ouvertes encore %lld:%@",
+    "it": "App originali aperte per %lld:%@",
+    "pt": "Apps originais abertos por %lld:%@"
+  },
+  "Original apps paused": {
+    "de": "Original-Apps pausiert",
+    "en": "Original apps paused",
+    "es": "Apps originales en pausa",
+    "fr": "Apps d’origine en pause",
+    "it": "App originali in pausa",
+    "pt": "Apps originais pausados"
+  },
+  "Pause the original apps": {
+    "de": "Original-Apps pausieren",
+    "en": "Pause the original apps",
+    "es": "Pausar las apps originales",
+    "fr": "Mettre en pause les apps d’origine",
+    "it": "Metti in pausa le app originali",
+    "pt": "Pausar os apps originais"
+  },
+  "Pay once": {
+    "de": "Einmal zahlen",
+    "en": "Pay once",
+    "es": "Paga una vez",
+    "fr": "Payer une fois",
+    "it": "Paga una volta",
+    "pt": "Pague uma vez"
+  },
+  "People you follow, profiles and messages": {
+    "de": "Leute, denen du folgst, Profile und Nachrichten",
+    "en": "People you follow, profiles and messages",
+    "es": "Personas que sigues, perfiles y mensajes",
+    "fr": "Personnes suivies, profils et messages",
+    "it": "Persone che segui, profili e messaggi",
+    "pt": "Quem você segue, perfis e mensagens"
+  },
+  "Plans aren't available right now. Please try again later.": {
+    "de": "Pläne sind gerade nicht verfügbar. Bitte versuch es später erneut.",
+    "en": "Plans aren't available right now. Please try again later.",
+    "es": "Los planes no están disponibles ahora. Inténtalo más tarde.",
+    "fr": "Les formules ne sont pas disponibles pour le moment. Réessayez plus tard.",
+    "it": "I piani non sono disponibili al momento. Riprova più tardi.",
+    "pt": "Os planos não estão disponíveis agora. Tente novamente mais tarde."
+  },
+  "Platform": {
+    "de": "Plattform",
+    "en": "Platform",
+    "es": "Plataforma",
+    "fr": "Plateforme",
+    "it": "Piattaforma",
+    "pt": "Plataforma"
+  },
+  "Presente never asks for or stores your passwords. You sign in on the official websites and the session stays on this iPhone. No accounts, no analytics, no ads.": {
+    "de": "Presente fragt nie nach deinen Passwörtern und speichert sie nicht. Du meldest dich auf den offiziellen Websites an, die Sitzung bleibt auf diesem iPhone. Keine Konten, keine Analysen, keine Werbung.",
+    "en": "Presente never asks for or stores your passwords. You sign in on the official websites and the session stays on this iPhone. No accounts, no analytics, no ads.",
+    "es": "Presente nunca pide ni guarda tus contraseñas. Inicias sesión en los sitios oficiales y la sesión se queda en este iPhone. Sin cuentas, sin analíticas, sin anuncios.",
+    "fr": "Presente ne demande ni ne stocke jamais vos mots de passe. Vous vous connectez sur les sites officiels et la session reste sur cet iPhone. Pas de compte, pas d’analyse, pas de pub.",
+    "it": "Presente non chiede né salva mai le tue password. Accedi dai siti ufficiali e la sessione resta su questo iPhone. Niente account, niente analisi, niente pubblicità.",
+    "pt": "O Presente nunca pede nem guarda suas senhas. Você entra nos sites oficiais e a sessão fica neste iPhone. Sem contas, sem análises, sem anúncios."
+  },
+  "Privacy": {
+    "de": "Datenschutz",
+    "en": "Privacy",
+    "es": "Privacidad",
+    "fr": "Confidentialité",
+    "it": "Privacy",
+    "pt": "Privacidade"
+  },
+  "Privacy policy": {
+    "de": "Datenschutzerklärung",
+    "en": "Privacy policy",
+    "es": "Política de privacidad",
+    "fr": "Politique de confidentialité",
+    "it": "Informativa sulla privacy",
+    "pt": "Política de privacidade"
+  },
+  "Private by design: no accounts, no ads, nothing leaves your iPhone": {
+    "de": "Privat von Grund auf: keine Konten, keine Werbung, nichts verlässt dein iPhone",
+    "en": "Private by design: no accounts, no ads, nothing leaves your iPhone",
+    "es": "Privado por diseño: sin cuentas, sin anuncios, nada sale de tu iPhone",
+    "fr": "Confidentiel par nature : pas de compte, pas de pub, rien ne quitte votre iPhone",
+    "it": "Privato per scelta: niente account, niente pubblicità, nulla lascia il tuo iPhone",
+    "pt": "Privado por padrão: sem contas, sem anúncios, nada sai do seu iPhone"
+  },
+  "Recommended": {
+    "de": "Empfohlen",
+    "en": "Recommended",
+    "es": "Recomendados",
+    "fr": "Recommandations",
+    "it": "Consigliati",
+    "pt": "Recomendados"
+  },
+  "Reels": {
+    "de": "Reels",
+    "en": "Reels",
+    "es": "Reels",
+    "fr": "Reels",
+    "it": "Reels",
+    "pt": "Reels"
+  },
+  "Reels are turned off": {
+    "de": "Reels sind ausgeschaltet",
+    "en": "Reels are turned off",
+    "es": "Los Reels están desactivados",
+    "fr": "Les Reels sont désactivés",
+    "it": "I Reels sono disattivati",
+    "pt": "Os Reels estão desativados"
+  },
+  "Reload": {
+    "de": "Neu laden",
+    "en": "Reload",
+    "es": "Recargar",
+    "fr": "Actualiser",
+    "it": "Ricarica",
+    "pt": "Recarregar"
+  },
+  "Remove %@": {
+    "de": "%@ entfernen",
+    "en": "Remove %@",
+    "es": "Quitar %@",
+    "fr": "Retirer %@",
+    "it": "Rimuovi %@",
+    "pt": "Remover %@"
+  },
+  "Remove Explore": {
+    "de": "Explore entfernen",
+    "en": "Remove Explore",
+    "es": "Quitar Explore",
+    "fr": "Retirer Explore",
+    "it": "Rimuovi Explore",
+    "pt": "Remover Explore"
+  },
+  "Remove Reels and Shorts": {
+    "de": "Reels und Shorts entfernen",
+    "en": "Remove Reels and Shorts",
+    "es": "Quitar Reels y Shorts",
+    "fr": "Retirer Reels et Shorts",
+    "it": "Rimuovi Reels e Shorts",
+    "pt": "Remover Reels e Shorts"
+  },
+  "Removed: Reels, Explore and suggested posts.": {
+    "de": "Entfernt: Reels, Explore und vorgeschlagene Beiträge.",
+    "en": "Removed: Reels, Explore and suggested posts.",
+    "es": "Se van: Reels, Explore y publicaciones sugeridas.",
+    "fr": "Supprimés : Reels, Explore et publications suggérées.",
+    "it": "Rimossi: Reels, Explore e post suggeriti.",
+    "pt": "Removidos: Reels, Explore e posts sugeridos."
+  },
+  "Removed: Shorts, recommendations and autoplay.": {
+    "de": "Entfernt: Shorts, Empfehlungen und Autoplay.",
+    "en": "Removed: Shorts, recommendations and autoplay.",
+    "es": "Se van: Shorts, recomendaciones y reproducción automática.",
+    "fr": "Supprimés : Shorts, recommandations et lecture automatique.",
+    "it": "Rimossi: Shorts, consigli e riproduzione automatica.",
+    "pt": "Removidos: Shorts, recomendações e reprodução automática."
+  },
+  "Renews monthly. Cancel anytime.": {
+    "de": "Verlängert sich monatlich. Jederzeit kündbar.",
+    "en": "Renews monthly. Cancel anytime.",
+    "es": "Se renueva cada mes. Cancela cuando quieras.",
+    "fr": "Renouvellement mensuel. Résiliable à tout moment.",
+    "it": "Si rinnova ogni mese. Annulla quando vuoi.",
+    "pt": "Renova mensalmente. Cancele quando quiser."
+  },
+  "Renews on %@.": {
+    "de": "Verlängert sich am %@.",
+    "en": "Renews on %@.",
+    "es": "Se renueva el %@.",
+    "fr": "Renouvellement le %@.",
+    "it": "Si rinnova il %@.",
+    "pt": "Renova em %@."
+  },
+  "Restore purchases": {
+    "de": "Käufe wiederherstellen",
+    "en": "Restore purchases",
+    "es": "Restaurar compras",
+    "fr": "Restaurer les achats",
+    "it": "Ripristina acquisti",
+    "pt": "Restaurar compras"
+  },
+  "Save %@": {
+    "de": "%@ speichern",
+    "en": "Save %@",
+    "es": "Guardar %@",
+    "fr": "Enregistrer %@",
+    "it": "Salva %@",
+    "pt": "Salvar %@"
+  },
+  "Saved only on this iPhone.": {
+    "de": "Nur auf diesem iPhone gespeichert.",
+    "en": "Saved only on this iPhone.",
+    "es": "Guardado solo en este iPhone.",
+    "fr": "Enregistré uniquement sur cet iPhone.",
+    "it": "Salvato solo su questo iPhone.",
+    "pt": "Salvo apenas neste iPhone."
+  },
+  "Screen Time permission wasn't granted. You can try again anytime.": {
+    "de": "Bildschirmzeit-Berechtigung nicht erteilt. Du kannst es jederzeit erneut versuchen.",
+    "en": "Screen Time permission wasn't granted. You can try again anytime.",
+    "es": "No se concedió el permiso de Tiempo en pantalla. Puedes reintentarlo cuando quieras.",
+    "fr": "L’autorisation Temps d’écran n’a pas été accordée. Vous pouvez réessayer à tout moment.",
+    "it": "Il permesso Tempo di utilizzo non è stato concesso. Puoi riprovare quando vuoi.",
+    "pt": "A permissão do Tempo de Uso não foi concedida. Você pode tentar de novo quando quiser."
+  },
+  "Scrolling": {
+    "de": "Scrollen",
+    "en": "Scrolling",
+    "es": "Scroll",
+    "fr": "Défilement",
+    "it": "Scroll",
+    "pt": "Rolagem"
+  },
+  "Search": {
+    "de": "Suchen",
+    "en": "Search",
+    "es": "Buscar",
+    "fr": "Rechercher",
+    "it": "Cerca",
+    "pt": "Buscar"
+  },
+  "Search for what you came for.": {
+    "de": "Such nach dem, wofür du gekommen bist.",
+    "en": "Search for what you came for.",
+    "es": "Busca lo que viniste a buscar.",
+    "fr": "Trouvez ce que vous cherchiez.",
+    "it": "Trova ciò che cercavi.",
+    "pt": "Busque o que você veio buscar."
+  },
+  "Search, boards and profiles": {
+    "de": "Suche, Pinnwände und Profile",
+    "en": "Search, boards and profiles",
+    "es": "Búsqueda, tableros y perfiles",
+    "fr": "Recherche, tableaux et profils",
+    "it": "Ricerca, bacheche e profili",
+    "pt": "Busca, pastas e perfis"
+  },
+  "Search, your channels and full videos": {
+    "de": "Suche, deine Kanäle und ganze Videos",
+    "en": "Search, your channels and full videos",
+    "es": "Búsqueda, tus canales y videos completos",
+    "fr": "Recherche, vos chaînes et vidéos complètes",
+    "it": "Ricerca, i tuoi canali e video completi",
+    "pt": "Busca, seus canais e vídeos completos"
+  },
+  "Searching for people stays.": {
+    "de": "Die Personensuche bleibt.",
+    "en": "Searching for people stays.",
+    "es": "La búsqueda de personas se mantiene.",
+    "fr": "Chercher des personnes reste possible.",
+    "it": "La ricerca di persone resta.",
+    "pt": "A busca de pessoas continua."
+  },
+  "See Lifetime": {
+    "de": "Lebenslangen Zugang ansehen",
+    "en": "See Lifetime",
+    "es": "Ver acceso de por vida",
+    "fr": "Voir l’accès à vie",
+    "it": "Vedi l’accesso a vita",
+    "pt": "Ver acesso vitalício"
+  },
+  "See plans": {
+    "de": "Pläne ansehen",
+    "en": "See plans",
+    "es": "Ver planes",
+    "fr": "Voir les formules",
+    "it": "Vedi piani",
+    "pt": "Ver planos"
+  },
+  "Settings": {
+    "de": "Einstellungen",
+    "en": "Settings",
+    "es": "Ajustes",
+    "fr": "Réglages",
+    "it": "Impostazioni",
+    "pt": "Ajustes"
+  },
+  "Shorts": {
+    "de": "Shorts",
+    "en": "Shorts",
+    "es": "Shorts",
+    "fr": "Shorts",
+    "it": "Shorts",
+    "pt": "Shorts"
+  },
+  "Shorts are turned off": {
+    "de": "Shorts sind ausgeschaltet",
+    "en": "Shorts are turned off",
+    "es": "Los Shorts están desactivados",
+    "fr": "Les Shorts sont désactivés",
+    "it": "Gli Shorts sono disattivati",
+    "pt": "Os Shorts estão desativados"
+  },
+  "Sign out": {
+    "de": "Abmelden",
+    "en": "Sign out",
+    "es": "Cerrar sesión",
+    "fr": "Se déconnecter",
+    "it": "Esci",
+    "pt": "Sair"
+  },
+  "Sign out of all networks": {
+    "de": "Von allen Netzwerken abmelden",
+    "en": "Sign out of all networks",
+    "es": "Cerrar sesión en todas las redes",
+    "fr": "Se déconnecter de tous les réseaux",
+    "it": "Esci da tutti i social",
+    "pt": "Sair de todas as redes"
+  },
+  "Sign out of every network inside Presente?": {
+    "de": "Von allen Netzwerken in Presente abmelden?",
+    "en": "Sign out of every network inside Presente?",
+    "es": "¿Cerrar sesión en todas las redes dentro de Presente?",
+    "fr": "Se déconnecter de tous les réseaux dans Presente ?",
+    "it": "Uscire da tutti i social in Presente?",
+    "pt": "Sair de todas as redes no Presente?"
+  },
+  "Signed out": {
+    "de": "Abgemeldet",
+    "en": "Signed out",
+    "es": "Sesión cerrada",
+    "fr": "Déconnecté",
+    "it": "Disconnesso",
+    "pt": "Sessão encerrada"
+  },
+  "Sleep": {
+    "de": "Schlaf",
+    "en": "Sleep",
+    "es": "Sueño",
+    "fr": "Sommeil",
+    "it": "Sonno",
+    "pt": "Sono"
+  },
+  "Start free trial": {
+    "de": "Gratis testen",
+    "en": "Start free trial",
+    "es": "Empezar prueba gratis",
+    "fr": "Commencer l’essai gratuit",
+    "it": "Inizia la prova gratuita",
+    "pt": "Começar teste grátis"
+  },
+  "Step %lld of %lld": {
+    "de": "Schritt %lld von %lld",
+    "en": "Step %lld of %lld",
+    "es": "Paso %lld de %lld",
+    "fr": "Étape %lld sur %lld",
+    "it": "Passo %lld di %lld",
+    "pt": "Passo %lld de %lld"
+  },
+  "Subscribe for %@ per month": {
+    "de": "Für %@ pro Monat abonnieren",
+    "en": "Subscribe for %@ per month",
+    "es": "Suscribirme por %@ al mes",
+    "fr": "S’abonner pour %@ par mois",
+    "it": "Abbonati a %@ al mese",
+    "pt": "Assinar por %@ por mês"
+  },
+  "Suggested for you": {
+    "de": "Vorschläge für dich",
+    "en": "Suggested for you",
+    "es": "Sugerido para ti",
+    "fr": "Suggestions pour vous",
+    "it": "Suggeriti per te",
+    "pt": "Sugestões para você"
+  },
+  "Take back my time": {
+    "de": "Meine Zeit zurückholen",
+    "en": "Take back my time",
+    "es": "Recuperar mi tiempo",
+    "fr": "Reprendre mon temps",
+    "it": "Riprendi il mio tempo",
+    "pt": "Recuperar meu tempo"
+  },
+  "Terms": {
+    "de": "Nutzungsbedingungen",
+    "en": "Terms",
+    "es": "Términos",
+    "fr": "Conditions",
+    "it": "Termini",
+    "pt": "Termos"
+  },
+  "That section is hidden to keep things calm": {
+    "de": "Dieser Bereich ist ausgeblendet, damit es ruhig bleibt",
+    "en": "That section is hidden to keep things calm",
+    "es": "Esa sección está oculta para mantener la calma",
+    "fr": "Cette section est masquée pour garder le calme",
+    "it": "Questa sezione è nascosta per mantenere la calma",
+    "pt": "Essa seção está oculta para manter a calma"
+  },
+  "The filter couldn't be prepared": {
+    "de": "Der Filter konnte nicht vorbereitet werden",
+    "en": "The filter couldn't be prepared",
+    "es": "No se pudo preparar el filtro",
+    "fr": "Le filtre n’a pas pu être préparé",
+    "it": "Non è stato possibile preparare il filtro",
+    "pt": "Não foi possível preparar o filtro"
+  },
+  "The page couldn't be loaded.": {
+    "de": "Die Seite konnte nicht geladen werden.",
+    "en": "The page couldn't be loaded.",
+    "es": "No se pudo cargar la página.",
+    "fr": "La page n’a pas pu être chargée.",
+    "it": "Impossibile caricare la pagina.",
+    "pt": "Não foi possível carregar a página."
+  },
+  "The purchase didn't go through. You weren't charged.": {
+    "de": "Der Kauf wurde nicht abgeschlossen. Dir wurde nichts berechnet.",
+    "en": "The purchase didn't go through. You weren't charged.",
+    "es": "La compra no se completó. No se te cobró.",
+    "fr": "L’achat n’a pas abouti. Vous n’avez pas été facturé.",
+    "it": "L’acquisto non è andato a buon fine. Non ti è stato addebitato nulla.",
+    "pt": "A compra não foi concluída. Você não foi cobrado."
+  },
+  "The rest can wait. Enjoy your day.": {
+    "de": "Der Rest kann warten. Genieß deinen Tag.",
+    "en": "The rest can wait. Enjoy your day.",
+    "es": "Lo demás puede esperar. Disfruta tu día.",
+    "fr": "Le reste peut attendre. Bonne journée.",
+    "it": "Il resto può aspettare. Goditi la giornata.",
+    "pt": "O resto pode esperar. Aproveite o seu dia."
+  },
+  "There's a problem with your payment method. Update it to keep access.": {
+    "de": "Es gibt ein Problem mit deiner Zahlungsmethode. Aktualisiere sie, um den Zugang zu behalten.",
+    "en": "There's a problem with your payment method. Update it to keep access.",
+    "es": "Hay un problema con tu método de pago. Actualízalo para mantener el acceso.",
+    "fr": "Un problème est survenu avec votre moyen de paiement. Mettez-le à jour pour garder l’accès.",
+    "it": "C’è un problema con il tuo metodo di pagamento. Aggiornalo per mantenere l’accesso.",
+    "pt": "Há um problema com sua forma de pagamento. Atualize-a para manter o acesso."
+  },
+  "This app is paused": {
+    "de": "Diese App ist pausiert",
+    "en": "This app is paused",
+    "es": "Esta app está en pausa",
+    "fr": "Cette app est en pause",
+    "it": "Questa app è in pausa",
+    "pt": "Este app está pausado"
+  },
+  "This purchase was refunded.": {
+    "de": "Dieser Kauf wurde erstattet.",
+    "en": "This purchase was refunded.",
+    "es": "Esta compra fue reembolsada.",
+    "fr": "Cet achat a été remboursé.",
+    "it": "Questo acquisto è stato rimborsato.",
+    "pt": "Esta compra foi reembolsada."
+  },
+  "This week": {
+    "de": "Diese Woche",
+    "en": "This week",
+    "es": "Esta semana",
+    "fr": "Cette semaine",
+    "it": "Questa settimana",
+    "pt": "Esta semana"
+  },
+  "This year": {
+    "de": "Dieses Jahr",
+    "en": "This year",
+    "es": "Este año",
+    "fr": "Cette année",
+    "it": "Quest’anno",
+    "pt": "Este ano"
+  },
+  "To be safe, we don't open %@ without filters. Close and try again.": {
+    "de": "Sicherheitshalber öffnen wir %@ nicht ohne Filter. Schließe und versuch es erneut.",
+    "en": "To be safe, we don't open %@ without filters. Close and try again.",
+    "es": "Por seguridad, no abrimos %@ sin filtros. Cierra e inténtalo de nuevo.",
+    "fr": "Par précaution, nous n’ouvrons pas %@ sans filtres. Fermez et réessayez.",
+    "it": "Per sicurezza, non apriamo %@ senza filtri. Chiudi e riprova.",
+    "pt": "Por segurança, não abrimos %@ sem filtros. Feche e tente novamente."
+  },
+  "Try again": {
+    "de": "Erneut versuchen",
+    "en": "Try again",
+    "es": "Reintentar",
+    "fr": "Réessayer",
+    "it": "Riprova",
+    "pt": "Tentar novamente"
+  },
+  "Version %@": {
+    "de": "Version %@",
+    "en": "Version %@",
+    "es": "Versión %@",
+    "fr": "Version %@",
+    "it": "Versione %@",
+    "pt": "Versão %@"
+  },
+  "We couldn't reach the App Store. Check your connection and try again.": {
+    "de": "Wir konnten den App Store nicht erreichen. Prüfe deine Verbindung und versuch es erneut.",
+    "en": "We couldn't reach the App Store. Check your connection and try again.",
+    "es": "No pudimos conectar con la App Store. Revisa tu conexión e inténtalo de nuevo.",
+    "fr": "Impossible de joindre l’App Store. Vérifiez votre connexion et réessayez.",
+    "it": "Non riusciamo a raggiungere l’App Store. Controlla la connessione e riprova.",
+    "pt": "Não conseguimos acessar a App Store. Verifique sua conexão e tente novamente."
+  },
+  "We couldn't restore your purchases. Please try again.": {
+    "de": "Wir konnten deine Käufe nicht wiederherstellen. Bitte versuch es erneut.",
+    "en": "We couldn't restore your purchases. Please try again.",
+    "es": "No pudimos restaurar tus compras. Inténtalo de nuevo.",
+    "fr": "Impossible de restaurer vos achats. Veuillez réessayer.",
+    "it": "Non siamo riusciti a ripristinare i tuoi acquisti. Riprova.",
+    "pt": "Não conseguimos restaurar suas compras. Tente novamente."
+  },
+  "We couldn't schedule the temporary unlock. The apps are still paused.": {
+    "de": "Wir konnten die vorübergehende Entsperrung nicht planen. Die Apps bleiben pausiert.",
+    "en": "We couldn't schedule the temporary unlock. The apps are still paused.",
+    "es": "No pudimos programar el desbloqueo temporal. Las apps siguen en pausa.",
+    "fr": "Impossible de programmer le déverrouillage temporaire. Les apps restent en pause.",
+    "it": "Non siamo riusciti a programmare lo sblocco temporaneo. Le app restano in pausa.",
+    "pt": "Não conseguimos agendar o desbloqueio temporário. Os apps continuam pausados."
+  },
+  "We couldn't verify the purchase with Apple. Nothing was unlocked.": {
+    "de": "Wir konnten den Kauf nicht bei Apple bestätigen. Nichts wurde freigeschaltet.",
+    "en": "We couldn't verify the purchase with Apple. Nothing was unlocked.",
+    "es": "No pudimos verificar la compra con Apple. No se desbloqueó nada.",
+    "fr": "Impossible de vérifier l’achat auprès d’Apple. Rien n’a été débloqué.",
+    "it": "Non siamo riusciti a verificare l’acquisto con Apple. Non è stato sbloccato nulla.",
+    "pt": "Não conseguimos verificar a compra com a Apple. Nada foi liberado."
+  },
+  "We didn't find any purchases for this Apple Account.": {
+    "de": "Wir haben keine Käufe für diesen Apple Account gefunden.",
+    "en": "We didn't find any purchases for this Apple Account.",
+    "es": "No encontramos compras para esta cuenta de Apple.",
+    "fr": "Aucun achat trouvé pour ce compte Apple.",
+    "it": "Non abbiamo trovato acquisti per questo Account Apple.",
+    "pt": "Não encontramos compras para esta Conta Apple."
+  },
+  "We'll open the original app so you can post.": {
+    "de": "Wir öffnen die Original-App, damit du posten kannst.",
+    "en": "We'll open the original app so you can post.",
+    "es": "Abriremos la app original para que puedas publicar.",
+    "fr": "L’app d’origine va s’ouvrir pour que vous puissiez publier.",
+    "it": "Apriremo l’app originale così puoi pubblicare.",
+    "pt": "Vamos abrir o app original para você postar."
+  },
+  "You": {
+    "de": "Du",
+    "en": "You",
+    "es": "Tú",
+    "fr": "Vous",
+    "it": "Tu",
+    "pt": "Você"
+  },
+  "You'll have 5 minutes in the original app. Then it pauses again on its own.": {
+    "de": "Du hast 5 Minuten in der Original-App. Danach pausiert sie automatisch wieder.",
+    "en": "You'll have 5 minutes in the original app. Then it pauses again on its own.",
+    "es": "Tendrás 5 minutos en la app original. Después se vuelve a pausar sola.",
+    "fr": "Vous aurez 5 minutes dans l’app d’origine. Ensuite, elle se remet en pause toute seule.",
+    "it": "Avrai 5 minuti nell’app originale. Poi tornerà in pausa da sola.",
+    "pt": "Você terá 5 minutos no app original. Depois ele pausa de novo sozinho."
+  },
+  "You're all caught up.": {
+    "de": "Du bist auf dem neuesten Stand.",
+    "en": "You're all caught up.",
+    "es": "Estás al día.",
+    "fr": "Vous êtes à jour.",
+    "it": "Sei in pari.",
+    "pt": "Você está em dia."
+  },
+  "You're offline. Check your connection and try again.": {
+    "de": "Du bist offline. Prüfe deine Verbindung und versuch es erneut.",
+    "en": "You're offline. Check your connection and try again.",
+    "es": "No tienes conexión. Revisa tu conexión e inténtalo de nuevo.",
+    "fr": "Vous êtes hors ligne. Vérifiez votre connexion et réessayez.",
+    "it": "Sei offline. Controlla la connessione e riprova.",
+    "pt": "Você está offline. Verifique sua conexão e tente novamente."
+  },
+  "Your age": {
+    "de": "Dein Alter",
+    "en": "Your age",
+    "es": "Tu edad",
+    "fr": "Votre âge",
+    "it": "La tua età",
+    "pt": "Sua idade"
+  },
+  "Your answer stays on this iPhone.": {
+    "de": "Deine Antwort bleibt auf diesem iPhone.",
+    "en": "Your answer stays on this iPhone.",
+    "es": "Tu respuesta se queda en este iPhone.",
+    "fr": "Votre réponse reste sur cet iPhone.",
+    "it": "La tua risposta resta su questo iPhone.",
+    "pt": "Sua resposta fica neste iPhone."
+  },
+  "Your channels": {
+    "de": "Deine Kanäle",
+    "en": "Your channels",
+    "es": "Tus canales",
+    "fr": "Vos chaînes",
+    "it": "I tuoi canali",
+    "pt": "Seus canais"
+  },
+  "Your communities, chat and search": {
+    "de": "Deine Communitys, Chat und Suche",
+    "en": "Your communities, chat and search",
+    "es": "Tus comunidades, chat y búsqueda",
+    "fr": "Vos communautés, le chat et la recherche",
+    "it": "Le tue community, chat e ricerca",
+    "pt": "Suas comunidades, chat e busca"
+  },
+  "Your filters are paused.": {
+    "de": "Deine Filter sind pausiert.",
+    "en": "Your filters are paused.",
+    "es": "Tus filtros están en pausa.",
+    "fr": "Vos filtres sont en pause.",
+    "it": "I tuoi filtri sono in pausa.",
+    "pt": "Seus filtros estão pausados."
+  },
+  "Your first charge is on %@.": {
+    "de": "Deine erste Abbuchung erfolgt am %@.",
+    "en": "Your first charge is on %@.",
+    "es": "Tu primer cargo será el %@.",
+    "fr": "Premier prélèvement le %@.",
+    "it": "Il primo addebito sarà il %@.",
+    "pt": "Sua primeira cobrança será em %@."
+  },
+  "Your life in weeks": {
+    "de": "Dein Leben in Wochen",
+    "en": "Your life in weeks",
+    "es": "Tu vida en semanas",
+    "fr": "Votre vie en semaines",
+    "it": "La tua vita in settimane",
+    "pt": "Sua vida em semanas"
+  },
+  "Your monthly plan won't be cancelled automatically": {
+    "de": "Dein Monatsplan wird nicht automatisch gekündigt",
+    "en": "Your monthly plan won't be cancelled automatically",
+    "es": "Tu plan mensual no se cancelará automáticamente",
+    "fr": "Votre formule mensuelle ne sera pas résiliée automatiquement",
+    "it": "Il tuo piano mensile non verrà annullato automaticamente",
+    "pt": "Seu plano mensal não será cancelado automaticamente"
+  },
+  "Your monthly subscription is still active and will keep renewing. Cancel it if you don't want to be charged again.": {
+    "de": "Dein Monatsabo ist noch aktiv und verlängert sich weiter. Kündige es, wenn dir nichts mehr berechnet werden soll.",
+    "en": "Your monthly subscription is still active and will keep renewing. Cancel it if you don't want to be charged again.",
+    "es": "Tu suscripción mensual sigue activa y se seguirá renovando. Cancélala si no quieres que se te vuelva a cobrar.",
+    "fr": "Votre abonnement mensuel est toujours actif et continuera de se renouveler. Résiliez-le si vous ne voulez plus être facturé.",
+    "it": "Il tuo abbonamento mensile è ancora attivo e continuerà a rinnovarsi. Annullalo se non vuoi altri addebiti.",
+    "pt": "Sua assinatura mensal continua ativa e seguirá sendo renovada. Cancele se não quiser ser cobrado novamente."
+  },
+  "Your network, messages and jobs": {
+    "de": "Dein Netzwerk, Nachrichten und Jobs",
+    "en": "Your network, messages and jobs",
+    "es": "Tu red, mensajes y empleos",
+    "fr": "Votre réseau, messages et emplois",
+    "it": "La tua rete, messaggi e lavoro",
+    "pt": "Sua rede, mensagens e vagas"
+  },
+  "Your networks": {
+    "de": "Deine Netzwerke",
+    "en": "Your networks",
+    "es": "Tus redes",
+    "fr": "Vos réseaux",
+    "it": "I tuoi social",
+    "pt": "Suas redes"
+  },
+  "Your plan": {
+    "de": "Dein Plan",
+    "en": "Your plan",
+    "es": "Tu plan",
+    "fr": "Votre formule",
+    "it": "Il tuo piano",
+    "pt": "Seu plano"
+  },
+  "Your plan has ended.": {
+    "de": "Dein Plan ist abgelaufen.",
+    "en": "Your plan has ended.",
+    "es": "Tu plan terminó.",
+    "fr": "Votre formule a pris fin.",
+    "it": "Il tuo piano è terminato.",
+    "pt": "Seu plano terminou."
+  },
+  "Your purchase is pending approval. It will activate once it's confirmed.": {
+    "de": "Dein Kauf wartet auf Genehmigung. Er wird aktiviert, sobald er bestätigt ist.",
+    "en": "Your purchase is pending approval. It will activate once it's confirmed.",
+    "es": "Tu compra está pendiente de aprobación. Se activará cuando se confirme.",
+    "fr": "Votre achat est en attente d’approbation. Il sera activé une fois confirmé.",
+    "it": "Il tuo acquisto è in attesa di approvazione. Si attiverà una volta confermato.",
+    "pt": "Sua compra está aguardando aprovação. Ela será ativada quando for confirmada."
+  },
+  "Your social apps. Without the noise.": {
+    "de": "Deine Social Apps. Ohne den Lärm.",
+    "en": "Your social apps. Without the noise.",
+    "es": "Tus redes sociales. Sin el ruido.",
+    "fr": "Vos réseaux sociaux. Sans le bruit.",
+    "it": "I tuoi social. Senza il rumore.",
+    "pt": "Suas redes sociais. Sem o ruído."
+  },
+  "Your space is clear.": {
+    "de": "Dein Raum ist frei.",
+    "en": "Your space is clear.",
+    "es": "Tu espacio está despejado.",
+    "fr": "Votre espace est libre.",
+    "it": "Il tuo spazio è libero.",
+    "pt": "Seu espaço está livre."
+  },
+  "Your space is ready.": {
+    "de": "Dein Raum ist bereit.",
+    "en": "Your space is ready.",
+    "es": "Tu espacio está listo.",
+    "fr": "Votre espace est prêt.",
+    "it": "Il tuo spazio è pronto.",
+    "pt": "Seu espaço está pronto."
+  },
+  "Your time is worth more.": {
+    "de": "Deine Zeit ist mehr wert.",
+    "en": "Your time is worth more.",
+    "es": "Tu tiempo vale más.",
+    "fr": "Votre temps vaut mieux.",
+    "it": "Il tuo tempo vale di più.",
+    "pt": "Seu tempo vale mais."
+  },
+  "Your trial ends on %@. You won't be charged.": {
+    "de": "Deine Testphase endet am %@. Dir wird nichts berechnet.",
+    "en": "Your trial ends on %@. You won't be charged.",
+    "es": "Tu prueba termina el %@. No se te cobrará.",
+    "fr": "Votre essai se termine le %@. Vous ne serez pas facturé.",
+    "it": "La prova termina il %@. Non ti verrà addebitato nulla.",
+    "pt": "Seu teste termina em %@. Você não será cobrado."
+  },
+  "afternoons with family and friends": {
+    "de": "Nachmittage mit Familie und Freunden",
+    "en": "afternoons with family and friends",
+    "es": "tardes con familia y amigos",
+    "fr": "après-midi en famille et entre amis",
+    "it": "pomeriggi con famiglia e amici",
+    "pt": "tardes com família e amigos"
+  },
+  "books read": {
+    "de": "gelesene Bücher",
+    "en": "books read",
+    "es": "libros leídos",
+    "fr": "livres lus",
+    "it": "libri letti",
+    "pt": "livros lidos"
+  },
+  "full nights of rest": {
+    "de": "erholsame Nächte",
+    "en": "full nights of rest",
+    "es": "noches completas de descanso",
+    "fr": "nuits complètes de repos",
+    "it": "notti intere di riposo",
+    "pt": "noites inteiras de descanso"
+  },
+  "language lessons": {
+    "de": "Sprachlektionen",
+    "en": "language lessons",
+    "es": "clases de idiomas",
+    "fr": "leçons de langue",
+    "it": "lezioni di lingua",
+    "pt": "aulas de idiomas"
+  }
+}
