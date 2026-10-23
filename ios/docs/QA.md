@@ -1,82 +1,109 @@
-# Plan de pruebas y validación
+# Plan de pruebas y validación (v2)
 
-Marca cada casilla con fecha, versión de iOS y resultado. **Una función no se anuncia hasta que su fila está en verde en un iPhone real.**
+Marca cada casilla con fecha, versión de iOS y resultado. **Una función no se anuncia hasta que su fila está en verde en un iPhone real.** Nunca se inventan resultados: lo que no se probó dice "pendiente".
 
-## A. Automáticas (en cada cambio)
+## A. Automáticas (CI de GitHub en cada cambio)
 
-| Suite | Comando | Cubre | Último resultado |
+| Suite | Dónde | Cubre | Último resultado |
 |---|---|---|---|
-| PresenteCore | `cd Packages/PresenteCore && swift test` | Política de navegación (Reels, Explore, inicio, Shorts, youtu.be, dominios externos, login), opciones apagadas, script sin acceso a credenciales, matemática de semanas, proyección a 10 años, ventana de desbloqueo (mínimo de 15 min con margen, medianoche), estados de suscripción, canales guardados | ✅ 32/32 (Swift 6.1.3, Linux) |
-| Filtro web | `cd web-tests && npm test` | Inicio en "Siguiendo", Reels oculto en navegación, sugerencias ocultas (también las que llegan con scroll), SPA hacia Reels, Explore → búsqueda, reel de amigo → publicación, DMs intactos, opción apagada, script inactivo en Facebook; YouTube: inicio tranquilo + buscador, Shorts ocultos, `/shorts/id` → video, relacionados/pantalla final ocultos, autoplay apagado y revertido, video elegido sí abre; protección contra bucles de redirección | ✅ 19/19 (Chromium 1194) |
-| StoreKit | `xcodebuild test -scheme Presente …` | Producto y precio $39 MXN mensual, sin compra = bloqueado, compra activa, expiración, reembolso, renovación cancelada sigue activa hasta vencer, restaurar sin compra, compra fallida | ✅ 9/9 (Xcode, macOS 15, Simulador iPhone — CI de GitHub) |
+| PresenteCore | Linux, Swift 6.1 · también en Xcode | Rutas y redirecciones de las 9 redes, opciones apagadas, script sin acceso a credenciales, niveles de soporte honestos, semanas de vida (suma exacta, sueño/scroll/libre), proyección semana/año/10 años y equivalencias, ventana de desbloqueo (mínimo de 15 min con margen, medianoche), acceso mensual/prueba/Lifetime/reembolso, reglas anti-compra-duplicada, fecha del primer cobro, protección contra bucles | ✅ 47/47 |
+| Filtro web | Chromium (Playwright) contra páginas de prueba | Instagram (Siguiendo, Reels, sugerencias, Explore→búsqueda, reel→publicación, DMs, SPA), YouTube (inicio tranquilo, Shorts, relacionados, autoplay), X (pestaña Siguiendo sin tocar botones de seguir, tendencias, tope de feed), mensajes que no escapan a Reels/Explore, TikTok, Reddit, Pinterest, Facebook | ✅ 26/26 |
+| Traducciones | `scripts/l10n.py check` | 192 cadenas × en, es, fr, de, pt, it; marcadores de formato idénticos; ninguna cadena del código sin traducir | ✅ completas |
+| Xcode 16 + StoreKit | macOS 15, Simulador | Compila app + 2 extensiones; productos y precios ($39 mensual con 7 días gratis, $499 Lifetime); elegibilidad; inicio de prueba; cobro después de la prueba (renovación forzada); cancelación de renovación; expiración; reembolso de suscripción y de Lifetime; Lifetime para siempre; Lifetime después de suscripción (aviso + acceso tras expirar); restaurar; restaurar sin compras; compra fallida; compra pendiente ("pedir compra"); navegador filtrado creable para las 9 redes | ✅ 16/16 (+ núcleo) |
+| Sin cuenta, Xcode más reciente | macOS 26, Xcode 26.6, firma por defecto | Compila como en una Mac sin Apple Developer | ✅ |
+| Capturas | Simulador, modo demo | 8 pantallas × 6 idiomas, modo oscuro, iPhone pequeño | ver `docs/evidence/screenshots/` |
+| Sitios reales | WebKit (motor de Safari), sin sesión | Ver tabla E | ✅ ejecutado (ver resultados) |
 
-> Las pruebas web usan páginas que imitan la estructura de Instagram/YouTube. Garantizan que el motor hace lo que dicen las reglas, **no** que las reglas coincidan con el HTML real de hoy. Eso lo valida la sección C.
+> Las pruebas con páginas de prueba garantizan que el motor hace lo que dicen las reglas, **no** que las reglas coincidan con el HTML real de hoy; eso lo cubren las secciones E y F.
+> StoreKit Testing simula al App Store: **no prueba pagos en producción**. Eso requiere Sandbox/TestFlight (sección G).
 
 ## B. Onboarding (iPhone o Simulador)
 
 | # | Paso | Esperado | ✓ |
 |---|---|---|---|
-| B1 | Instalar limpio y abrir | Pantalla "Tu tiempo es tuyo." | |
-| B2 | Comenzar → semanas | Cuadrícula de 90×52, leyenda, frase "Si sigues dedicando 120 minutos…, equivalen a 304 días completos durante los próximos 10 años." | |
-| B3 | Cambiar edad y minutos | La cuadrícula y la frase cambian al instante; suma de categorías constante | |
-| B4 | Continuar → filtros | Tres opciones activadas | |
-| B5 | Eliminar distracciones → activación | Tarjeta de Screen Time + oferta con precio del App Store, qué incluye, cuándo se cobra y cómo cancelar | |
-| B6 | Tiempo total sin permisos | < 60 s | |
-| B7 | Modo oscuro, Dynamic Type XXL, VoiceOver | Legible, sin cortes; VoiceOver lee el resumen de la cuadrícula | |
-| B8 | Idioma del iPhone en inglés | Textos en inglés | |
+| B1 | Instalar limpio | Pantalla 1 "Your social apps. Without the noise." con comparación Antes/Después que se mueve sola y se puede arrastrar; Instagram/YouTube | |
+| B2 | Pantalla 2 | Valor inicial 2 h; −/+ de 5 en 5 min (hasta 12 h), deslizador, atajos 30 min…5 h+ | |
+| B3 | Pantalla 3 | Edad editable; cuadrícula de 90×52 que se llena en orden (vivido, sueño, scroll, libre); leyenda con semanas | |
+| B4 | Pantalla 4 | Con 2 h: 14 h/semana, 731 h y 30 días al año, 304 días en 10 años; "si recuperaras la mitad": 60 libros, 487 entrenamientos, 730 lecciones, 121 tardes, 45 noches | |
+| B5 | Pantalla 5 | Dos planes, ninguno preseleccionado; condiciones de cobro cambian según el plan; Restaurar, Términos, Privacidad; "Not now" | |
+| B6 | Tiempo sin permisos ni compra | < 60 s | |
+| B7 | Modo oscuro, Dynamic Type XXL, VoiceOver | Legible, sin cortes; VoiceOver lee resúmenes de la comparación y de la cuadrícula | |
+| B8 | iPhone en es, fr, de, pt, it | Todo traducido, sin textos cortados | |
 
-## C. Filtros contra los sitios reales (iPhone, con sesión iniciada)
-
-Repetir **semanalmente** y después de cada actualización de iOS.
+## C. Pantalla principal y Configuración
 
 | # | Acción | Esperado | ✓ |
 |---|---|---|---|
-| C1 | Abrir Instagram e iniciar sesión | Login oficial funciona; Presente nunca muestra su propio campo de contraseña | |
-| C2 | Inicio | Solo cuentas seguidas (`?variant=following`); sin "Sugerencias para ti" | |
-| C3 | Barra inferior | Sin Reels; Inicio, Buscar, Mensajes y Perfil visibles | |
-| C4 | Tocar Buscar | Abre búsqueda de perfiles, sin cuadrícula de Explore | |
-| C5 | Abrir `instagram.com/reels/` desde un enlace | Regresa al inicio con aviso "Reels está desactivado" | |
-| C6 | Abrir un reel enviado por DM | Se ve como publicación individual, sin deslizar a otros reels | |
-| C7 | Mensajes directos | Lista y conversación funcionan; se pueden enviar mensajes | |
-| C8 | Perfil de otra cuenta | Visible con sus publicaciones | |
-| C9 | Abrir YouTube | Inicio sin recomendaciones; buscador propio | |
-| C10 | Buscar "receta" | Resultados sin Shorts | |
-| C11 | Reproducir un video | Solo empieza al tocar; sin relacionados debajo | |
-| C12 | Dejar terminar el video | No empieza otro solo (o se revierte con aviso) | |
-| C13 | Abrir un enlace `youtube.com/shorts/…` | Se abre como video normal | |
-| C14 | Canal → Mis canales → Guardar | Aparece en la lista y abre `/@canal/videos` | |
-| C15 | Iniciar sesión en Google | **Esperado: Google lo bloquea.** Documentar el resultado | |
-| C16 | Enlace externo en una bio | Se abre en Safari | |
-| C17 | Modo avión | Mensaje "Sin conexión" + Reintentar; sin cierre | |
-| C18 | Apagar cada opción en Configuración y reabrir | Solo desaparece el filtro de esa opción | |
+| C1 | Con plan | "Your space is clear.", estado de filtros y de apps originales, redes activas | |
+| C2 | Sin plan | "Your space is ready." + "See plans"; tocar una red abre los planes | |
+| C3 | Configuración › Your networks | Activar X/Reddit… aparecen en inicio con etiqueta Beta; Snapchat deshabilitado con explicación | |
+| C4 | Sign out of all networks | Borra sesiones | |
 
-## D. Control de apps (solo iPhone real)
+## D. Mensajería (iPhone, con sesión)
 
 | # | Acción | Esperado | ✓ |
 |---|---|---|---|
-| D1 | Permitir Tiempo en pantalla | Diálogo del sistema; estado aprobado | |
-| D2 | Elegir Instagram y YouTube | "Apps elegidas: 2"; inicio dice "Apps originales en pausa" | |
-| D3 | Abrir Instagram nativo | Pantalla "Esta app está en pausa" de Presente | |
-| D4 | Necesito publicar → Abrir Instagram | Instagram abre sin bloqueo; contador en el inicio de Presente | |
-| D5 | Esperar 5 min **sin abrir Presente** | Instagram vuelve a bloquearse solo (extensión) | |
-| D6 | Necesito publicar, cerrar Presente a la fuerza, esperar 5 min | Se vuelve a bloquear | |
-| D7 | Necesito publicar a las 23:58 | Se vuelve a bloquear a las 00:03 (no mañana) | |
-| D8 | Reiniciar el iPhone con bloqueo activo | Sigue bloqueado | |
-| D9 | Apagar el interruptor | Apps libres de inmediato | |
-| D10 | Revocar permiso en Ajustes › Tiempo en pantalla | Presente lo detecta al volver y ofrece permitir de nuevo | |
+| D1 | Instagram › Mensajes › conversación larga | Se lee completa, se desplaza, se escribe y responde | |
+| D2 | Tocar un reel compartido | Se abre como publicación individual, sin carrusel | |
+| D3 | Tocar un enlace a Explore/Reels | Regresa a búsqueda/inicio con aviso | |
+| D4 | Volver a la bandeja | Funciona | |
+| D5 | X › Mensajes | Funciona | |
 
-## E. Suscripción en Sandbox/TestFlight
+## E. Filtros contra sitios reales — automático (WebKit, sin sesión)
+
+Resultado del CI del 2026-10-23 (`docs/evidence/live-sites/`):
+
+| Red | Prueba | Resultado observado |
+|---|---|---|
+| YouTube | Inicio | ✅ Inicio algorítmico oculto, buscador propio visible, pestaña Shorts oculta |
+| YouTube | Búsqueda | ✅ 8 Shorts, 2 estantes de Shorts, 6 resultados que eran Shorts y 34 enlaces a Shorts ocultos |
+| YouTube | Video | ✅ Sección de relacionados oculta |
+| Instagram | `/explore/` | ✅ Redirigido a `/explore/search/` (luego Instagram pide iniciar sesión) |
+| TikTok | `/` | ✅ Redirigido a `/following` |
+| Reddit | `/r/popular/` | ✅ Redirigido a `/` |
+| Facebook | `/` | ✅ Redirigido a "Más recientes" (`?sk=h_chr`); luego pide iniciar sesión |
+| Pinterest | `/` | ✅ Inicio sustituido por buscador |
+| X | `/explore` | ⚠️ No verificable: X mostró un desafío anti-bots (Cloudflare) |
+| LinkedIn, Threads, Instagram (perfil) | — | ⚠️ No verificable sin sesión (piden iniciar sesión) |
+
+## F. Filtros con sesión (iPhone real) — pendiente
+
+Repetir **semanalmente** y después de cada actualización de iOS o de una red.
+
+| # | Red | Acción | Esperado | ✓ |
+|---|---|---|---|---|
+| F1 | Instagram | Iniciar sesión | Login oficial; Presente nunca muestra su propio campo de contraseña | |
+| F2 | Instagram | Inicio | Solo cuentas seguidas; sin "Sugerencias para ti" | |
+| F3 | Instagram | Barra | Sin Reels; Inicio, Buscar, Mensajes y Perfil visibles | |
+| F4 | YouTube | Iniciar sesión con Google | **Esperado: Google lo bloquea.** Documentar | |
+| F5 | YouTube | Dejar terminar un video | No empieza otro solo | |
+| F6 | TikTok | Con sesión | Abre en Siguiendo; perfiles y búsqueda | |
+| F7 | X | Con sesión | Pestaña Siguiendo elegida; sin tendencias; tope tras 40 publicaciones | |
+| F8 | Reddit, Facebook, LinkedIn, Threads, Pinterest | Con sesión | Lo de la tabla de ARQUITECTURA.md; anotar qué falla | |
+| F9 | Cualquiera | Enlace externo | Se abre en Safari | |
+| F10 | Cualquiera | Modo avión | "You're offline" + Try again; sin cierre | |
+| F11 | Cualquiera | Apagar cada filtro y reabrir | Solo desaparece ese filtro | |
+
+Cuando una red Beta pase su fila F, cambia su `support` en `Platform.swift` y en la tabla de ARQUITECTURA.md.
+
+## G. Compras en Sandbox / TestFlight — pendiente
 
 | # | Acción | Esperado | ✓ |
 |---|---|---|---|
-| E1 | Precio en la oferta | El configurado en App Store Connect ($39 MXN en México) | |
-| E2 | Comprar | Hoja de Apple; al confirmar, "Suscripción activa" y acceso a plataformas | |
-| E3 | Cancelar y dejar vencer | Pierde acceso; vuelve a ver la oferta | |
-| E4 | Borrar app, reinstalar, Restaurar | Recupera acceso | |
-| E5 | Administrar suscripción | Abre la hoja del sistema | |
-| E6 | Sin red al abrir la oferta | Mensaje claro + Reintentar | |
+| G1 | Precios | Los de App Store Connect ($39 MXN y $499 MXN en México) | |
+| G2 | Cuenta Sandbox nueva › Mensual | "7 days free" visible; hoja de Apple; estado "Free trial" con fecha del primer cobro | |
+| G3 | Esperar renovaciones aceleradas | Pasa a "Monthly plan" | |
+| G4 | Cancelar en Ajustes | Sigue activa hasta vencer; luego pierde acceso | |
+| G5 | Cuenta que ya usó la prueba | No se muestra "7 days free" | |
+| G6 | Lifetime con mensual activo | Aviso de que el mensual no se cancela solo + enlace para administrarlo; después "Lifetime — yours to keep" | |
+| G7 | Borrar app, reinstalar, Restaurar | Recupera acceso | |
+| G8 | Sin red en la pantalla de planes | Mensaje + Try again | |
 
-## F. Estabilidad
+## H. Control de apps (solo iPhone real) — pendiente
 
-- [ ] 30 min de uso mixto sin cierres (revisar Xcode › Organizer › Crashes).
-- [ ] Memoria estable al abrir/cerrar plataformas 20 veces (Instruments › Leaks).
+Igual que la versión anterior: permiso, elegir apps, pantalla de pausa, "I need to post" 5 min (también con la app cerrada y cerca de medianoche), reinicio del iPhone, apagar el interruptor, revocar el permiso.
+
+## I. Estabilidad — pendiente
+
+- [ ] 30 min de uso mixto sin cierres (Xcode › Organizer › Crashes).
+- [ ] Memoria estable al abrir/cerrar redes 20 veces (Instruments › Leaks).
