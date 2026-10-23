@@ -55,3 +55,29 @@ jobs:
         with:
           name: xcodebuild-log
           path: ios/build.log
+
+  simulador-como-usuario:
+    name: Simulador sin cuenta (como en una Mac nueva)
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode más reciente
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+          xcodebuild -version
+      - name: Compilar para Simulador con la firma por defecto
+        working-directory: ios
+        shell: bash
+        run: |
+          brew install xcodegen
+          xcodegen
+          set -o pipefail
+          xcodebuild build -project Presente.xcodeproj -scheme Presente \
+            -destination 'generic/platform=iOS Simulator' 2>&1 | tee sim.log | tail -5
+      - name: Errores con contexto
+        if: failure()
+        working-directory: ios
+        run: grep -n -B3 -A25 -E "error:|failed with a nonzero|^Ld |^CodeSign " sim.log | grep -vE "^\S*-\s+(export|cd) " | head -300
