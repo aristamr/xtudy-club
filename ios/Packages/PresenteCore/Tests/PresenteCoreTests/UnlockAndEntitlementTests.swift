@@ -35,31 +35,86 @@ final class UnlockWindowTests: XCTestCase {
 }
 
 final class EntitlementTests: XCTestCase {
-    let id = "mx.xtudy.presente.monthly"
+    let sub = "mx.xtudy.presente.monthly"
+    let life = "mx.xtudy.presente.lifetime"
     let now = Date(timeIntervalSince1970: 1_800_000_000)
+    typealias T = EntitlementEvaluator.TransactionFacts
 
-    func testNoTransactions() {
-        XCTAssertEqual(EntitlementEvaluator.evaluate(productID: id, transactions: [], now: now), .none)
+    func eval(_ t: [T], grace: Bool = false, renew: Bool = true) -> EntitlementState {
+        EntitlementEvaluator.evaluate(subscriptionID: sub, lifetimeID: life, transactions: t,
+                                      inGracePeriod: grace, willRenew: renew, now: now)
     }
 
-    func testActive() {
-        let t = EntitlementEvaluator.TransactionFacts(productID: id, expirationDate: now + 1000, revocationDate: nil)
-        let s = EntitlementEvaluator.evaluate(productID: id, transactions: [t], willRenew: false, now: now)
-        XCTAssertEqual(s, .active(expires: now + 1000, willRenew: false))
-        XCTAssertTrue(s.unlocksFilters)
+    func testNoTransactions() {
+        XCTAssertEqual(eval([]), .none)
+        XCTAssertFalse(eval([]).unlocksFilters)
+    }
+
+    func testTrialThenPaid() {
+        let trial = T(productID: sub, expirationDate: now + 7 * 86400, revocationDate: nil, isIntroOffer: true)
+        XCTAssertEqual(eval([trial]), .trial(expires: now + 7 * 86400, willRenew: true))
+        XCTAssertTrue(eval([trial]).unlocksFilters)
+        let paid = T(productID: sub, expirationDate: now + 30 * 86400, revocationDate: nil)
+        XCTAssertEqual(eval([paid], renew: false), .subscribed(expires: now + 30 * 86400, willRenew: false))
     }
 
     func testExpiredAndGrace() {
-        let t = EntitlementEvaluator.TransactionFacts(productID: id, expirationDate: now - 1, revocationDate: nil)
-        XCTAssertEqual(EntitlementEvaluator.evaluate(productID: id, transactions: [t], now: now), .expired)
-        XCTAssertTrue(EntitlementEvaluator.evaluate(productID: id, transactions: [t], inGracePeriod: true, now: now).unlocksFilters)
+        let t = T(productID: sub, expirationDate: now - 1, revocationDate: nil)
+        XCTAssertEqual(eval([t]), .expired)
+        XCTAssertTrue(eval([t], grace: true).unlocksFilters)
     }
 
     func testRevokedAndOtherProducts() {
-        let revoked = EntitlementEvaluator.TransactionFacts(productID: id, expirationDate: now + 1000, revocationDate: now - 10)
-        XCTAssertEqual(EntitlementEvaluator.evaluate(productID: id, transactions: [revoked], now: now), .revoked)
-        let other = EntitlementEvaluator.TransactionFacts(productID: "other", expirationDate: now + 1000, revocationDate: nil)
-        XCTAssertEqual(EntitlementEvaluator.evaluate(productID: id, transactions: [other], now: now), .none)
+        XCTAssertEqual(eval([T(productID: sub, expirationDate: now + 1000, revocationDate: now - 10)]), .revoked)
+        XCTAssertEqual(eval([T(productID: "other", expirationDate: now + 1000, revocationDate: nil)]), .none)
+    }
+
+    func testLifetimeWinsAndSurvivesSubscriptionEnd() {
+        let lifetime = T(productID: life, expirationDate: nil, revocationDate: nil)
+        let expiredSub = T(productID: sub, expirationDate: now - 1, revocationDate: nil)
+        XCTAssertEqual(eval([lifetime]), .lifetime(subscriptionStillRenews: false))
+        XCTAssertEqual(eval([lifetime, expiredSub]), .lifetime(subscriptionStillRenews: false))
+        let activeSub = T(productID: sub, expirationDate: now + 1000, revocationDate: nil)
+        XCTAssertEqual(eval([activeSub, lifetime]), .lifetime(subscriptionStillRenews: true))
+        XCTAssertEqual(eval([activeSub, lifetime], renew: false), .lifetime(subscriptionStillRenews: false))
+    }
+
+    func testRefundedLifetime() {
+        let refunded = T(productID: life, expirationDate: nil, revocationDate: now - 5)
+        XCTAssertEqual(eval([refunded]), .revoked)
+        XCTAssertFalse(eval([refunded]).unlocksFilters)
+        let activeSub = T(productID: sub, expirationDate: now + 1000, revocationDate: nil)
+        XCTAssertTrue(eval([refunded, activeSub]).unlocksFilters, "la suscripción sigue valiendo")
+    }
+
+    func testPurchaseRulesPreventDuplicates() {
+        let none = PurchaseRules(state: .none)
+        XCTAssertTrue(none.canPurchase(.monthly))
+        XCTAssertTrue(none.canPurchase(.lifetime))
+        XCTAssertFalse(none.needsSubscriptionWarning(before: .lifetime))
+
+        let subscribed = PurchaseRules(state: .subscribed(expires: nil, willRenew: true))
+        XCTAssertFalse(subscribed.canPurchase(.monthly))
+        XCTAssertTrue(subscribed.canPurchase(.lifetime))
+        XCTAssertTrue(subscribed.needsSubscriptionWarning(before: .lifetime))
+
+        let lifetime = PurchaseRules(state: .lifetime(subscriptionStillRenews: false))
+        XCTAssertFalse(lifetime.canPurchase(.monthly))
+        XCTAssertFalse(lifetime.canPurchase(.lifetime))
+
+        let expired = PurchaseRules(state: .expired)
+        XCTAssertTrue(expired.canPurchase(.monthly))
+    }
+
+    func testTrialChargeDate() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Mexico_City")!
+        let start = cal.date(from: DateComponents(year: 2026, month: 12, day: 28, hour: 10))!
+        let charge = TrialTerms.firstChargeDate(start: start, unit: .week, value: 1, calendar: cal)
+        XCTAssertEqual(cal.dateComponents([.year, .month, .day], from: charge), DateComponents(year: 2027, month: 1, day: 4))
+        XCTAssertEqual(TrialTerms.days(unit: .week, value: 1), 7)
+        XCTAssertEqual(TrialTerms.days(unit: .day, value: 7), 7)
+        XCTAssertNil(TrialTerms.days(unit: .month, value: 1))
     }
 }
 

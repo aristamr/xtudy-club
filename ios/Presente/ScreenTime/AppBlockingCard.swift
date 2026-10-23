@@ -9,39 +9,39 @@ struct AppBlockingCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Bloquear las apps originales", systemImage: "hourglass")
+            Label("Pause the original apps", systemImage: "hourglass")
                 .font(.headline)
-            Text("Opcional. Usa el permiso de Tiempo en pantalla de Apple para poner en pausa Instagram y YouTube, y así abrirlos aquí, sin distracciones.")
+            Text("Optional. Uses Apple's Screen Time permission to pause the apps you choose, so you open them here, without the noise.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             if !screenTime.isAuthorized {
-                Text("Apple te pedirá permiso. Presente no ve qué apps usas ni cuánto tiempo: solo puede pausar las apps que tú elijas.")
+                Text("Apple will ask for permission. Presente can't see which apps you use or for how long: it can only pause the apps you choose.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button("Permitir Tiempo en pantalla") {
+                Button("Allow Screen Time") {
                     Task {
                         if await screenTime.requestAuthorization() { openPicker() }
                     }
                 }
                 .buttonStyle(.secondary)
             } else if !screenTime.hasSelection {
-                Text("En la siguiente ventana, elige Instagram y YouTube.")
+                Text("In the next window, choose the social apps you want to pause.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Button("Elegir apps", action: openPicker)
+                Button("Choose apps", action: openPicker)
                     .buttonStyle(.secondary)
             } else {
                 Toggle(isOn: Binding(get: { screenTime.isEnabled }, set: { screenTime.setEnabled($0) })) {
                     if screenTime.selectedCategoryCount > 0 {
-                        Text("Apps elegidas: \(screenTime.selectedAppCount) · categorías: \(screenTime.selectedCategoryCount)")
+                        Text("Apps chosen: \(screenTime.selectedAppCount) · categories: \(screenTime.selectedCategoryCount)")
                     } else {
-                        Text("Apps elegidas: \(screenTime.selectedAppCount)")
+                        Text("Apps chosen: \(screenTime.selectedAppCount)")
                     }
                 }
-                Button("Cambiar apps", action: openPicker)
+                Button("Change apps", action: openPicker)
                     .font(.subheadline)
             }
 

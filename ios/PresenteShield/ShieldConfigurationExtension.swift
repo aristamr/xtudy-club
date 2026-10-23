@@ -18,14 +18,14 @@ final class ShieldConfigurationExtension: ShieldConfigurationDataSource {
             backgroundColor: nil,
             icon: UIImage(systemName: "leaf"),
             title: ShieldConfiguration.Label(
-                text: String(localized: "Esta app está en pausa"),
+                text: String(localized: "This app is paused"),
                 color: .label
             ),
             subtitle: ShieldConfiguration.Label(
-                text: String(localized: "Abre Presente para ver a tus personas sin el algoritmo. Si necesitas publicar, toca «Necesito publicar» en Presente."),
+                text: String(localized: "Open Presente to see your people without the noise. Need to post? Tap “I need to post” in Presente."),
                 color: .secondaryLabel
             ),
-            primaryButtonLabel: ShieldConfiguration.Label(text: String(localized: "Entendido"), color: .systemBackground),
+            primaryButtonLabel: ShieldConfiguration.Label(text: String(localized: "Got it"), color: .systemBackground),
             primaryButtonBackgroundColor: .label,
             secondaryButtonLabel: nil
         )

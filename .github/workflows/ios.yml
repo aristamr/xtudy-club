@@ -9,7 +9,7 @@ on:
 
 jobs:
   core-and-web:
-    name: PresenteCore + filtro web
+    name: PresenteCore + filtro web + traducciones
     runs-on: ubuntu-24.04
     container: swift:6.1-noble
     steps:
@@ -17,6 +17,9 @@ jobs:
       - name: Pruebas de PresenteCore
         working-directory: ios/Packages/PresenteCore
         run: swift test
+      - name: Traducciones completas (en, es, fr, de, pt, it)
+        working-directory: ios
+        run: python3 scripts/l10n.py check
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -26,9 +29,14 @@ jobs:
           npm install
           npx playwright install --with-deps chromium
           npm test
+      - name: Scripts generados
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-scripts
+          path: ios/web-tests/generated
 
   app:
-    name: App iOS (Xcode)
+    name: App iOS (Xcode 16) + pruebas StoreKit
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -56,19 +64,18 @@ jobs:
           name: xcodebuild-log
           path: ios/build.log
 
-  simulador-como-usuario:
-    name: Simulador sin cuenta (como en una Mac nueva)
+  screenshots:
+    name: Sin cuenta (Xcode más reciente) + capturas
     runs-on: macos-26
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - name: Xcode más reciente
         run: |
-          ls -d /Applications/Xcode*.app
           LATEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
           sudo xcode-select -s "$LATEST/Contents/Developer"
           xcodebuild -version
-      - name: Compilar para Simulador con la firma por defecto
+      - name: Compilar para Simulador con la firma por defecto (como una Mac sin cuenta)
         working-directory: ios
         shell: bash
         run: |
@@ -76,8 +83,72 @@ jobs:
           xcodegen
           set -o pipefail
           xcodebuild build -project Presente.xcodeproj -scheme Presente \
-            -destination 'generic/platform=iOS Simulator' 2>&1 | tee sim.log | tail -5
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build 2>&1 | tee sim.log | tail -5
       - name: Errores con contexto
         if: failure()
         working-directory: ios
-        run: grep -n -B3 -A25 -E "error:|failed with a nonzero|^Ld |^CodeSign " sim.log | grep -vE "^\S*-\s+(export|cd) " | head -300
+        run: grep -n -B3 -A25 -E "error:|failed with a nonzero" sim.log | head -300
+      - name: Capturas (6 idiomas, claro/oscuro, iPhone grande y pequeño)
+        working-directory: ios
+        run: scripts/screenshots.sh ../evidence/screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: evidence/screenshots
+
+  live-sites:
+    name: Filtro contra sitios reales (WebKit, sin sesión)
+    needs: core-and-web
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-scripts
+          path: ios/web-tests/generated
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verificar
+        working-directory: ios/web-tests
+        run: |
+          npm install
+          npx playwright install --with-deps webkit
+          node live-check.mjs ../../evidence/live-sites
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-sites
+          path: evidence/live-sites
+
+  publish-evidence:
+    name: Publicar evidencia en la rama
+    needs: [screenshots, live-sites]
+    if: always() && github.event_name != 'pull_request' && needs.screenshots.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: screenshots
+          path: ios/docs/evidence/screenshots
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: live-sites
+          path: ios/docs/evidence/live-sites
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ios/docs/evidence
+          git diff --cached --quiet && exit 0
+          git commit -m "Evidence: screenshots and live-site check for ${GITHUB_SHA::7} [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

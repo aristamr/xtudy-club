@@ -4,7 +4,7 @@ import WebKit
 
 /// Pantalla completa con la versión filtrada de una plataforma.
 struct BrowserScreen: View {
-    let platform: PresenteCore.Platform
+    let platform: PlatformID
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var browser: BrowserModel?
@@ -16,11 +16,11 @@ struct BrowserScreen: View {
                 BrowserContent(browser: browser, close: close)
             } else if setupError {
                 ContentUnavailableView {
-                    Label("No se pudo preparar el filtro", systemImage: "exclamationmark.triangle")
+                    Label("The filter couldn't be prepared", systemImage: "exclamationmark.triangle")
                 } description: {
-                    Text("Por seguridad no abrimos \(platform.displayName) sin filtros. Cierra e inténtalo de nuevo.")
+                    Text("To be safe, we don't open \(platform.displayName) without filters. Close and try again.")
                 } actions: {
-                    Button("Cerrar", action: close)
+                    Button("Close", action: close)
                 }
             } else {
                 ProgressView()
@@ -53,6 +53,15 @@ private struct BrowserContent: View {
     var body: some View {
         VStack(spacing: 0) {
             toolbar
+            if browser.platform.support == .experimental {
+                Text("Beta: filters for \(browser.platform.displayName) haven't been verified yet. Some distractions may slip through.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.softInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(Theme.surface)
+            }
             ZStack(alignment: .top) {
                 WebViewContainer(webView: browser.webView)
                     .ignoresSafeArea(edges: .bottom)
@@ -67,7 +76,7 @@ private struct BrowserContent: View {
                     ContentUnavailableView {
                         Label(error, systemImage: "wifi.slash")
                     } actions: {
-                        Button("Reintentar") { browser.reload() }
+                        Button("Try again") { browser.reload() }
                     }
                     .background(Color(uiColor: .systemBackground))
                 }
@@ -96,13 +105,13 @@ private struct BrowserContent: View {
             Button(action: close) {
                 Image(systemName: "xmark").font(.body.weight(.semibold))
             }
-            .accessibilityLabel(Text("Cerrar"))
+            .accessibilityLabel(Text("Close"))
 
             Button { browser.goBack() } label: {
                 Image(systemName: "chevron.left").font(.body.weight(.semibold))
             }
             .disabled(!browser.canGoBack)
-            .accessibilityLabel(Text("Atrás"))
+            .accessibilityLabel(Text("Back"))
 
             Spacer()
             HStack(spacing: 6) {
@@ -110,20 +119,20 @@ private struct BrowserContent: View {
                 Text(browser.platform.displayName).font(.headline)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text("\(browser.platform.displayName), filtros activos"))
+            .accessibilityLabel(Text("\(browser.platform.displayName), filters on"))
             Spacer()
 
             if browser.platform == .youtube {
                 Button { showChannels = true } label: {
                     Image(systemName: "person.2").font(.body.weight(.semibold))
                 }
-                .accessibilityLabel(Text("Mis canales"))
+                .accessibilityLabel(Text("My channels"))
             }
 
             Button { browser.reload() } label: {
                 Image(systemName: "arrow.clockwise").font(.body.weight(.semibold))
             }
-            .accessibilityLabel(Text("Recargar"))
+            .accessibilityLabel(Text("Reload"))
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
@@ -152,18 +161,18 @@ struct ChannelsSheet: View {
                     Section {
                         if model.channels.contains(current) {
                             Button(role: .destructive) { model.channels.remove(current) } label: {
-                                Label("Quitar \(current.handle)", systemImage: "minus.circle")
+                                Label("Remove \(current.handle)", systemImage: "minus.circle")
                             }
                         } else {
                             Button { model.channels.add(current) } label: {
-                                Label("Guardar \(current.handle)", systemImage: "plus.circle")
+                                Label("Save \(current.handle)", systemImage: "plus.circle")
                             }
                         }
                     }
                 }
                 Section {
                     if model.channels.channels.isEmpty {
-                        Text("Abre la página de un canal y guárdalo aquí. Verás sus videos más recientes, en orden, sin recomendaciones.")
+                        Text("Open a channel's page and save it here. You'll see its latest videos, in order, with no recommendations.")
                             .foregroundStyle(.secondary)
                     }
                     ForEach(model.channels.channels) { channel in
@@ -177,15 +186,15 @@ struct ChannelsSheet: View {
                         removed.forEach { model.channels.remove($0) }
                     }
                 } header: {
-                    Text("Mis canales")
+                    Text("My channels")
                 } footer: {
-                    Text("Se guardan solo en este iPhone.")
+                    Text("Saved only on this iPhone.")
                 }
             }
-            .navigationTitle(Text("Mis canales"))
+            .navigationTitle(Text("My channels"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
         .presentationDetents([.medium, .large])

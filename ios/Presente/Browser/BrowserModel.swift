@@ -98,20 +98,25 @@ final class BrowserModel: NSObject, ObservableObject {
 
     static var scriptLabels: [String: String] {
         [
-            "calmTitle": String(localized: "Busca lo que quieres ver."),
-            "calmSubtitle": String(localized: "Sin recomendaciones. Solo lo que tú elijas."),
-            "searchPlaceholder": String(localized: "Buscar en YouTube"),
-            "searchButton": String(localized: "Buscar"),
+            "calmTitle": String(localized: "Search for what you came for."),
+            "calmSubtitle": String(localized: "No recommendations. Only what you choose."),
+            "searchPlaceholder": String(localized: "Search"),
+            "searchButton": String(localized: "Search"),
+            "feedEndTitle": String(localized: "You're all caught up."),
+            "feedEndSubtitle": String(localized: "The rest can wait. Enjoy your day."),
         ]
     }
 
+    /// Redirecciones silenciosas: llevan a la versión tranquila de la misma página.
+    static let silentRules: Set<String> = ["home-following-only", "foryou-to-following", "home-most-recent", "youtu.be"]
+
     static func noticeText(forRule rule: String) -> String? {
-        if rule.hasPrefix("reel") { return String(localized: "Reels está desactivado") }
-        if rule.hasPrefix("short") { return String(localized: "Shorts está desactivado") }
-        if rule.hasPrefix("explore") { return String(localized: "Explore está desactivado; la búsqueda sigue disponible") }
-        if rule == "trending" { return String(localized: "Las tendencias están ocultas") }
-        if rule == "autoplay" { return String(localized: "Se detuvo la reproducción automática") }
-        return nil
+        if silentRules.contains(rule) { return nil }
+        if rule.hasPrefix("reel") { return String(localized: "Reels are turned off") }
+        if rule.hasPrefix("short") { return String(localized: "Shorts are turned off") }
+        if rule.hasPrefix("explore") { return String(localized: "Explore is off. Search still works.") }
+        if rule == "autoplay" { return String(localized: "Autoplay was stopped") }
+        return String(localized: "That section is hidden to keep things calm")
     }
 
     fileprivate func show(noticeForRule rule: String) {
@@ -176,9 +181,9 @@ extension BrowserModel: WKNavigationDelegate {
         if ns.domain == "WebKitErrorDomain", ns.code == 102 { return }
         if ns.domain == NSURLErrorDomain,
            [NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost, NSURLErrorTimedOut].contains(ns.code) {
-            loadError = String(localized: "Sin conexión. Revisa tu internet e inténtalo de nuevo.")
+            loadError = String(localized: "You're offline. Check your connection and try again.")
         } else {
-            loadError = String(localized: "No se pudo cargar la página.")
+            loadError = String(localized: "The page couldn't be loaded.")
         }
     }
 }

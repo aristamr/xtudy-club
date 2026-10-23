@@ -1,71 +1,89 @@
 {
-  "identifier" : "6C1E4A3B",
-  "nonRenewingSubscriptions" : [
-
-  ],
-  "products" : [
-
-  ],
-  "settings" : {
-    "_applicationInternalID" : "6740000000",
-    "_developerTeamID" : "",
-    "_failTransactionsEnabled" : false,
-    "_locale" : "es_MX",
-    "_storefront" : "MEX",
-    "_storeKitErrors" : [
-
-    ]
-  },
-  "subscriptionGroups" : [
+  "identifier": "6C1E4A3B",
+  "nonRenewingSubscriptions": [],
+  "products": [
     {
-      "id" : "21500001",
-      "localizations" : [
+      "displayPrice": "499",
+      "familyShareable": false,
+      "internalID": "6740000002",
+      "localizations": [
         {
-          "description" : "Instagram y YouTube sin distracciones",
-          "displayName" : "Presente",
-          "locale" : "es_MX"
+          "description": "One-time purchase. Same features, no subscription.",
+          "displayName": "Presente Lifetime",
+          "locale": "en_US"
+        },
+        {
+          "description": "Pago único. Mismas funciones, sin suscripción.",
+          "displayName": "Presente de por vida",
+          "locale": "es_MX"
         }
       ],
-      "name" : "Presente",
-      "subscriptions" : [
+      "productID": "mx.xtudy.presente.lifetime",
+      "referenceName": "Presente Lifetime",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_applicationInternalID": "6740000000",
+    "_developerTeamID": "",
+    "_failTransactionsEnabled": false,
+    "_locale": "es_MX",
+    "_storefront": "MEX",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "21500001",
+      "localizations": [
         {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "39",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "6740000001",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "description": "Social media without the noise",
+          "displayName": "Presente",
+          "locale": "en_US"
+        },
+        {
+          "description": "Redes sociales sin ruido",
+          "displayName": "Presente",
+          "locale": "es_MX"
+        }
+      ],
+      "name": "Presente",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6740000001",
+          "introductoryOffer": {
+            "internalID": "6740000003",
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          },
+          "localizations": [
             {
-              "description" : "Filtros para Instagram y YouTube, bloqueo opcional de las apps originales.",
-              "displayName" : "Presente mensual",
-              "locale" : "es_MX"
+              "description": "All filters, app blocking and 5 minutes to post.",
+              "displayName": "Presente Monthly",
+              "locale": "en_US"
             },
             {
-              "description" : "Filters for Instagram and YouTube, optional blocking of the original apps.",
-              "displayName" : "Presente monthly",
-              "locale" : "en_US"
+              "description": "Todos los filtros, bloqueo de apps y 5 minutos para publicar.",
+              "displayName": "Presente mensual",
+              "locale": "es_MX"
             }
           ],
-          "productID" : "mx.xtudy.presente.monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Presente mensual",
-          "subscriptionGroupID" : "21500001",
-          "type" : "RecurringSubscription",
-          "winbackOffers" : [
-
-          ]
+          "productID": "mx.xtudy.presente.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Presente mensual",
+          "subscriptionGroupID": "21500001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
         }
       ]
     }
   ],
-  "version" : {
-    "major" : 4,
-    "minor" : 0
+  "version": {
+    "major": 4,
+    "minor": 0
   }
 }

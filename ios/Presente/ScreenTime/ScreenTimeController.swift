@@ -71,7 +71,7 @@ final class ScreenTimeController: ObservableObject {
         do {
             try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
         } catch {
-            errorMessage = String(localized: "No se otorgó el permiso de Tiempo en pantalla. Puedes intentarlo de nuevo cuando quieras.")
+            errorMessage = String(localized: "Screen Time permission wasn't granted. You can try again anytime.")
         }
         authorization = AuthorizationCenter.shared.authorizationStatus
         return isAuthorized
@@ -116,7 +116,7 @@ final class ScreenTimeController: ObservableObject {
         do {
             try center.startMonitoring(.temporaryUnlock, during: schedule)
         } catch {
-            errorMessage = String(localized: "No pudimos programar el desbloqueo temporal. Las apps siguen bloqueadas.")
+            errorMessage = String(localized: "We couldn't schedule the temporary unlock. The apps are still paused.")
             return false
         }
         shield.unlockedUntil = window.end

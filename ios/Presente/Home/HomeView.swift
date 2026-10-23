@@ -1,86 +1,82 @@
 import PresenteCore
 import SwiftUI
 
-/// Pantalla principal: un estado, dos accesos y nada más.
+/// Pantalla principal: estado, redes activas, acceso a cada una y Configuración. Nada más.
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var store: SubscriptionStore
     @EnvironmentObject private var screenTime: ScreenTimeController
 
-    @State private var openPlatform: PresenteCore.Platform?
+    @State private var openPlatform: PlatformID?
     @State private var showPaywall = false
     @State private var showSettings = false
-    @State private var showPublishChoice = false
-
-    private var isProtected: Bool { store.state.unlocksFilters && model.settings.anyEnabled }
+    @State private var showPublish = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Spacer()
-                Button { showSettings = true } label: {
-                    Image(systemName: "gearshape").font(.title3)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                HStack {
+                    Spacer()
+                    Button { showSettings = true } label: {
+                        Image(systemName: "gearshape").font(.title3).frame(width: 44, height: 44)
+                    }
+                    .foregroundStyle(Theme.softInk)
+                    .accessibilityLabel(Text("Settings"))
                 }
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(Text("Configuración"))
-            }
-            .padding(.top, 8)
 
-            Spacer(minLength: 24)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text(title)
-                    .font(.largeTitle.bold())
-                    .contentTransition(.opacity)
-                StatusLine()
-            }
-
-            Spacer(minLength: 32)
-
-            VStack(spacing: 14) {
-                ForEach(PresenteCore.Platform.allCases) { platform in
-                    PlatformCard(platform: platform) { open(platform) }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(title)
+                        .font(Theme.title(36))
+                        .foregroundStyle(Theme.ink)
+                        .contentTransition(.opacity)
+                        .accessibilityAddTraits(.isHeader)
+                    StatusLines()
+                    if !store.state.unlocksFilters, store.state != .unknown {
+                        Button("See plans") { showPaywall = true }
+                            .buttonStyle(.secondary)
+                            .padding(.top, 4)
+                    }
                 }
-            }
 
-            Spacer(minLength: 24)
+                VStack(spacing: 12) {
+                    ForEach(model.activePlatforms) { platform in
+                        PlatformRow(platform: platform) { open(platform) }
+                    }
+                    if model.activePlatforms.isEmpty {
+                        Button("Add a network") { showSettings = true }
+                            .buttonStyle(.secondary)
+                    }
+                }
 
-            Button {
-                showPublishChoice = true
-            } label: {
-                Label("Necesito publicar", systemImage: "square.and.arrow.up")
+                Button { showPublish = true } label: {
+                    Label("I need to post", systemImage: "square.and.arrow.up")
+                }
+                .buttonStyle(.secondary)
             }
-            .buttonStyle(.secondary)
-            .padding(.bottom, 8)
+            .padding(.horizontal, Theme.padding)
+            .padding(.bottom, Theme.padding)
         }
-        .padding(.horizontal, Theme.padding)
-        .padding(.bottom, Theme.padding)
-        .fullScreenCover(item: $openPlatform) { platform in
-            BrowserScreen(platform: platform)
-        }
+        .background(Theme.background.ignoresSafeArea())
+        .fullScreenCover(item: $openPlatform) { BrowserScreen(platform: $0) }
         .sheet(isPresented: $showPaywall) { PaywallSheet() }
         .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showPublishChoice) { PublishSheet() }
+        .sheet(isPresented: $showPublish) { PublishSheet() }
     }
 
     private var title: LocalizedStringKey {
-        if !store.state.unlocksFilters {
-            if case .unknown = store.state { return "Presente" }
-            return "Activa Presente para empezar."
+        switch store.state {
+        case .unknown: return "Presente"
+        case let s where !s.unlocksFilters: return "Your space is ready."
+        default: return model.settings.anyEnabled ? "Your space is clear." : "Your filters are paused."
         }
-        return isProtected ? "Estás protegido." : "Filtros en pausa."
     }
 
-    private func open(_ platform: PresenteCore.Platform) {
-        if store.state.unlocksFilters {
-            openPlatform = platform
-        } else {
-            showPaywall = true
-        }
+    private func open(_ platform: PlatformID) {
+        if store.state.unlocksFilters { openPlatform = platform } else { showPaywall = true }
     }
 }
 
-private struct StatusLine: View {
+private struct StatusLines: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var store: SubscriptionStore
     @EnvironmentObject private var screenTime: ScreenTimeController
@@ -93,106 +89,116 @@ private struct StatusLine: View {
             }
         }
         .font(.subheadline)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Theme.softInk)
     }
 
     private var filtersText: LocalizedStringKey {
-        if !store.state.unlocksFilters { return "Sin suscripción activa" }
-        return model.settings.anyEnabled ? "Filtros activos" : "Todos los filtros están apagados"
+        if !store.state.unlocksFilters { return "Filters unlock with a plan" }
+        return model.settings.anyEnabled ? "Filters on" : "All filters are off"
     }
 
     @ViewBuilder
     private func appsRow(now: Date) -> some View {
         if let until = screenTime.unlockedUntil, until > now {
             let remaining = Int(until.timeIntervalSince(now))
-            row(on: false, "Apps originales abiertas por \(remaining / 60):\(String(format: "%02d", remaining % 60))")
+            row(on: false, "Original apps open for \(remaining / 60):\(String(format: "%02d", remaining % 60))")
         } else if screenTime.isBlocking {
-            row(on: true, "Apps originales en pausa")
+            row(on: true, "Original apps paused")
         } else {
-            row(on: false, "Apps originales sin bloquear")
+            row(on: false, "Original apps not paused")
         }
     }
 
     private func row(on: Bool, _ text: LocalizedStringKey) -> some View {
         HStack(spacing: 8) {
-            Circle().fill(on ? Theme.free : Color.secondary.opacity(0.4)).frame(width: 8, height: 8)
+            Circle().fill(on ? Theme.accent : Theme.softInk.opacity(0.4)).frame(width: 8, height: 8)
             Text(text)
         }
         .accessibilityElement(children: .combine)
     }
 }
 
-private struct PlatformCard: View {
-    let platform: PresenteCore.Platform
+private struct PlatformRow: View {
+    let platform: PlatformID
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
                 Image(systemName: platform.symbolName)
-                    .font(.title2)
-                    .frame(width: 44, height: 44)
-                    .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .font(.title3)
+                    .frame(width: 46, height: 46)
+                    .background(Theme.accent.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .foregroundStyle(Theme.accent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(platform.displayName).font(.title3.weight(.semibold))
-                    Text(platform.keepsSummary).font(.subheadline).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Text(verbatim: platform.displayName).font(.title3.weight(.semibold)).foregroundStyle(Theme.ink)
+                        if let tag = platform.supportTag { Tag(text: tag) }
+                    }
+                    Text(platform.keepsSummary).font(.subheadline).foregroundStyle(Theme.softInk)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.forward").foregroundStyle(Theme.softInk.opacity(0.6))
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, minHeight: 96)
-            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            .padding(18)
+            .frame(maxWidth: .infinity)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityHint(Text("Abre \(platform.displayName) sin distracciones"))
+        .accessibilityHint(Text("Opens \(platform.displayName) without distractions"))
     }
 }
 
-/// "Necesito publicar": abre la app original; si está bloqueada, la libera 5 minutos.
-private struct PublishSheet: View {
+/// "I need to post": abre la app original; si está en pausa, la libera 5 minutos.
+struct PublishSheet: View {
     @EnvironmentObject private var screenTime: ScreenTimeController
+    @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(screenTime.isBlocking || screenTime.isTemporarilyUnlocked
-                     ? LocalizedStringKey("Tendrás 5 minutos en la app original. Después se vuelve a pausar sola.")
-                     : LocalizedStringKey("Abriremos la app original para que publiques."))
-                    .foregroundStyle(.secondary)
-                if screenTime.isBlocking || screenTime.isTemporarilyUnlocked {
-                    Text("Por privacidad, iOS no nos dice cuál app es cuál: se liberan todas las apps que elegiste.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(PresenteCore.Platform.allCases) { platform in
-                    Button {
-                        publish(on: platform)
-                    } label: {
-                        Label("Abrir \(platform.displayName)", systemImage: platform.symbolName)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if screenTime.isBlocking || screenTime.isTemporarilyUnlocked {
+                        Text("You'll have 5 minutes in the original app. Then it pauses again on its own.")
+                            .foregroundStyle(Theme.softInk)
+                        Text("For privacy, iOS doesn't tell us which app is which, so all the apps you chose are unlocked.")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.softInk)
+                    } else {
+                        Text("We'll open the original app so you can post.")
+                            .foregroundStyle(Theme.softInk)
                     }
-                    .buttonStyle(.secondary)
+                    ForEach(PlatformID.allCases.filter { model.isActive($0) || $0 == .snapchat }) { platform in
+                        Button { publish(on: platform) } label: {
+                            Label {
+                                Text("Open \(platform.displayName)")
+                            } icon: {
+                                Image(systemName: platform.symbolName)
+                            }
+                        }
+                        .buttonStyle(.secondary)
+                    }
+                    if let error = screenTime.errorMessage {
+                        Text(error).font(.footnote).foregroundStyle(.red)
+                    }
                 }
-                if let error = screenTime.errorMessage {
-                    Text(error).font(.footnote).foregroundStyle(.red)
-                }
-                Spacer()
+                .padding(Theme.padding)
             }
-            .padding(Theme.padding)
-            .navigationTitle(Text("Necesito publicar"))
+            .background(Theme.background.ignoresSafeArea())
+            .navigationTitle(Text("I need to post"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
 
-    private func publish(on platform: PresenteCore.Platform) {
+    private func publish(on platform: PlatformID) {
         guard screenTime.temporaryUnlock() else { return }
         dismiss()
         openURL(platform.nativeAppURL) { accepted in

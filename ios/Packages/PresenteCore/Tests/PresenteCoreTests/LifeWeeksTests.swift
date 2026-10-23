@@ -39,9 +39,10 @@ final class LifeWeeksTests: XCTestCase {
     func testKindOrdering() {
         let b = LifeWeeksBreakdown(LifeEstimate(age: 30, dailyScrollMinutes: 120))
         XCTAssertEqual(b.kind(at: 0), .lived)
-        XCTAssertEqual(b.kind(at: b.lived), .free)
-        XCTAssertEqual(b.kind(at: b.lived + b.free), .scroll)
-        XCTAssertEqual(b.kind(at: b.total - 1), .sleep)
+        XCTAssertEqual(b.kind(at: b.lived), .sleep)
+        XCTAssertEqual(b.kind(at: b.lived + b.sleep), .scroll)
+        XCTAssertEqual(b.kind(at: b.lived + b.sleep + b.scroll), .free)
+        XCTAssertEqual(b.kind(at: b.total - 1), .free)
     }
 
     func testTenYearProjection() {
@@ -50,5 +51,32 @@ final class LifeWeeksTests: XCTestCase {
         XCTAssertEqual(ScrollProjection.fullDays(minutesPerDay: 0, years: 10), 0)
         XCTAssertEqual(ScrollProjection.projectionYears(for: LifeEstimate(age: 85)), 5)
         XCTAssertEqual(ScrollProjection.projectionYears(for: LifeEstimate(age: 30)), 10)
+    }
+}
+
+final class TimeProjectionTests: XCTestCase {
+    func testTwoHoursADay() {
+        let p = TimeProjection(minutesPerDay: 120)
+        XCTAssertEqual(p.hoursPerWeek, 14)
+        XCTAssertEqual(p.hoursPerYear, 730.5, accuracy: 0.001)
+        XCTAssertEqual(p.fullDaysPerYear, 30.4375, accuracy: 0.0001)
+        XCTAssertEqual(p.fullDaysPerTenYears, 304.375, accuracy: 0.001)
+        // Coincide con la frase de la cuadrícula de semanas.
+        XCTAssertEqual(Int(p.fullDaysPerTenYears.rounded()), ScrollProjection.fullDays(minutesPerDay: 120, years: 10))
+    }
+
+    func testIllustrativeHalfShare() {
+        let p = TimeProjection(minutesPerDay: 120)
+        // 730.5 h / 2 = 365.25 h al año
+        XCTAssertEqual(p.yearlyCount(of: .book), 60)            // 365.25 / 6
+        XCTAssertEqual(p.yearlyCount(of: .workout), 487)        // 21915 / 45
+        XCTAssertEqual(p.yearlyCount(of: .languageLesson), 730) // 21915 / 30
+        XCTAssertEqual(p.yearlyCount(of: .nightOfRest), 45)     // 21915 / 480
+        XCTAssertEqual(p.yearlyCount(of: .afternoonTogether), 121)
+    }
+
+    func testZeroAndNegative() {
+        XCTAssertEqual(TimeProjection(minutesPerDay: -5).minutesPerDay, 0)
+        XCTAssertEqual(TimeProjection(minutesPerDay: 0).yearlyCount(of: .book), 0)
     }
 }

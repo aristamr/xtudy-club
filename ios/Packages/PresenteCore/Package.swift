@@ -7,7 +7,7 @@ import PackageDescription
 // Compila en iOS, macOS y Linux para poder probarla sin simulador.
 let package = Package(
     name: "PresenteCore",
-    defaultLocalization: "es",
+    defaultLocalization: "en",
     platforms: [.iOS(.v17), .macOS(.v13)],
     products: [
         .library(name: "PresenteCore", targets: ["PresenteCore"]),

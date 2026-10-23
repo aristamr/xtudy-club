@@ -3,7 +3,7 @@ import Foundation
 /// Estimación que la persona escribe en el onboarding. No es una medición.
 public struct LifeEstimate: Codable, Equatable, Sendable {
     public static let ageRange = 10...89
-    public static let minutesRange = 0...600
+    public static let minutesRange = 0...720
     public static let horizonRange = 60...110
 
     public var age: Int
@@ -63,12 +63,13 @@ public struct LifeWeeksBreakdown: Equatable, Sendable {
 
     public enum Kind: Equatable, Sendable { case lived, free, scroll, sleep }
 
-    /// Categoría del cuadro `index` (0 = primera semana). Orden: vivido, libre, scroll, sueño.
+    /// Categoría del cuadro `index` (0 = primera semana). Orden: vivido, sueño, scroll y, al final,
+    /// lo que queda libre para todo lo demás.
     public func kind(at index: Int) -> Kind {
         if index < lived { return .lived }
-        if index < lived + free { return .free }
-        if index < lived + free + scroll { return .scroll }
-        return .sleep
+        if index < lived + sleep { return .sleep }
+        if index < lived + sleep + scroll { return .scroll }
+        return .free
     }
 }
 
