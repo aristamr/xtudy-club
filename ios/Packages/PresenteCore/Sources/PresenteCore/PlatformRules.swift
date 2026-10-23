@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reglas declarativas de una plataforma (Resources/Rules/<plataforma>.json).
+/// Reglas declarativas de una plataforma (FilterResources/Rules/<plataforma>.json).
 /// Es el único lugar que hay que editar cuando Instagram o YouTube cambian su HTML.
 public struct PlatformRules: Codable, Equatable, Sendable {
     public struct Route: Codable, Equatable, Sendable {
@@ -37,7 +37,7 @@ public struct PlatformRules: Codable, Equatable, Sendable {
 
     public static func load(for platform: Platform, bundle: Bundle? = nil) throws -> PlatformRules {
         let bundle = bundle ?? .module
-        guard let url = bundle.url(forResource: platform.rulesResourceName, withExtension: "json", subdirectory: "Resources/Rules") else {
+        guard let url = bundle.url(forResource: platform.rulesResourceName, withExtension: "json", subdirectory: "FilterResources/Rules") else {
             throw LoadError.missingResource("Rules/\(platform.rulesResourceName).json")
         }
         return try JSONDecoder().decode(PlatformRules.self, from: Data(contentsOf: url))

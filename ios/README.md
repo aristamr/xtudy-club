@@ -13,4 +13,4 @@ cd Packages/PresenteCore && swift test                          # lógica
 cd web-tests && npm install && npm test                         # filtro web
 ```
 
-Cuando Instagram o YouTube cambien su HTML, edita `Packages/PresenteCore/Sources/PresenteCore/Resources/Rules/<plataforma>.json` y vuelve a correr las pruebas.
+Cuando Instagram o YouTube cambien su HTML, edita `Packages/PresenteCore/Sources/PresenteCore/FilterResources/Rules/<plataforma>.json` y vuelve a correr las pruebas.

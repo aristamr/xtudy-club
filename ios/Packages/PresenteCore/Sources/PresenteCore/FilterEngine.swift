@@ -132,7 +132,7 @@ public struct FilterEngine: Sendable {
     }
 
     static func resource(_ name: String, bundle: Bundle) throws -> String {
-        guard let url = bundle.url(forResource: name, withExtension: "js", subdirectory: "Resources/Scripts") else {
+        guard let url = bundle.url(forResource: name, withExtension: "js", subdirectory: "FilterResources/Scripts") else {
             throw PlatformRules.LoadError.missingResource("Scripts/\(name).js")
         }
         return try String(contentsOf: url, encoding: .utf8)

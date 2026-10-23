@@ -15,7 +15,7 @@ let package = Package(
     targets: [
         .target(
             name: "PresenteCore",
-            resources: [.copy("Resources")]
+            resources: [.copy("FilterResources")]
         ),
         // Herramienta de desarrollo: imprime el script compuesto para las pruebas web (Playwright).
         .executableTarget(

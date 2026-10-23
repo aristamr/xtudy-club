@@ -47,8 +47,8 @@ Lo que **no** hace Presente: no pide contraseñas, no lee cookies, no envía ses
 ios/
 ├── project.yml                  XcodeGen → Presente.xcodeproj
 ├── Packages/PresenteCore/       Lógica pura (iOS/macOS/Linux), con pruebas
-│   ├── Resources/Rules/*.json   Reglas por plataforma  ← lo que se edita cuando cambia el HTML
-│   ├── Resources/Scripts/       engine.js (genérico) + instagram.js / youtube.js (comportamientos)
+│   ├── FilterResources/Rules/*.json   Reglas por plataforma  ← lo que se edita cuando cambia el HTML
+│   ├── FilterResources/Scripts/     engine.js (genérico) + instagram.js / youtube.js (comportamientos)
 │   ├── FilterEngine.swift       Política de navegación + composición del script
 │   ├── LifeWeeks.swift          Matemática de "tu vida en semanas"
 │   ├── UnlockWindow.swift       Ventana de 5 min compatible con DeviceActivity
