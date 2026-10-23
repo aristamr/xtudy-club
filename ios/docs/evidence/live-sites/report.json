@@ -97,28 +97,31 @@
     "platform": "youtube",
     "url": "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
     "expectation": "Sin relacionados ni pantalla final",
-    "finalUrl": "https://www.google.com/sorry/index?continue=https://m.youtube.com/watch%3Fv%3DdQw4w9WgXcQ&q=EgQ5l4BTGPCj69YGIjA9pzohbosFjy7h-S-OmtwauDwg9mlNjfp5wUfe1wrIMLJHiIQPAal7fz778jntGDgyAnJSWgFDYLTD8JrUytWEuwE",
-    "title": "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+    "finalUrl": "https://m.youtube.com/watch?v=dQw4w9WgXcQ&ra=m",
+    "title": "YouTube",
     "result": {
-      "engineStarted": false,
-      "styleTags": 0,
+      "engineStarted": true,
+      "styleTags": 3,
       "hiddenByTextOrCap": 0,
-      "selectorsMatching": [],
+      "selectorsMatching": [
+        {
+          "selector": "ytm-item-section-renderer[section-identifier=\"related-items\"]",
+          "matches": 2
+        }
+      ],
       "calmHome": false,
       "feedEnd": false,
       "loginWall": false
     },
     "screenshot": "youtube-2.png",
-    "pageErrors": [
-      "pageerror: Can't find variable: solveSimpleChallenge"
-    ]
+    "pageErrors": []
   },
   {
     "platform": "instagram",
     "url": "https://www.instagram.com/explore/",
     "expectation": "Explore → búsqueda",
     "finalUrl": "https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fexplore%2Fsearch%2F%3F__coig_login%3D1",
-    "title": "",
+    "title": "Instagram",
     "result": {
       "engineStarted": true,
       "styleTags": 1,
@@ -126,7 +129,7 @@
       "selectorsMatching": [],
       "calmHome": false,
       "feedEnd": false,
-      "loginWall": false
+      "loginWall": true
     },
     "screenshot": "instagram-3.png",
     "pageErrors": []
@@ -136,7 +139,7 @@
     "url": "https://www.instagram.com/instagram/",
     "expectation": "Perfil público visible",
     "finalUrl": "https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Finstagram%2F&is_from_rle",
-    "title": "",
+    "title": "Instagram",
     "result": {
       "engineStarted": true,
       "styleTags": 1,
@@ -144,7 +147,7 @@
       "selectorsMatching": [],
       "calmHome": false,
       "feedEnd": false,
-      "loginWall": false
+      "loginWall": true
     },
     "screenshot": "instagram-4.png",
     "pageErrors": []
@@ -225,8 +228,8 @@
     "platform": "x",
     "url": "https://x.com/explore",
     "expectation": "Sin tendencias",
-    "finalUrl": "https://x.com/i/jf/onboarding/web?redirect_after_login=%2Fexplore&mode=login",
-    "title": "X - The Everything App / X",
+    "finalUrl": "https://x.com/explore",
+    "title": "Just a moment...",
     "result": {
       "engineStarted": true,
       "styleTags": 2,
@@ -237,7 +240,9 @@
       "loginWall": false
     },
     "screenshot": "x-9.png",
-    "pageErrors": []
+    "pageErrors": [
+      "pageerror: /challenges.cloudflare.com\" from accessing a frame with origin \"https://x.com\". Protocols, domains, and ports must match."
+    ]
   },
   {
     "platform": "facebook",
@@ -281,7 +286,7 @@
     "platform": "threads",
     "url": "https://www.threads.com/",
     "expectation": "Siguiendo / sin sugerencias",
-    "finalUrl": "https://www.threads.com/?hpir=1&http_ref=eyJ0cyI6MTc5MjcyNTU2OTAwMCwiciI6IiJ9",
+    "finalUrl": "https://www.threads.com/?hpir=1&http_ref=eyJ0cyI6MTc5MjcyODkzNzAwMCwiciI6IiJ9",
     "title": "Threads",
     "result": {
       "engineStarted": true,
@@ -293,9 +298,7 @@
       "loginWall": true
     },
     "screenshot": "threads-12.png",
-    "pageErrors": [
-      "pageerror: /www.threads.com/ajax/bulk-route-definitions/ due to access control checks."
-    ]
+    "pageErrors": []
   },
   {
     "platform": "pinterest",
