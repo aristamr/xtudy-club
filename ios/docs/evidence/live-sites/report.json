@@ -1,0 +1,349 @@
+[
+  {
+    "platform": "youtube",
+    "url": "https://m.youtube.com/",
+    "expectation": "Inicio sustituido por buscador; sin Shorts",
+    "finalUrl": "https://m.youtube.com/?ra=m",
+    "title": "YouTube",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 3,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [
+        {
+          "selector": "ytm-pivot-bar-item-renderer:has(.pivot-shorts)",
+          "matches": 1
+        },
+        {
+          "selector": "html[data-presente-route=\"home\"] ytm-browse ytm-rich-grid-renderer",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm",
+          "matches": 1
+        },
+        {
+          "selector": "html[data-presente-route=\"home\"] #presente-calm",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm h2",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm p",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm form",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm input",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm button",
+          "matches": 1
+        }
+      ],
+      "calmHome": true,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "youtube-0.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "youtube",
+    "url": "https://m.youtube.com/results?search_query=guitar+lesson",
+    "expectation": "Resultados sin Shorts",
+    "finalUrl": "https://m.youtube.com/results?search_query=guitar+lesson&ra=m",
+    "title": "guitar lesson - YouTube",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 3,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [
+        {
+          "selector": "ytm-shorts-lockup-view-model",
+          "matches": 8
+        },
+        {
+          "selector": "grid-shelf-view-model:has(ytm-shorts-lockup-view-model)",
+          "matches": 2
+        },
+        {
+          "selector": "ytm-pivot-bar-item-renderer:has(.pivot-shorts)",
+          "matches": 1
+        },
+        {
+          "selector": "ytm-video-with-context-renderer:has(a[href^=\"/shorts/\"])",
+          "matches": 4
+        },
+        {
+          "selector": "a[href^=\"/shorts\"]",
+          "matches": 28
+        }
+      ],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "youtube-1.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "youtube",
+    "url": "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+    "expectation": "Sin relacionados ni pantalla final",
+    "finalUrl": "https://www.google.com/sorry/index?continue=https://m.youtube.com/watch%3Fv%3DdQw4w9WgXcQ&q=EgQ5l4BTGPCj69YGIjA9pzohbosFjy7h-S-OmtwauDwg9mlNjfp5wUfe1wrIMLJHiIQPAal7fz778jntGDgyAnJSWgFDYLTD8JrUytWEuwE",
+    "title": "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+    "result": {
+      "engineStarted": false,
+      "styleTags": 0,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "youtube-2.png",
+    "pageErrors": [
+      "pageerror: Can't find variable: solveSimpleChallenge"
+    ]
+  },
+  {
+    "platform": "instagram",
+    "url": "https://www.instagram.com/explore/",
+    "expectation": "Explore → búsqueda",
+    "finalUrl": "https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fexplore%2Fsearch%2F%3F__coig_login%3D1",
+    "title": "",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 1,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "instagram-3.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "instagram",
+    "url": "https://www.instagram.com/instagram/",
+    "expectation": "Perfil público visible",
+    "finalUrl": "https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Finstagram%2F&is_from_rle",
+    "title": "",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 1,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "instagram-4.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "tiktok",
+    "url": "https://www.tiktok.com/",
+    "expectation": "Para ti → Siguiendo",
+    "finalUrl": "https://www.tiktok.com/following",
+    "title": "TikTok - Make Your Day",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 1,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "tiktok-5.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "tiktok",
+    "url": "https://www.tiktok.com/@tiktok",
+    "expectation": "Perfil visible",
+    "finalUrl": "https://www.tiktok.com/@tiktok",
+    "title": "TikTok (@tiktok) | TikTok",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 1,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "tiktok-6.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "reddit",
+    "url": "https://www.reddit.com/r/popular/",
+    "expectation": "Popular → inicio",
+    "finalUrl": "https://www.reddit.com/",
+    "title": "",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 2,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "reddit-7.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "reddit",
+    "url": "https://www.reddit.com/r/AskReddit/",
+    "expectation": "Comunidad visible, con tope de feed",
+    "finalUrl": "https://www.reddit.com/r/AskReddit/",
+    "title": "",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 2,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "reddit-8.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "x",
+    "url": "https://x.com/explore",
+    "expectation": "Sin tendencias",
+    "finalUrl": "https://x.com/i/jf/onboarding/web?redirect_after_login=%2Fexplore&mode=login",
+    "title": "X - The Everything App / X",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 2,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": false
+    },
+    "screenshot": "x-9.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "facebook",
+    "url": "https://m.facebook.com/",
+    "expectation": "Inicio \"Más recientes\"",
+    "finalUrl": "https://m.facebook.com/?sk=h_chr",
+    "title": "Facebook - log in or sign up",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 2,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "facebook-10.png",
+    "pageErrors": [
+      "pageerror: undefined is not an object (evaluating 'e.getElementsByTagName')"
+    ]
+  },
+  {
+    "platform": "linkedin",
+    "url": "https://www.linkedin.com/feed/",
+    "expectation": "Feed con tope",
+    "finalUrl": "https://www.linkedin.com/login/?session_redirect=https%3A%2F%2Fwww.linkedin.com%2Ffeed%2F",
+    "title": "LinkedIn Login, Sign in | LinkedIn",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 2,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "linkedin-11.png",
+    "pageErrors": []
+  },
+  {
+    "platform": "threads",
+    "url": "https://www.threads.com/",
+    "expectation": "Siguiendo / sin sugerencias",
+    "finalUrl": "https://www.threads.com/?hpir=1&http_ref=eyJ0cyI6MTc5MjcyNTU2OTAwMCwiciI6IiJ9",
+    "title": "Threads",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 2,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [],
+      "calmHome": false,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "threads-12.png",
+    "pageErrors": [
+      "pageerror: /www.threads.com/ajax/bulk-route-definitions/ due to access control checks."
+    ]
+  },
+  {
+    "platform": "pinterest",
+    "url": "https://www.pinterest.com/",
+    "expectation": "Inicio sustituido por buscador",
+    "finalUrl": "https://www.pinterest.com/",
+    "title": "Pinterest",
+    "result": {
+      "engineStarted": true,
+      "styleTags": 3,
+      "hiddenByTextOrCap": 0,
+      "selectorsMatching": [
+        {
+          "selector": "#presente-calm",
+          "matches": 1
+        },
+        {
+          "selector": "html[data-presente-route=\"home\"] #presente-calm",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm h2",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm p",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm form",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm input",
+          "matches": 1
+        },
+        {
+          "selector": "#presente-calm button",
+          "matches": 1
+        }
+      ],
+      "calmHome": true,
+      "feedEnd": false,
+      "loginWall": true
+    },
+    "screenshot": "pinterest-13.png",
+    "pageErrors": [
+      "pageerror: /www.pinterest.com/resource/ApiSResource/create/ due to access control checks."
+    ]
+  }
+]
