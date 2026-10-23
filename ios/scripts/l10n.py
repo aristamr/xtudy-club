@@ -81,7 +81,13 @@ def to_key(literal: str) -> str:
     return "".join(out)
 
 
+# Palabras sueltas en minúscula que SÍ se muestran (el resto se trata como identificador interno).
+VISIBLE_SINGLE_WORDS = {"workouts"}
+
+
 def looks_visible(key: str) -> bool:
+    if key in VISIBLE_SINGLE_WORDS:
+        return True
     if not key or key.startswith(("http", "#")):
         return False
     if re.fullmatch(r"[a-z][A-Za-z0-9.\-]*", key):  # símbolos SF, identificadores internos

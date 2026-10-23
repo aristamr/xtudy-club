@@ -15,6 +15,14 @@
     "it": "%@ una tantum",
     "pt": "%@ uma única vez"
   },
+  "%@ once. No subscription.": {
+    "de": "%@ einmalig. Kein Abo.",
+    "en": "%@ once. No subscription.",
+    "es": "%@ en un solo pago. Sin suscripción.",
+    "fr": "%@ en une fois. Sans abonnement.",
+    "it": "%@ una sola volta. Nessun abbonamento.",
+    "pt": "%@ uma única vez. Sem assinatura."
+  },
   "%@ one-time payment, charged to your Apple Account when you confirm. No subscription; nothing renews.": {
     "de": "Einmalzahlung von %@, wird bei Bestätigung über deinen Apple Account abgerechnet. Kein Abo; nichts verlängert sich.",
     "en": "%@ one-time payment, charged to your Apple Account when you confirm. No subscription; nothing renews.",
@@ -30,6 +38,14 @@
     "fr": "%@ par mois, débité sur votre compte Apple lors de la confirmation. Renouvellement automatique sauf résiliation au moins 24 heures avant la fin de la période. Gérez ou résiliez à tout moment dans Réglages › votre nom › Abonnements.",
     "it": "%@ al mese, addebitati sul tuo Account Apple alla conferma. Si rinnova automaticamente se non viene annullato almeno 24 ore prima della fine del periodo. Gestisci o annulla quando vuoi in Impostazioni › il tuo nome › Abbonamenti.",
     "pt": "%@ por mês, cobrado na sua Conta Apple ao confirmar. Renova automaticamente, a menos que seja cancelado pelo menos 24 horas antes do fim do período. Gerencie ou cancele quando quiser em Ajustes › seu nome › Assinaturas."
+  },
+  "%@ per month. Renews automatically. Cancel anytime.": {
+    "de": "%@ pro Monat. Verlängert sich automatisch. Jederzeit kündbar.",
+    "en": "%@ per month. Renews automatically. Cancel anytime.",
+    "es": "%@ al mes. Se renueva automáticamente. Cancela cuando quieras.",
+    "fr": "%@ par mois. Renouvellement automatique. Résiliable à tout moment.",
+    "it": "%@ al mese. Si rinnova automaticamente. Disdici quando vuoi.",
+    "pt": "%@ por mês. Renova automaticamente. Cancele quando quiser."
   },
   "%@, filters on": {
     "de": "%@, Filter aktiv",
@@ -462,6 +478,14 @@
     "fr": "Essai gratuit",
     "it": "Prova gratuita",
     "pt": "Teste grátis"
+  },
+  "Free until %@, then %@ per month. Cancel anytime.": {
+    "de": "Gratis bis %@, danach %@ pro Monat. Jederzeit kündbar.",
+    "en": "Free until %@, then %@ per month. Cancel anytime.",
+    "es": "Gratis hasta el %@, luego %@ al mes. Cancela cuando quieras.",
+    "fr": "Gratuit jusqu’au %@, puis %@ par mois. Résiliable à tout moment.",
+    "it": "Gratis fino al %@, poi %@ al mese. Disdici quando vuoi.",
+    "pt": "Grátis até %@, depois %@ por mês. Cancele quando quiser."
   },
   "Free until %@. Then %@ per month, charged to your Apple Account and renewed automatically until you cancel. Cancel at least 24 hours before the trial ends to avoid being charged. Manage or cancel anytime in Settings › your name › Subscriptions.": {
     "de": "Gratis bis zum %@. Danach %@ pro Monat, abgerechnet über deinen Apple Account und automatisch verlängert, bis du kündigst. Kündige mindestens 24 Stunden vor Ende der Testphase, damit dir nichts berechnet wird. Verwalten oder kündigen jederzeit unter Einstellungen › dein Name › Abonnements.",
@@ -1534,5 +1558,13 @@
     "fr": "leçons de langue",
     "it": "lezioni di lingua",
     "pt": "aulas de idiomas"
+  },
+  "workouts": {
+    "de": "Trainingseinheiten",
+    "en": "workouts",
+    "es": "entrenamientos",
+    "fr": "séances de sport",
+    "it": "allenamenti",
+    "pt": "treinos"
   }
 }

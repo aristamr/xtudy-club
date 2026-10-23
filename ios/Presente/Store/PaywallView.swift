@@ -41,6 +41,7 @@ struct PaywallView: View {
                     } else {
                         features
                         plans
+                        disclosure
                     }
 
                     if let message = store.message {
@@ -57,8 +58,8 @@ struct PaywallView: View {
 
             if !store.state.unlocksFilters {
                 VStack(spacing: 10) {
+                    summary
                     buyButton
-                    disclosure
                     footer
                 }
                 .padding(.horizontal, Theme.padding)
@@ -197,15 +198,57 @@ struct PaywallView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// Resumen de una línea junto al botón; las condiciones completas están arriba, bajo los planes.
+    @ViewBuilder private var summary: some View {
+        Group {
+            switch selected {
+            case .monthly?:
+                if let monthly = store.offer(for: .monthly) {
+                    if let unit = monthly.trialUnit {
+                        let charge = TrialTerms.firstChargeDate(start: Date(), unit: unit, value: monthly.trialValue)
+                        Text("Free until \(charge.formatted(date: .abbreviated, time: .omitted)), then \(monthly.displayPrice) per month. Cancel anytime.")
+                    } else {
+                        Text("\(monthly.displayPrice) per month. Renews automatically. Cancel anytime.")
+                    }
+                }
+            case .lifetime?:
+                if let lifetime = store.offer(for: .lifetime) {
+                    Text("\(lifetime.displayPrice) once. No subscription.")
+                }
+            case .none:
+                EmptyView()
+            }
+        }
+        .font(.footnote.weight(.medium))
+        .foregroundStyle(Theme.ink)
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
     private var footer: some View {
-        HStack(spacing: 14) {
-            Button("Restore purchases") { Task { await store.restore() } }
-            Spacer()
-            Link("Terms", destination: Self.termsURL)
-            Link("Privacy", destination: Self.privacyURL)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                restoreButton
+                Spacer()
+                legalLinks
+            }
+            VStack(spacing: 6) {
+                restoreButton
+                HStack(spacing: 14) { legalLinks }
+            }
         }
         .font(.footnote)
         .foregroundStyle(Theme.softInk)
+    }
+
+    private var restoreButton: some View {
+        Button("Restore purchases") { Task { await store.restore() } }
+            .lineLimit(1)
+    }
+
+    @ViewBuilder private var legalLinks: some View {
+        Link("Terms", destination: Self.termsURL).lineLimit(1)
+        Link("Privacy", destination: Self.privacyURL).lineLimit(1)
     }
 }
 

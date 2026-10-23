@@ -46,6 +46,12 @@ for udid in "$BIG" "$SMALL"; do
   limit 300 xcrun simctl bootstatus "$udid" -b >/dev/null || echo "bootstatus tardó demasiado: $udid"
   limit 120 xcrun simctl install "$udid" "$APP"
 done
+# Calentamiento: el primer arranque tras instalar puede tardar; no queremos perder esas capturas.
+for udid in "$BIG" "$SMALL"; do
+  limit 90 xcrun simctl launch "$udid" "$BUNDLE" -PresenteDemo home >/dev/null 2>&1 || true
+  sleep 12
+  limit 30 xcrun simctl terminate "$udid" "$BUNDLE" >/dev/null 2>&1 || true
+done
 xcrun simctl status_bar "$BIG" override --time 9:41 --batteryLevel 100 --cellularBars 4 2>/dev/null || true
 
 for lang in en es fr de pt it; do

@@ -111,27 +111,27 @@ private struct NetworkToggle: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
-        Toggle(isOn: Binding(get: { model.isActive(platform) }, set: { model.setActive(platform, $0) })) {
-            HStack(spacing: 12) {
-                Image(systemName: platform.symbolName)
-                    .frame(width: 30)
-                    .foregroundStyle(Theme.accent)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(verbatim: platform.displayName).foregroundStyle(Theme.ink)
-                        if let tag = platform.supportTag { Tag(text: tag, tint: platform.hasFilteredWeb ? Theme.accent : Theme.softInk) }
-                    }
-                    if !platform.hasFilteredWeb {
-                        Text("Its website only works on computers. You can still pause the app with Screen Time.")
-                            .font(.caption)
-                            .foregroundStyle(Theme.softInk)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(isOn: Binding(get: { model.isActive(platform) }, set: { model.setActive(platform, $0) })) {
+                HStack(spacing: 12) {
+                    Image(systemName: platform.symbolName)
+                        .frame(width: 30)
+                        .foregroundStyle(Theme.accent)
+                    Text(verbatim: platform.displayName).foregroundStyle(Theme.ink)
+                    if let tag = platform.supportTag { Tag(text: tag, tint: platform.hasFilteredWeb ? Theme.accent : Theme.softInk) }
                 }
             }
+            .disabled(!platform.hasFilteredWeb)
+            .tint(Theme.accent)
+            if !platform.hasFilteredWeb {
+                // Fuera del Toggle para que el texto completo nunca se corte.
+                Text("Its website only works on computers. You can still pause the app with Screen Time.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.softInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 42)
+            }
         }
-        .disabled(!platform.hasFilteredWeb)
-        .tint(Theme.accent)
         .padding(.vertical, 10)
     }
 }

@@ -71,6 +71,41 @@
         }
       }
     },
+    "%@ once. No subscription.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ einmalig. Kein Abo."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ en un solo pago. Sin suscripción."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ en une fois. Sans abonnement."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ una sola volta. Nessun abbonamento."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ uma única vez. Sem assinatura."
+          }
+        }
+      }
+    },
     "%@ one-time payment, charged to your Apple Account when you confirm. No subscription; nothing renews.": {
       "extractionState": "manual",
       "localizations": {
@@ -137,6 +172,41 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ por mês, cobrado na sua Conta Apple ao confirmar. Renova automaticamente, a menos que seja cancelado pelo menos 24 horas antes do fim do período. Gerencie ou cancele quando quiser em Ajustes › seu nome › Assinaturas."
+          }
+        }
+      }
+    },
+    "%@ per month. Renews automatically. Cancel anytime.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ pro Monat. Verlängert sich automatisch. Jederzeit kündbar."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ al mes. Se renueva automáticamente. Cancela cuando quieras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ par mois. Renouvellement automatique. Résiliable à tout moment."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ al mese. Si rinnova automaticamente. Disdici quando vuoi."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ por mês. Renova automaticamente. Cancele quando quiser."
           }
         }
       }
@@ -2027,6 +2097,41 @@
           "stringUnit": {
             "state": "translated",
             "value": "Teste grátis"
+          }
+        }
+      }
+    },
+    "Free until %@, then %@ per month. Cancel anytime.": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratis bis %@, danach %@ pro Monat. Jederzeit kündbar."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratis hasta el %@, luego %@ al mes. Cancela cuando quieras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratuit jusqu’au %@, puis %@ par mois. Résiliable à tout moment."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gratis fino al %@, poi %@ al mese. Disdici quando vuoi."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grátis até %@, depois %@ por mês. Cancele quando quiser."
           }
         }
       }
@@ -6717,6 +6822,41 @@
           "stringUnit": {
             "state": "translated",
             "value": "aulas de idiomas"
+          }
+        }
+      }
+    },
+    "workouts": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingseinheiten"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "entrenamientos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "séances de sport"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "allenamenti"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "treinos"
           }
         }
       }
