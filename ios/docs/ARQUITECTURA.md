@@ -125,5 +125,5 @@ Qué desbloquea la suscripción: abrir Instagram/YouTube filtrados. El onboardin
 ## 5. Qué está verificado y qué no
 
 - ✅ **Verificado automáticamente en este repositorio**: 32 pruebas de `PresenteCore` (Swift 6.1, Linux) y 19 pruebas del filtro JS en Chromium contra páginas que imitan la estructura de Instagram y YouTube.
-- ⚠️ **Escrito pero no compilado aquí**: la app SwiftUI, las extensiones y las pruebas de StoreKit requieren Xcode en macOS (este entorno es Linux). Primer paso en Mac: `xcodegen && xcodebuild test` (ver INSTALAR.md).
+- ✅ **Compilado en Xcode (CI de GitHub, macOS 15)**: la app, las 2 extensiones y las pruebas en Simulador (StoreKit 9/9 + núcleo) pasan.
 - ⚠️ **Requiere verificación manual en iPhone real**: selectores contra los sitios reales de hoy, Screen Time, desbloqueo de 5 min, login. Ver `QA.md`. **Ninguna función debe anunciarse como lista hasta marcarla en QA.**
