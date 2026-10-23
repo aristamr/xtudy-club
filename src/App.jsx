@@ -2695,6 +2695,12 @@ export default function ClubDescuentos() {
             } catch {}
           }
         }
+        // Desde el sitio principal (xtudyclub.com): «Iniciar sesión en Xtudy Club» abre directo el acceso de miembros
+        // y el idioma elegido allá se conserva.
+        const entry = new URLSearchParams(window.location.search);
+        const entryLang = entry.get("lang");
+        if (entryLang === "en" || entryLang === "es") setLangState(entryLang);
+        if (!myEmail && entry.get("login") === "1") setView("login");
       } catch (e) {
         console.error(e);
       } finally {
@@ -3224,7 +3230,7 @@ function Register({ form, setForm, onSubmit, error, onBack, universities, onGoTo
           )}
           <p style={styles.termsNotice}>
             {tr(lang, "Al crear tu cuenta, aceptas nuestros ", "By creating your account, you accept our ", "En créant ton compte, tu acceptes nos ", "Mit der Erstellung deines Kontos akzeptierst du unsere ")}
-            <a href="/terminos-y-condiciones.pdf" target="_blank" rel="noopener noreferrer" style={styles.termsLink}>
+            <a href={`${import.meta.env.BASE_URL}terminos-y-condiciones.pdf`} target="_blank" rel="noopener noreferrer" style={styles.termsLink}>
               {tr(lang, "Términos y Condiciones y el Aviso de Privacidad", "Terms and Conditions and Privacy Notice", "Conditions Générales et l'Avis de Confidentialité", "Nutzungsbedingungen und Datenschutzhinweis")}
             </a>
             {tr(lang, " de Students Club.", " of Students Club.", " de Students Club.", " von Students Club.")}

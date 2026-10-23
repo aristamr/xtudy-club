@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/club/",
+      "permanent": false
+    },
+    {
+      "source": "/terminos-y-condiciones.pdf",
+      "destination": "/club/terminos-y-condiciones.pdf",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/club",
+      "destination": "/club/index.html"
+    }
+  ]
+}
