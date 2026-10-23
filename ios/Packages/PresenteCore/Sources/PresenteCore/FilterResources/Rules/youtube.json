@@ -53,7 +53,30 @@
   },
   "textRules": [],
   "behaviors": [
-    { "name": "calmHome", "option": "recommendations" },
-    { "name": "autoplayGuard", "option": "recommendations" }
+    {
+      "name": "calmHome",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(\\?.*)?$"
+        ],
+        "hide": [
+          "ytm-browse ytm-rich-grid-renderer",
+          "ytm-browse ytm-section-list-renderer",
+          "ytm-browse ytm-feed-filter-chip-bar-renderer",
+          "ytm-browse ytm-chip-cloud-renderer"
+        ],
+        "searchPath": [
+          "/results?search_query="
+        ],
+        "anchor": [
+          "ytm-app, #app"
+        ]
+      }
+    },
+    {
+      "name": "autoplayGuard",
+      "option": "recommendations"
+    }
   ]
 }

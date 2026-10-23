@@ -1,0 +1,67 @@
+{
+  "platform": "reddit",
+  "version": 1,
+  "notes": "reddit.com web móvil. Se bloquean Popular, All y Explore; el inicio tiene tope de publicaciones. Chat y perfiles intactos. Experimental.",
+  "routes": [
+    {
+      "id": "popular-all",
+      "option": "recommendations",
+      "pattern": "^/r/(popular|all)(/.*)?$",
+      "redirect": "/"
+    },
+    {
+      "id": "explore",
+      "option": "explore",
+      "pattern": "^/explore(/.*)?$",
+      "redirect": "/"
+    }
+  ],
+  "hide": {
+    "recommendations": [
+      "a[href=\"/r/popular/\"]",
+      "a[href=\"/r/all/\"]",
+      "shreddit-gallery-carousel",
+      "faceplate-tracker[source=\"trending\"]"
+    ],
+    "explore": [
+      "a[href^=\"/explore\"]"
+    ],
+    "shortForm": []
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Popular posts",
+        "Publicaciones populares",
+        "Recommended for you",
+        "Recomendado para ti",
+        "Similar to",
+        "Because you've shown interest in a similar community"
+      ],
+      "containers": [
+        "shreddit-post",
+        "article"
+      ],
+      "maxDepth": 3
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "feedCap",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(best|hot|new|top)?/?(\\?.*)?$"
+        ],
+        "items": [
+          "shreddit-post",
+          "article"
+        ],
+        "max": [
+          "40"
+        ]
+      }
+    }
+  ]
+}

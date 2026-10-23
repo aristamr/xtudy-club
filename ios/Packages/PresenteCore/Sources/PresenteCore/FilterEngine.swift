@@ -95,8 +95,13 @@ public struct FilterEngine: Sendable {
         public var routes: [PlatformRules.Route]
         public var hide: [String]
         public var textRules: [PlatformRules.TextRule]
-        public var behaviors: [String]
+        public var behaviors: [BehaviorConfig]
         public var labels: [String: String]
+    }
+
+    public struct BehaviorConfig: Codable, Equatable {
+        public var name: String
+        public var params: [String: [String]]
     }
 
     public func scriptConfig(labels: [String: String] = [:]) -> ScriptConfig {
@@ -106,7 +111,8 @@ public struct FilterEngine: Sendable {
             routes: activeRoutes,
             hide: rules.selectors(for: options),
             textRules: rules.textRules.filter { options.contains($0.option) },
-            behaviors: rules.behaviors.filter { options.contains($0.option) }.map(\.name),
+            behaviors: rules.behaviors.filter { options.contains($0.option) }
+                .map { BehaviorConfig(name: $0.name, params: $0.params ?? [:]) },
             labels: labels
         )
     }
@@ -118,6 +124,7 @@ public struct FilterEngine: Sendable {
         encoder.outputFormatting = [.sortedKeys]
         let configJSON = String(decoding: try encoder.encode(scriptConfig(labels: labels)), as: UTF8.self)
         let engine = try Self.resource("engine", bundle: bundle)
+        let common = try Self.resource("common", bundle: bundle)
         let behaviors = try Self.resource(platform.scriptResourceName, bundle: bundle)
         return """
         (function () {
@@ -125,6 +132,7 @@ public struct FilterEngine: Sendable {
         if (!/(^|\\.)(\(platform.contentHosts.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")))$/.test(location.hostname)) { return; }
         const PRESENTE_CONFIG = \(configJSON);
         \(engine)
+        \(common)
         \(behaviors)
         presenteStart(PRESENTE_CONFIG, PRESENTE_BEHAVIORS);
         })();

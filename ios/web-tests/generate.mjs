@@ -15,6 +15,13 @@ const variants = {
   'instagram-no-recommendations': ['instagram', 'recommendations'],
   'youtube': ['youtube'],
   'youtube-no-recommendations': ['youtube', 'recommendations'],
+  'tiktok': ['tiktok'],
+  'facebook': ['facebook'],
+  'x': ['x'],
+  'reddit': ['reddit'],
+  'linkedin': ['linkedin'],
+  'threads': ['threads'],
+  'pinterest': ['pinterest'],
 };
 
 const swift = process.env.PRESENTE_SWIFT || 'swift';

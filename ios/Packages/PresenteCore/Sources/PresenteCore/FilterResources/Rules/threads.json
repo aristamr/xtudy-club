@@ -1,0 +1,82 @@
+{
+  "platform": "threads",
+  "version": 1,
+  "notes": "threads.com web. Se elige 'Siguiendo' y se ocultan sugerencias. Experimental.",
+  "routes": [],
+  "hide": {
+    "shortForm": [],
+    "explore": [],
+    "recommendations": []
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Suggested for you",
+        "Sugerencias para ti",
+        "Suggestions pour vous",
+        "Vorschläge für dich",
+        "Sugestões para você",
+        "Suggeriti per te",
+        "People you may know",
+        "Personas que quizá conozcas",
+        "Who to follow",
+        "A quién seguir",
+        "Recommended for you",
+        "Recomendado para ti"
+      ],
+      "containers": [
+        "[data-pressable-container]",
+        "article"
+      ],
+      "maxDepth": 4
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "preferTab",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(\\?.*)?$"
+        ],
+        "tabs": [
+          "[role=\"tab\"]"
+        ],
+        "prefer": [
+          "Following",
+          "Siguiendo",
+          "Abonnements",
+          "Suivis",
+          "Folgen",
+          "Gefolgt",
+          "Seguindo",
+          "Seguiti"
+        ],
+        "avoid": [
+          "For you",
+          "Para ti",
+          "Pour vous",
+          "Für dich",
+          "Para você",
+          "Per te"
+        ]
+      }
+    },
+    {
+      "name": "feedCap",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(\\?.*)?$"
+        ],
+        "items": [
+          "[data-pressable-container=\"true\"]"
+        ],
+        "max": [
+          "40"
+        ]
+      }
+    }
+  ]
+}

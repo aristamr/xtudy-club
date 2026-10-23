@@ -14,7 +14,7 @@ final class FilterEngineTests: XCTestCase {
     }
 
     func testRulesLoadForEveryPlatform() throws {
-        for p in Platform.allCases {
+        for p in Platform.allCases where p.hasFilteredWeb {
             let rules = try PlatformRules.load(for: p)
             XCTAssertEqual(rules.platform, p.rawValue)
             for route in rules.routes {
@@ -120,7 +120,8 @@ final class FilterEngineTests: XCTestCase {
     func testScriptContainsOnlyEnabledOptions() throws {
         let all = try engine(.youtube).scriptConfig()
         XCTAssertTrue(all.hide.contains("ytm-reel-shelf-renderer"))
-        XCTAssertEqual(Set(all.behaviors), ["calmHome", "autoplayGuard"])
+        XCTAssertEqual(Set(all.behaviors.map(\.name)), ["calmHome", "autoplayGuard"])
+        XCTAssertEqual(all.behaviors.first { $0.name == "calmHome" }?.params["searchPath"], ["/results?search_query="])
 
         let noRecs = try engine(.youtube, FilterSettings(hideRecommendations: false)).scriptConfig()
         XCTAssertTrue(noRecs.behaviors.isEmpty)
@@ -138,11 +139,86 @@ final class FilterEngineTests: XCTestCase {
     }
 
     func testScriptNeverTouchesCredentials() throws {
-        for p in Platform.allCases {
+        for p in Platform.allCases where p.hasFilteredWeb {
             let script = try engine(p).userScript()
             for forbidden in ["document.cookie", "password", "localStorage", "XMLHttpRequest", "fetch("] {
                 XCTAssertFalse(script.contains(forbidden), "\(p): \(forbidden)")
             }
         }
+    }
+
+    // MARK: Plataformas nuevas
+
+    func testSupportLevelsAreHonest() {
+        // Nada se declara verificado hasta completar docs/QA.md en un iPhone real.
+        XCTAssertTrue(Platform.allCases.allSatisfy { $0.support != .verified })
+        XCTAssertEqual(Platform.snapchat.support, .unavailable)
+        XCTAssertFalse(Platform.snapchat.hasFilteredWeb)
+        XCTAssertEqual(Platform.defaultActive, [.instagram, .youtube])
+        for p in [Platform.tiktok, .facebook, .x, .reddit, .linkedin, .threads, .pinterest] {
+            XCTAssertEqual(p.support, .experimental, p.rawValue)
+        }
+    }
+
+    func testEveryBehaviorInRulesExistsInScripts() throws {
+        for p in Platform.allCases where p.hasFilteredWeb {
+            let e = try engine(p)
+            let script = try e.userScript()
+            for b in e.rules.behaviors {
+                XCTAssertTrue(script.contains("\(b.name): function"), "\(p): \(b.name)")
+            }
+            for route in e.rules.routes {
+                XCTAssertNoThrow(try NSRegularExpression(pattern: route.pattern), "\(p): \(route.id)")
+            }
+        }
+    }
+
+    func testTikTokSendsForYouToFollowing() throws {
+        let e = try engine(.tiktok)
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://www.tiktok.com/"))), "https://www.tiktok.com/following")
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://www.tiktok.com/foryou?lang=es"))), "https://www.tiktok.com/following")
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://www.tiktok.com/explore"))), "https://www.tiktok.com/search")
+        XCTAssertEqual(e.decision(for: url("https://www.tiktok.com/@amiga")), .allow)
+        XCTAssertEqual(e.decision(for: url("https://www.tiktok.com/search?q=recetas")), .allow)
+    }
+
+    func testFacebookBlocksReelsAndWatch() throws {
+        let e = try engine(.facebook)
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://m.facebook.com/reels/"))), "https://m.facebook.com/?sk=h_chr")
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://m.facebook.com/watch/"))), "https://m.facebook.com/?sk=h_chr")
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://m.facebook.com/"))), "https://m.facebook.com/?sk=h_chr")
+        XCTAssertEqual(e.decision(for: url("https://m.facebook.com/?sk=h_chr")), .allow)
+        XCTAssertEqual(e.decision(for: url("https://m.facebook.com/messages/")), .allow)
+        XCTAssertEqual(e.decision(for: url("https://m.facebook.com/profile.php?id=1")), .allow)
+    }
+
+    func testXKeepsMessagesAndBlocksTrendTabs() throws {
+        let e = try engine(.x)
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://x.com/explore/tabs/trending"))), "https://x.com/explore")
+        for path in ["/home", "/messages", "/i/chat", "/amiga", "/search?q=libros"] {
+            XCTAssertEqual(e.decision(for: url("https://x.com" + path)), .allow, path)
+        }
+        XCTAssertEqual(e.decision(for: url("https://twitter.com/amiga")), .allow)
+    }
+
+    func testRedditBlocksPopularAndAll() throws {
+        let e = try engine(.reddit)
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://www.reddit.com/r/popular/"))), "https://www.reddit.com/")
+        XCTAssertEqual(redirectTarget(e.decision(for: url("https://www.reddit.com/r/all/top/"))), "https://www.reddit.com/")
+        XCTAssertEqual(e.decision(for: url("https://www.reddit.com/r/swift/")), .allow)
+        XCTAssertEqual(e.decision(for: url("https://www.reddit.com/chat")), .allow)
+    }
+
+    func testPinterestAndLinkedInAndThreads() throws {
+        XCTAssertEqual(redirectTarget(try engine(.pinterest).decision(for: url("https://www.pinterest.com/today/"))), "https://www.pinterest.com/")
+        XCTAssertEqual(try engine(.pinterest).decision(for: url("https://mx.pinterest.com/search/pins/?q=sala")), .allow)
+        XCTAssertEqual(redirectTarget(try engine(.linkedin).decision(for: url("https://www.linkedin.com/video/"))), "https://www.linkedin.com/feed/")
+        XCTAssertEqual(try engine(.linkedin).decision(for: url("https://www.linkedin.com/messaging/")), .allow)
+        XCTAssertEqual(try engine(.threads).decision(for: url("https://www.threads.net/@amiga")), .allow)
+        XCTAssertEqual(try engine(.threads).decision(for: url("https://www.instagram.com/accounts/login/")), .allow, "login con Instagram")
+    }
+
+    func testSnapchatHasNoFilteredWeb() {
+        XCTAssertThrowsError(try FilterEngine(platform: .snapchat, settings: .default))
     }
 }

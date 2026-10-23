@@ -1,7 +1,7 @@
 import Foundation
 
 /// Reglas declarativas de una plataforma (FilterResources/Rules/<plataforma>.json).
-/// Es el único lugar que hay que editar cuando Instagram o YouTube cambian su HTML.
+/// Es el único lugar que hay que editar cuando una plataforma cambia su HTML.
 public struct PlatformRules: Codable, Equatable, Sendable {
     public struct Route: Codable, Equatable, Sendable {
         public var id: String
@@ -22,6 +22,8 @@ public struct PlatformRules: Codable, Equatable, Sendable {
     public struct Behavior: Codable, Equatable, Sendable {
         public var name: String
         public var option: FilterOption
+        /// Parámetros del comportamiento (selectores, rutas, textos…).
+        public var params: [String: [String]]?
     }
 
     public var platform: String

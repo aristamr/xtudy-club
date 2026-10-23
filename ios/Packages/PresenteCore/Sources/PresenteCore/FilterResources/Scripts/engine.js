@@ -203,12 +203,18 @@ function presenteStart(config, behaviors) {
     hide: hide,
     post: post,
     currentPath: currentPath,
+    // true si la ruta actual coincide con alguna de las expresiones (o si no hay ninguna).
+    pathMatches: function (patterns) {
+      if (!patterns || !patterns.length) { return true; }
+      const path = currentPath();
+      return patterns.some(function (p) { return new RegExp(p).test(path); });
+    },
     onRoute: function (cb) { routeListeners.push(cb); },
     onTick: function (cb) { tickListeners.push(cb); }
   };
 
-  config.behaviors.forEach(function (name) {
-    if (behaviors && typeof behaviors[name] === 'function') { behaviors[name](ctx); }
+  config.behaviors.forEach(function (b) {
+    if (behaviors && typeof behaviors[b.name] === 'function') { behaviors[b.name](ctx, b.params || {}); }
   });
 
   if (enforceRoute()) { return; }

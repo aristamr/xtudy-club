@@ -1,0 +1,84 @@
+{
+  "platform": "facebook",
+  "version": 1,
+  "notes": "Facebook web móvil. Reels y Video se bloquean; el inicio se fuerza a 'Más recientes'. Messenger en web móvil suele redirigir a la app. Experimental.",
+  "routes": [
+    {
+      "id": "reels-feed",
+      "option": "shortForm",
+      "pattern": "^/reels?/?(\\?.*)?$",
+      "redirect": "/?sk=h_chr"
+    },
+    {
+      "id": "watch-feed",
+      "option": "recommendations",
+      "pattern": "^/watch/?(\\?.*)?$",
+      "redirect": "/?sk=h_chr"
+    },
+    {
+      "id": "home-most-recent",
+      "option": "recommendations",
+      "pattern": "^/(home\\.php)?(\\?(?!.*sk=h_chr).*)?$",
+      "redirect": "/?sk=h_chr"
+    }
+  ],
+  "hide": {
+    "shortForm": [
+      "a[href^=\"/reel/\"][aria-label]",
+      "a[href^=\"/reels/\"]",
+      "[aria-label=\"Reels\"]"
+    ],
+    "recommendations": [
+      "a[href^=\"/watch\"]",
+      "[aria-label=\"Video\"]",
+      "[aria-label=\"Watch\"]"
+    ],
+    "explore": []
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Suggested for you",
+        "Sugerencias para ti",
+        "Suggestions pour vous",
+        "Vorschläge für dich",
+        "Sugestões para você",
+        "Suggeriti per te",
+        "People you may know",
+        "Personas que quizá conozcas",
+        "Who to follow",
+        "A quién seguir",
+        "Recommended for you",
+        "Recomendado para ti",
+        "Reels and short videos",
+        "Reels y videos cortos",
+        "Suggested groups",
+        "Grupos sugeridos"
+      ],
+      "containers": [
+        "article",
+        "[role=\"article\"]"
+      ],
+      "maxDepth": 4
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "feedCap",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(\\?.*)?$"
+        ],
+        "items": [
+          "article",
+          "[role=\"article\"]"
+        ],
+        "max": [
+          "40"
+        ]
+      }
+    }
+  ]
+}

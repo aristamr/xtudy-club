@@ -1,0 +1,60 @@
+{
+  "platform": "linkedin",
+  "version": 1,
+  "notes": "linkedin.com web móvil. Se ocultan publicaciones sugeridas y se pone tope al feed; mensajes y perfiles intactos (la mensajería web móvil puede redirigir a la app). Experimental.",
+  "routes": [
+    {
+      "id": "video-feed",
+      "option": "shortForm",
+      "pattern": "^/(video|feed/videos?)(/.*)?$",
+      "redirect": "/feed/"
+    }
+  ],
+  "hide": {
+    "shortForm": [],
+    "explore": [
+      "a[href^=\"/news/\"]",
+      "a[href*=\"/games/\"]"
+    ],
+    "recommendations": []
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Suggested",
+        "Sugerido",
+        "Suggéré",
+        "Vorgeschlagen",
+        "Sugerido para você",
+        "Suggerito",
+        "Recommended for you",
+        "Recomendado para ti"
+      ],
+      "containers": [
+        "article",
+        "[data-urn]",
+        "li"
+      ],
+      "maxDepth": 4
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "feedCap",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/feed/?(\\?.*)?$"
+        ],
+        "items": [
+          "article",
+          "[data-urn^=\"urn:li:activity\"]"
+        ],
+        "max": [
+          "30"
+        ]
+      }
+    }
+  ]
+}

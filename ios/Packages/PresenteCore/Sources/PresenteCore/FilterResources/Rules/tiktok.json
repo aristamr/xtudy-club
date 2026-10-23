@@ -1,0 +1,97 @@
+{
+  "platform": "tiktok",
+  "version": 1,
+  "notes": "TikTok web móvil. La versión web casi no tiene mensajes; el valor principal es búsqueda, perfiles y el feed de cuentas seguidas (requiere sesión). Experimental.",
+  "routes": [
+    {
+      "id": "foryou-to-following",
+      "option": "recommendations",
+      "pattern": "^/(foryou)?/?(\\?.*)?$",
+      "redirect": "/following"
+    },
+    {
+      "id": "explore-to-search",
+      "option": "explore",
+      "pattern": "^/explore/?(\\?.*)?$",
+      "redirect": "/search"
+    },
+    {
+      "id": "live-feed",
+      "option": "recommendations",
+      "pattern": "^/live/?(\\?.*)?$",
+      "redirect": "/following"
+    }
+  ],
+  "hide": {
+    "recommendations": [
+      "a[href=\"/foryou\"]",
+      "a[href=\"/\"][data-e2e=\"nav-foryou\"]",
+      "[data-e2e=\"nav-foryou\"]",
+      "a[href^=\"/live\"]",
+      "[data-e2e=\"nav-live\"]",
+      "[data-e2e=\"user-suggest\"]",
+      "[data-e2e=\"recommend-list-item-container\"]"
+    ],
+    "explore": [
+      "a[href^=\"/explore\"]",
+      "[data-e2e=\"nav-explore\"]"
+    ],
+    "shortForm": []
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Suggested for you",
+        "Sugerencias para ti",
+        "Suggestions pour vous",
+        "Vorschläge für dich",
+        "Sugestões para você",
+        "Suggeriti per te",
+        "People you may know",
+        "Personas que quizá conozcas",
+        "Who to follow",
+        "A quién seguir",
+        "Recommended for you",
+        "Recomendado para ti"
+      ],
+      "containers": [
+        "section",
+        "li"
+      ],
+      "maxDepth": 3
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "preferTab",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(following|foryou)?/?(\\?.*)?$"
+        ],
+        "tabs": [
+          "[role=\"tab\"]"
+        ],
+        "prefer": [
+          "Following",
+          "Siguiendo",
+          "Abonnements",
+          "Suivis",
+          "Folgen",
+          "Gefolgt",
+          "Seguindo",
+          "Seguiti"
+        ],
+        "avoid": [
+          "For you",
+          "Para ti",
+          "Pour vous",
+          "Für dich",
+          "Para você",
+          "Per te"
+        ]
+      }
+    }
+  ]
+}

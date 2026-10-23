@@ -1,0 +1,101 @@
+{
+  "platform": "x",
+  "version": 1,
+  "notes": "x.com web móvil. Se elige 'Siguiendo', se ocultan 'Para ti', tendencias y 'A quién seguir'. Mensajes (/messages, /i/chat) intactos. Experimental.",
+  "routes": [
+    {
+      "id": "explore-trends",
+      "option": "explore",
+      "pattern": "^/explore/tabs/.*$",
+      "redirect": "/explore"
+    }
+  ],
+  "hide": {
+    "explore": [
+      "[data-testid=\"trend\"]",
+      "[aria-label*=\"Trending\"]",
+      "[aria-label*=\"Tendencias\"]",
+      "a[href^=\"/explore/tabs/\"]"
+    ],
+    "recommendations": [
+      "aside[aria-label*=\"follow\"]",
+      "aside[aria-label*=\"seguir\"]"
+    ],
+    "shortForm": [
+      "a[href*=\"/i/videos\"]"
+    ]
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "Suggested for you",
+        "Sugerencias para ti",
+        "Suggestions pour vous",
+        "Vorschläge für dich",
+        "Sugestões para você",
+        "Suggeriti per te",
+        "People you may know",
+        "Personas que quizá conozcas",
+        "Who to follow",
+        "A quién seguir",
+        "Recommended for you",
+        "Recomendado para ti",
+        "Relevant people",
+        "Personas relevantes"
+      ],
+      "containers": [
+        "section",
+        "aside"
+      ],
+      "maxDepth": 3
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "preferTab",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/home(\\?.*)?$"
+        ],
+        "tabs": [
+          "[role=\"tab\"]"
+        ],
+        "prefer": [
+          "Following",
+          "Siguiendo",
+          "Abonnements",
+          "Suivis",
+          "Folgen",
+          "Gefolgt",
+          "Seguindo",
+          "Seguiti"
+        ],
+        "avoid": [
+          "For you",
+          "Para ti",
+          "Pour vous",
+          "Für dich",
+          "Para você",
+          "Per te"
+        ]
+      }
+    },
+    {
+      "name": "feedCap",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/home(\\?.*)?$"
+        ],
+        "items": [
+          "article[data-testid=\"tweet\"]"
+        ],
+        "max": [
+          "40"
+        ]
+      }
+    }
+  ]
+}

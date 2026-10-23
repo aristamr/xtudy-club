@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><title>X (fixture)</title></head>
+<body>
+<div role="tablist">
+  <a role="tab" id="tab-foryou" aria-selected="true" href="#">For you</a>
+  <a role="tab" id="tab-following" aria-selected="false" href="#">Following</a>
+</div>
+<button id="follow-button">Following</button>
+<main id="timeline"></main>
+<section id="trends"><div data-testid="trend" id="trend-1">#Viral</div></section>
+<aside id="wtf"><h2>Who to follow</h2><div>Cuenta</div></aside>
+<a id="dm" href="/messages">Messages</a>
+<script>
+  window.clicks = [];
+  document.getElementById('tab-following').addEventListener('click', function (e) {
+    e.preventDefault(); window.clicks.push('following-tab');
+    this.setAttribute('aria-selected','true'); document.getElementById('tab-foryou').setAttribute('aria-selected','false');
+  });
+  document.getElementById('follow-button').addEventListener('click', function () { window.clicks.push('UNFOLLOW'); });
+  const tl = document.getElementById('timeline');
+  for (let i = 0; i < 45; i++) {
+    const a = document.createElement('article'); a.setAttribute('data-testid','tweet'); a.id = 'tweet-' + i; a.textContent = 'Post ' + i;
+    tl.appendChild(a);
+  }
+</script>
+</body></html>

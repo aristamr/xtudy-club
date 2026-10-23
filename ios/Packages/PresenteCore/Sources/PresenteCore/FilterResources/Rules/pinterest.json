@@ -1,0 +1,63 @@
+{
+  "platform": "pinterest",
+  "version": 1,
+  "notes": "pinterest.com web móvil. El inicio (solo recomendaciones) se sustituye por un buscador; se ocultan 'Más ideas'. Tableros, perfiles y búsqueda intactos. Experimental.",
+  "routes": [
+    {
+      "id": "today-tab",
+      "option": "explore",
+      "pattern": "^/today/?.*$",
+      "redirect": "/"
+    }
+  ],
+  "hide": {
+    "explore": [
+      "a[href^=\"/today\"]",
+      "[data-test-id=\"today-tab\"]"
+    ],
+    "recommendations": [
+      "[data-test-id=\"relatedPins\"]",
+      "[data-test-id=\"more-ideas\"]"
+    ],
+    "shortForm": []
+  },
+  "textRules": [
+    {
+      "option": "recommendations",
+      "phrases": [
+        "More to explore",
+        "Más para explorar",
+        "More ideas",
+        "Más ideas",
+        "More like this",
+        "Más como esto"
+      ],
+      "containers": [
+        "section"
+      ],
+      "maxDepth": 3
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "calmHome",
+      "option": "recommendations",
+      "params": {
+        "paths": [
+          "^/(\\?.*)?$"
+        ],
+        "hide": [
+          "[data-test-id=\"homefeed-feed\"]",
+          "[role=\"list\"]",
+          "[data-test-id=\"masonry-container\"]"
+        ],
+        "searchPath": [
+          "/search/pins/?q="
+        ],
+        "anchor": [
+          "#__PWS_ROOT__, body"
+        ]
+      }
+    }
+  ]
+}
