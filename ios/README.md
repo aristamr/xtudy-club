@@ -6,6 +6,9 @@ Instagram y YouTube sin Reels, Shorts, Explore ni recomendaciones. *Quédate con
 - **Instalar en un iPhone** → [docs/INSTALAR.md](docs/INSTALAR.md)
 - **Plan de pruebas** → [docs/QA.md](docs/QA.md)
 - **TestFlight / App Store** → [docs/APP-STORE.md](docs/APP-STORE.md)
+- **Reporte de entrega v2** → [docs/REPORTE-V2.md](docs/REPORTE-V2.md)
+- **Privacidad** → [docs/PRIVACY.md](docs/PRIVACY.md)
+- **Evidencia (capturas y sitios reales)** → [docs/evidence/](docs/evidence/)
 
 ```bash
 brew install xcodegen && xcodegen && open Presente.xcodeproj   # app
