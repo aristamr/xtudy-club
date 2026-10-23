@@ -20,25 +20,31 @@ for d in devs:
 " "$@"
 }
 
+# Ejecuta un comando con límite de tiempo (macOS no trae `timeout`).
+limit() { local secs=$1; shift; perl -e 'alarm shift; exec @ARGV' "$secs" "$@"; }
+
 shoot() { # udid etiqueta idioma apariencia pantallas...
   local udid=$1 label=$2 lang=$3 look=$4; shift 4
   xcrun simctl ui "$udid" appearance "$look"
   for screen in "$@"; do
-    xcrun simctl terminate "$udid" "$BUNDLE" >/dev/null 2>&1 || true
-    xcrun simctl launch "$udid" "$BUNDLE" -PresenteDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$lang" >/dev/null
+    local file="$OUT/${lang}-${look}-${label}-${screen}.png"
+    echo "$(date +%T) $file"
+    limit 30 xcrun simctl terminate "$udid" "$BUNDLE" >/dev/null 2>&1 || true
+    limit 60 xcrun simctl launch "$udid" "$BUNDLE" -PresenteDemo "$screen" -AppleLanguages "($lang)" -AppleLocale "$lang" >/dev/null || { echo "  no se pudo abrir"; continue; }
     sleep 5
-    xcrun simctl io "$udid" screenshot --type=png "$OUT/${lang}-${look}-${label}-${screen}.png" >/dev/null 2>&1
-    sips -Z 900 "$OUT/${lang}-${look}-${label}-${screen}.png" >/dev/null
+    limit 30 xcrun simctl io "$udid" screenshot --type=png "$file" >/dev/null 2>&1 || { echo "  sin captura"; continue; }
+    sips -Z 900 "$file" >/dev/null
   done
 }
 
 SCREENS=(onboarding1 onboarding2 onboarding3 onboarding4 onboarding5 onboarding5Selected home settings)
 BIG=$(pick "iPhone 17" "iPhone 16" "iPhone 16 Pro")
 SMALL=$(pick "iPhone SE (3rd generation)" "iPhone 16e" "iPhone 13 mini")
+echo "Simuladores: grande=$BIG pequeño=$SMALL"
 for udid in "$BIG" "$SMALL"; do
   xcrun simctl boot "$udid" 2>/dev/null || true
-  xcrun simctl bootstatus "$udid" -b >/dev/null
-  xcrun simctl install "$udid" "$APP"
+  limit 300 xcrun simctl bootstatus "$udid" -b >/dev/null || echo "bootstatus tardó demasiado: $udid"
+  limit 120 xcrun simctl install "$udid" "$APP"
 done
 xcrun simctl status_bar "$BIG" override --time 9:41 --batteryLevel 100 --cellularBars 4 2>/dev/null || true
 

@@ -39,7 +39,25 @@ Lo que **no** hace Presente: no pide contraseñas, no lee cookies, no envía ses
 | "Necesito publicar" (5 min) | ✅ Viable con matiz | `DeviceActivity` exige intervalos ≥ 15 min (usamos 16 por margen). Se programa un intervalo que **termina** en ahora+5 min (empieza 11 min en el pasado, para un intervalo de 16 min). Al terminar, la extensión `PresenteMonitor` reaplica el bloqueo. Respaldo: al volver a primer plano, Presente reaplica si ya venció. Libera **todas** las apps elegidas (iOS no dice cuál es cuál). Verificar en dispositivo. |
 | Datos reales de Tiempo en pantalla en "tu vida en semanas" | ❌ No en el MVP | `DeviceActivityReport` solo muestra datos dentro de una extensión aislada; la app no puede leer los números. Se usa una estimación declarada y se rotula como tal. |
 | **Negocio** | | |
-| Suscripción $39 MXN/mes | ✅ Viable | StoreKit 2, un solo producto `mx.xtudy.presente.monthly`. El precio mostrado siempre es `Product.displayPrice`. |
+| Mensual $39 MXN con 7 días gratis | ✅ Viable | StoreKit 2, suscripción `mx.xtudy.presente.monthly` con oferta introductoria gratuita de 1 semana. La prueba solo se muestra si StoreKit confirma la elegibilidad. |
+| Lifetime $499 MXN | ✅ Viable | Compra no consumible `mx.xtudy.presente.lifetime`. Gana sobre cualquier suscripción; si había una activa, se avisa que no se cancela sola y se ofrece administrarla. |
+
+### Estado por plataforma
+
+| Plataforma | Estado | Qué se filtra | Qué se conserva | Límites conocidos |
+|---|---|---|---|---|
+| Instagram | Parcial | Reels (pestaña y feed), Explore (→ búsqueda), sugerencias; inicio en "Siguiendo" | Mensajes, perfiles, publicaciones de cuentas seguidas, búsqueda | Verificar en iPhone; DMs en web dependen de Meta |
+| YouTube | Parcial | Shorts, inicio algorítmico (→ buscador), relacionados, pantalla final, autoplay | Búsqueda, videos completos, "Mis canales" | Google bloquea el login en WebViews |
+| TikTok | Experimental | "Para ti" (→ Siguiendo), Explore, LIVE, sugerencias | Búsqueda, perfiles, Siguiendo (con sesión) | La web casi no tiene mensajes; todo es video corto |
+| Facebook | Experimental | Reels, Watch, sugerencias; inicio "Más recientes"; tope de feed | Publicaciones de amigos, perfiles, grupos | Messenger web móvil suele mandar a la app |
+| X | Experimental | "Para ti" (→ Siguiendo), tendencias, "A quién seguir"; tope de feed | Mensajes, perfiles, búsqueda | Login de X puede pedir verificaciones |
+| Reddit | Experimental | Popular, All, Explore, carruseles; tope de feed | Comunidades, chat, búsqueda | Inicio de Reddit mezcla recomendaciones |
+| LinkedIn | Experimental | Publicaciones sugeridas, video; tope de feed | Red, mensajes, empleos, perfiles | Mensajería web móvil puede mandar a la app |
+| Threads | Experimental | "Para ti" (→ Siguiendo), sugerencias; tope de feed | Perfiles, búsqueda | Selectores sin verificar |
+| Pinterest | Experimental | Inicio (→ buscador), "Hoy", "Más ideas" | Búsqueda, tableros, perfiles | Casi todo Pinterest es recomendación |
+| Snapchat | No disponible | — | Pausa de la app con Tiempo en pantalla | web.snapchat.com solo funciona en computadora |
+
+"Experimental" se muestra en la app como **Beta**, con un aviso dentro de la red. Nada pasa a "Verificada" sin completar `QA.md` en un iPhone real (`Platform.support` en `PresenteCore`; hay una prueba que impide marcar algo como verificado por accidente).
 
 ## 3. Arquitectura
 
@@ -48,15 +66,16 @@ ios/
 ├── project.yml                  XcodeGen → Presente.xcodeproj
 ├── Packages/PresenteCore/       Lógica pura (iOS/macOS/Linux), con pruebas
 │   ├── FilterResources/Rules/*.json   Reglas por plataforma  ← lo que se edita cuando cambia el HTML
-│   ├── FilterResources/Scripts/     engine.js (genérico) + instagram.js / youtube.js (comportamientos)
+│   ├── FilterResources/Scripts/     engine.js + common.js (genéricos) + <plataforma>.js
 │   ├── FilterEngine.swift       Política de navegación + composición del script
 │   ├── LifeWeeks.swift          Matemática de "tu vida en semanas"
 │   ├── UnlockWindow.swift       Ventana de 5 min compatible con DeviceActivity
-│   ├── Entitlement.swift        Estado de suscripción (independiente de StoreKit)
+│   ├── Entitlement.swift        Acceso (mensual, prueba, Lifetime) y reglas anti-duplicado
+│   ├── TimeProjection.swift     Semana / año / 10 años y equivalencias
 │   └── SavedChannels.swift      "Mis canales" de YouTube
 ├── Presente/                    App SwiftUI
-│   ├── Onboarding/              4 pantallas
-│   ├── Home/                    "Estás protegido." + 2 accesos + "Necesito publicar"
+│   ├── Onboarding/              5 pantallas
+│   ├── Home/                    "Your space is clear." + redes activas + "I need to post"
 │   ├── Browser/                 WKWebView filtrado
 │   ├── ScreenTime/              FamilyControls / ManagedSettings / DeviceActivity
 │   ├── Store/                   StoreKit 2 (desacoplado del filtrado)
@@ -75,7 +94,8 @@ Una sola fuente de verdad por plataforma, `Rules/<plataforma>.json`:
 - `routes`: regex sobre `ruta?consulta` → redirección. Se evalúa **dos veces con la misma regla**: en Swift (`decidePolicyFor`, cargas completas) y en JS (navegación SPA con `history.pushState`, toques en enlaces). La primera regla que coincide decide.
 - `hide`: selectores CSS por opción (una regla CSS por selector para que uno inválido no rompa los demás).
 - `textRules`: frases que, si aparecen como texto exacto, ocultan su contenedor (`article`), con salvaguarda: nunca se oculta un elemento que contenga `main`, `nav` u otras publicaciones.
-- `behaviors`: funciones con nombre en `instagram.js`/`youtube.js` (p. ej. `calmHome`, `autoplayGuard`).
+- `behaviors`: funciones con nombre y parámetros. Genéricas en `common.js`: `calmHome` (inicio → buscador), `preferTab` (elige "Siguiendo"; solo hace clic en `role="tab"`, nunca en botones de seguir), `feedCap` (cierra feeds infinitos tras N publicaciones). Específicas en `<plataforma>.js` (p. ej. `autoplayGuard` de YouTube).
+- Mensajes: las mismas rutas se aplican dentro de los chats, así que un Reel o un Explore compartido no abre el feed infinito, pero el historial, la escritura y el regreso a la bandeja no se tocan (probado con fixtures).
 
 Cada regla pertenece a una de las tres opciones del onboarding; apagar una opción quita exactamente sus reglas.
 
@@ -99,9 +119,9 @@ Mantenimiento cuando Instagram/YouTube cambian: editar el JSON → `swift test` 
 
 ### Suscripción (StoreKit 2)
 
-`SubscriptionStore` → `Product.products`, `purchase()`, `Transaction.updates`, `Transaction.currentEntitlements` (solo transacciones `.verified`), `AppStore.sync()` para restaurar, `manageSubscriptionsSheet`, periodo de gracia y renovación vía `subscription.status`. La decisión "¿tiene acceso?" vive en `EntitlementEvaluator` (puro, probado). El motor de filtrado no sabe nada de pagos.
+`SubscriptionStore` → `Product.products` (mensual + Lifetime), `isEligibleForIntroOffer`, `purchase()`, `Transaction.updates`, `Transaction.currentEntitlements` (solo transacciones `.verified`), `AppStore.sync()` para restaurar, `manageSubscriptionsSheet`, periodo de gracia y renovación vía `subscription.status`. La decisión "¿tiene acceso?" vive en `EntitlementEvaluator` y "¿qué se puede comprar?" en `PurchaseRules` (ambos puros y probados). El motor de filtrado no sabe nada de pagos. Precios y fechas siempre de StoreKit; nada se compra sin elegir un plan y tocar el botón.
 
-Qué desbloquea la suscripción: abrir Instagram/YouTube filtrados. El onboarding, la configuración, el bloqueo de apps y "Necesito publicar" funcionan sin pagar (no retenemos a nadie con sus apps bloqueadas).
+Qué desbloquean los planes: abrir las redes filtradas. El onboarding, la configuración, el bloqueo de apps y "Necesito publicar" funcionan sin pagar (no retenemos a nadie con sus apps bloqueadas).
 
 ### Privacidad
 
@@ -124,6 +144,6 @@ Qué desbloquea la suscripción: abrir Instagram/YouTube filtrados. El onboardin
 
 ## 5. Qué está verificado y qué no
 
-- ✅ **Verificado automáticamente en este repositorio**: 32 pruebas de `PresenteCore` (Swift 6.1, Linux) y 19 pruebas del filtro JS en Chromium contra páginas que imitan la estructura de Instagram y YouTube.
-- ✅ **Compilado en Xcode (CI de GitHub, macOS 15)**: la app, las 2 extensiones y las pruebas en Simulador (StoreKit 9/9 + núcleo) pasan.
+- ✅ **Verificado automáticamente (CI)**: 47 pruebas de `PresenteCore`, 26 pruebas del filtro JS contra páginas que imitan cada red, traducciones completas en 6 idiomas, y en Xcode: app + 2 extensiones + 16 pruebas en Simulador (15 de StoreKit). También compila sin cuenta de Apple Developer con el Xcode más reciente.
+- 📸 **Evidencia visual**: `docs/evidence/screenshots/` (generadas por CI) y `docs/evidence/live-sites/` (sitios reales, sin sesión).
 - ⚠️ **Requiere verificación manual en iPhone real**: selectores contra los sitios reales de hoy, Screen Time, desbloqueo de 5 min, login. Ver `QA.md`. **Ninguna función debe anunciarse como lista hasta marcarla en QA.**
