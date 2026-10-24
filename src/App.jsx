@@ -2701,6 +2701,8 @@ export default function ClubDescuentos() {
         const entryLang = entry.get("lang");
         if (entryLang === "en" || entryLang === "es") setLangState(entryLang);
         if (!myEmail && entry.get("login") === "1") setView("login");
+        // «Únete gratis a Xtudy Club» en el inicio del sitio: abre directo el registro.
+        else if (!myEmail && entry.get("signup") === "1") setView("register");
       } catch (e) {
         console.error(e);
       } finally {
