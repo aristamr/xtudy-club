@@ -2322,7 +2322,6 @@ const SOON_ORDER = 999;
 
 // El panel de administrador siempre se muestra en español, así que aquí usamos
 // nombres fijos (no bilingües) solo para esa parte de la app.
-const TIER_NAME_ES = { guest: "Explorador", resident: "Residente Xtudy", soon: "Próximamente" };
 const RESTAURANT_TIER_OPTIONS = [
   { id: "guest", name: "Explorador" },
   { id: "resident", name: "Residente Xtudy" },
@@ -2529,6 +2528,11 @@ function getReservationUrl(phone) {
 
 // Sube el logo de un restaurante al espacio de almacenamiento y regresa el link
 // público para guardarlo. Solo funciona si quien lo llama tiene sesión de admin.
+function QrError() {
+  const { lang } = useContext(LangContext);
+  return <div role="alert" style={{ fontSize: 11, color: "#B3261E" }}>{tr(lang, "No se pudo generar el código QR.", "The QR code could not be generated.", "Impossible de générer le code QR.", "Der QR-Code konnte nicht erstellt werden.")}</div>;
+}
+
 function QRCode({ value, size = 140 }) {
   const data = useMemo(() => {
     try {
@@ -2548,7 +2552,7 @@ function QRCode({ value, size = 140 }) {
     }
   }, [value]);
 
-  if (!data) return <div style={{ fontSize: 11, color: "#B3261E" }}>No se pudo generar el código QR.</div>;
+  if (!data) return <QrError />;
 
   const quiet = 2;
   const total = data.count + quiet * 2;
@@ -2619,14 +2623,13 @@ export default function ClubDescuentos() {
       return null;
     }
   });
-  const [verifyResult, setVerifyResult] = useState(null);
 
   useEffect(() => {
     (async () => {
       try {
         const myEmail = await storageGet("my-email", false);
         const savedLang = await storageGet("my-lang", false);
-        if (savedLang === "en" || savedLang === "es") setLangState(savedLang);
+        if (["es", "en", "fr", "de"].includes(savedLang)) setLangState(savedLang);
         const list = await storageGet("restaurants-list", true);
         let restList = DEFAULT_RESTAURANTS;
         if (list) { try { restList = JSON.parse(list); setRestaurants(restList); } catch {} }
@@ -2651,7 +2654,7 @@ export default function ClubDescuentos() {
         // y el idioma elegido allá se conserva.
         const entry = new URLSearchParams(window.location.search);
         const entryLang = entry.get("lang");
-        if (entryLang === "en" || entryLang === "es") setLangState(entryLang);
+        if (["es", "en", "fr", "de"].includes(entryLang)) setLangState(entryLang);
         if (!myEmail && entry.get("login") === "1") setView("login");
         // «Únete gratis a Xtudy Club» en el inicio del sitio: abre directo el registro.
         else if (!myEmail && entry.get("signup") === "1") setView("register");
@@ -2808,39 +2811,7 @@ export default function ClubDescuentos() {
               <img src={SYMBOL_DATA} alt="Xtudy" style={{ height: 14 }} />
               <span style={{ fontWeight: 700, color: colors.ink }}>Xtudy</span>
             </div>
-            {!verifyResult && <p style={styles.formSub}>Verificando…</p>}
-            {verifyResult && verifyResult.status === "ok" && (
-              <>
-                <div style={styles.checkinCheck}><Check size={40} color="#fff" strokeWidth={3} /></div>
-                <div style={styles.checkinName}>{verifyResult.name}</div>
-                <div style={styles.checkinTier}>
-                  Miembro de Students Club · {verifyResult.level}
-                </div>
-                {verifyResult.promotionTitle && <div style={styles.checkinRest}>{verifyResult.promotionTitle}</div>}
-                <div style={styles.checkinDiscountBig}>{verifyResult.benefit}</div>
-                <div style={styles.checkinRest}>{verifyResult.business}</div>
-                <p style={styles.checkinHint}>Este estudiante tiene acceso confirmado a este descuento.</p>
-              </>
-            )}
-            {verifyResult && verifyResult.status === "tier" && (
-              <>
-                <div style={{ ...styles.checkinCheck, background: "#B3261E" }}><X size={40} color="#fff" strokeWidth={3} /></div>
-                <div style={styles.checkinName}>{verifyResult.name}</div>
-                <p style={styles.checkinHint}>Este miembro ({verifyResult.level}) no tiene acceso a esta promoción de {verifyResult.business}: es para {verifyResult.requiredLevel}.</p>
-              </>
-            )}
-            {verifyResult && verifyResult.status === "error" && (
-              <>
-                <div style={{ ...styles.checkinCheck, background: "#B3261E" }}><X size={40} color="#fff" strokeWidth={3} /></div>
-                <p style={styles.checkinHint}>No se pudo verificar en este momento (sin conexión). Intenta de nuevo.</p>
-              </>
-            )}
-            {verifyResult && verifyResult.status === "notfound" && (
-              <>
-                <div style={{ ...styles.checkinCheck, background: "#B3261E" }}><X size={40} color="#fff" strokeWidth={3} /></div>
-                <p style={styles.checkinHint}>Este código no es válido o ya expiró.</p>
-              </>
-            )}
+            <p style={styles.formSub}>{tr(lang, "Abriendo la validación de Xtudy…", "Opening Xtudy validation…", "Ouverture de la validation Xtudy…", "Xtudy-Prüfung wird geöffnet…")}</p>
           </div>
         </div>
       </div>
