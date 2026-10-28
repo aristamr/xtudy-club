@@ -3178,6 +3178,8 @@ function MeasureNotice() {
   const { lang } = useContext(LangContext);
   const [ask, setAsk] = useState(false);
   useEffect(() => { setAsk(measureChoice() === null && !privacySignal()); }, []);
+  // Mientras el aviso está abierto, la página deja espacio abajo para que ningún botón quede tapado.
+  useEffect(() => { if (!ask) return; const prev = document.body.style.paddingBottom; document.body.style.paddingBottom = "140px"; return () => { document.body.style.paddingBottom = prev; }; }, [ask]);
   if (!ask) return null;
   const decide = (v) => { try { localStorage.setItem(MEASURE_KEY, v); } catch {} setAsk(false); };
   const text = tr(lang, "Medimos las visitas de forma anónima, sin cookies ni datos personales, para mejorar el Club.", "We measure visits anonymously, without cookies or personal data, to improve the Club.", "Nous mesurons les visites de façon anonyme, sans cookies ni données personnelles, pour améliorer le Club.", "Wir messen Besuche anonym, ohne Cookies oder personenbezogene Daten, um den Club zu verbessern.");
