@@ -2567,13 +2567,13 @@ function QRCode({ value, size = 140 }) {
       qr.addData(String(value || ""));
       qr.make();
       const count = qr.getModuleCount();
-      const cells = [];
+      let d = "";
       for (let r = 0; r < count; r++) {
         for (let c = 0; c < count; c++) {
-          if (qr.isDark(r, c)) cells.push([r, c]);
+          if (qr.isDark(r, c)) d += `M${c + 2} ${r + 2}h1v1h-1z`;
         }
       }
-      return { count, cells };
+      return { count, d };
     } catch (e) {
       return null;
     }
@@ -2587,9 +2587,7 @@ function QRCode({ value, size = 140 }) {
   return (
     <svg width={size} height={size} viewBox={`0 0 ${total} ${total}`} shapeRendering="crispEdges">
       <rect width={total} height={total} fill="#ffffff" />
-      {data.cells.map(([r, c], i) => (
-        <rect key={i} x={c + quiet} y={r + quiet} width="1" height="1" fill="#0B1F2B" />
-      ))}
+      <path d={data.d} fill="#0B1F2B" />
     </svg>
   );
 }
@@ -2647,7 +2645,7 @@ export default function ClubDescuentos() {
   const [restaurants, setRestaurants] = useState(DEFAULT_RESTAURANTS);
   const [universities, setUniversities] = useState(DEFAULT_UNIVERSITIES);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", countryCode: "+52", studentId: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no", residentCode: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", countryCode: "+52", studentId: "", university: DEFAULT_UNIVERSITIES[0].name, isXtudy: "no", residentCode: "", profile: "student", proCode: "", proError: "" });
   const [formError, setFormError] = useState("");
   // Registro del equipo Xtudy (empleado o colaborador): el código lo valida el servidor y decide el tipo.
   const [team, setTeam] = useState({ open: false, code: "", kind: null, status: "", busy: false });
@@ -2773,7 +2771,9 @@ export default function ClubDescuentos() {
   const handleRegister = async () => {
     setFormError("");
     const isTeam = Boolean(team.kind);
-    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || (!isTeam && !form.studentId.trim())) {
+    const isPro = !isTeam && form.profile === "professional";
+    if (isPro && !form.proCode.trim()) { setForm((f) => ({ ...f, proError: "empty" })); return; }
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || (!isTeam && !isPro && !form.studentId.trim())) {
       setFormError(tr(lang, "Completa todos los campos para continuar.", "Fill in all the fields to continue.", "Remplis tous les champs pour continuer.", "Fülle alle Felder aus, um fortzufahren."));
       return;
     }
@@ -2798,12 +2798,12 @@ export default function ClubDescuentos() {
       setFormError("duplicate-email");
       return;
     }
-    if (isTeam) {
-      // La cuenta del equipo la crea el servidor (vuelve a validar el código; el tipo lo decide el código).
+    if (isTeam || isPro) {
+      // La cuenta del equipo o del residente profesionista la crea el servidor (valida el código y decide el tipo).
       setTeam((t) => ({ ...t, busy: true }));
       try {
         const r = await fetch(`${PLATFORM_URL}/api/club/team/register`, { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: team.code.trim(), name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: `${form.countryCode === "other" ? "" : form.countryCode + " "}${form.phone.trim()}` }) });
+          body: JSON.stringify({ code: (isPro ? form.proCode : team.code).trim(), as: isPro ? "professional" : "team", name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: `${form.countryCode === "other" ? "" : form.countryCode + " "}${form.phone.trim()}` }) });
         const j = await r.json().catch(() => ({}));
         if (j.status === "ok" && j.account) {
           setTeam({ open: false, code: "", kind: null, status: "", busy: false });
@@ -2813,7 +2813,12 @@ export default function ClubDescuentos() {
           return;
         }
         if (j.status === "exists") { setTeam((t) => ({ ...t, busy: false })); setFormError("duplicate-email"); return; }
-        if (["invalid", "expired", "inactive", "too_many"].includes(j.status)) { setTeam((t) => ({ ...t, busy: false, kind: null, status: j.status })); return; }
+        if (["invalid", "expired", "inactive", "too_many"].includes(j.status)) {
+          setTeam((t) => ({ ...t, busy: false, ...(isPro ? {} : { kind: null, status: j.status }) }));
+          // Profesionista: el código no sirve → se explica junto al campo y se conservan los datos capturados.
+          if (isPro) setForm((f) => ({ ...f, proError: j.status }));
+          return;
+        }
         setTeam((t) => ({ ...t, busy: false }));
         setFormError(j.status === "bad_request"
           ? tr(lang, "Revisa tus datos: nombre, correo y teléfono.", "Check your details: name, email and phone.", "Vérifie tes informations : nom, e-mail et téléphone.", "Prüfe deine Angaben: Name, E-Mail und Telefon.")
@@ -3298,6 +3303,7 @@ function TeamCodeBox({ team, setTeam, onCheck, lang }) {
 function Register({ form, setForm, team, setTeam, onCheckTeam, onSubmit, error, onBack, universities, onGoToLogin, onClearError }) {
   const { lang } = useContext(LangContext);
   const isTeam = Boolean(team && team.kind);
+  const isPro = !isTeam && form.profile === "professional";
   const publicas = universities.filter((u) => u.tipo === "Pública");
   const privadas = universities.filter((u) => u.tipo === "Privada");
   const otras = universities.filter((u) => u.tipo === "Otra");
@@ -3316,6 +3322,15 @@ function Register({ form, setForm, team, setTeam, onCheckTeam, onSubmit, error, 
         )}</p>}
         <TeamCodeBox team={team} setTeam={setTeam} onCheck={onCheckTeam} lang={lang} />
         <div style={styles.form}>
+          {!isTeam && (
+            <div style={styles.label} role="radiogroup" aria-label={tr(lang, "Tu perfil", "Your profile", "Ton profil", "Dein Profil")}>
+              {tr(lang, "Tu perfil", "Your profile", "Ton profil", "Dein Profil")}
+              <div style={styles.radioRow}>
+                <button type="button" role="radio" aria-checked={!isPro} style={{ ...styles.radioBtn, ...(!isPro ? styles.radioBtnActive : {}) }} onClick={() => setForm({ ...form, profile: "student", proError: "" })}>{tr(lang, "Estudiante", "Student", "Étudiant", "Studierende")}</button>
+                <button type="button" role="radio" aria-checked={isPro} style={{ ...styles.radioBtn, ...(isPro ? styles.radioBtnActive : {}) }} onClick={() => setForm({ ...form, profile: "professional" })}>{tr(lang, "Profesionista", "Professional", "Professionnel", "Berufstätig")}</button>
+              </div>
+            </div>
+          )}
           <label style={styles.label}>{tr(lang, "Nombre completo", "Full name", "Nom complet", "Vollständiger Name")}
             <input style={styles.input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={tr(lang, "Ej. Ana Torres", "E.g. Ana Torres", "Ex. Ana Torres", "Z.B. Ana Torres")} />
           </label>
@@ -3330,7 +3345,14 @@ function Register({ form, setForm, team, setTeam, onCheckTeam, onSubmit, error, 
               <input style={{ ...styles.input, flex: 1 }} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={tr(lang, "Número de teléfono", "Phone number", "Numéro de téléphone", "Telefonnummer")} />
             </div>
           </label>
-          {!isTeam && <>
+          {isPro && (
+            <label style={styles.label}>{tr(lang, "Código de residente profesionista", "Resident professional code", "Code résident professionnel", "Code für berufstätige Bewohner")}
+              <input style={styles.input} value={form.proCode} onChange={(e) => setForm({ ...form, proCode: e.target.value, proError: "" })} autoComplete="off" autoCapitalize="characters" maxLength={40} aria-invalid={Boolean(form.proError)} placeholder={tr(lang, "Pídelo a tu administración Xtudy", "Ask your Xtudy administration", "Demande-le à ton administration Xtudy", "Frag deine Xtudy-Verwaltung danach")} />
+              {form.proError && <span role="alert" style={styles.errorText}>{tr(lang, ...(TEAM_CODE_MSG[form.proError] || TEAM_CODE_MSG.error)).replace(/ o continúa con el registro normal\.| or continue with the regular sign-up\.| ou continue avec l'inscription normale\.| oder fahre mit der normalen Registrierung fort\./, ".")} {tr(lang, "Tus datos se conservan; corrige el código o elige «Estudiante».", "Your details are kept; fix the code or choose “Student”.", "Tes données sont conservées ; corrige le code ou choisis « Étudiant ».", "Deine Angaben bleiben erhalten; korrigiere den Code oder wähle „Studierende“.")}</span>}
+              <span style={{ ...styles.partnerFine, margin: 0 }}>{tr(lang, "Sin universidad ni matrícula. Activa tu membresía de residente profesionista; no crea una reserva.", "No university or student ID needed. It activates your resident professional membership; it doesn't create a booking.", "Ni université ni numéro d'étudiant. Il active ton adhésion de résident professionnel ; il ne crée pas de réservation.", "Keine Universität oder Matrikelnummer nötig. Er aktiviert deine Mitgliedschaft als berufstätiger Bewohner; es entsteht keine Buchung.")}</span>
+            </label>
+          )}
+          {!isTeam && !isPro && <>
           <label style={styles.label}>{tr(lang, "Matrícula / ID de estudiante", "Student ID", "Numéro d'étudiant", "Studentenausweis-Nummer")}
             <input style={styles.input} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} placeholder={tr(lang, "Ej. A01234567", "E.g. A01234567", "Ex. A01234567", "Z.B. A01234567")} />
           </label>
@@ -3513,12 +3535,14 @@ function useNarrow() {
 }
 
 // Detalles de canje de una promoción: se piden al servidor, que comprueba la cuenta y el nivel en CADA apertura.
-function useRedeemDetails(r, p, level, account) {
+function useRedeemDetails(r, p, level, account, preloaded) {
   const allowed = p && canUsePromo(level, p);
-  const [st, setSt] = useState({ state: "idle", data: null });
+  const ready = p && allowed && preloaded ? preloaded[`${r.id}:${p.id}`] : null;
+  const [st, setSt] = useState(() => (ready ? { state: "ok", data: ready } : { state: "idle", data: null }));
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!p || !allowed) { setSt({ state: allowed === false ? "denied" : "idle", data: null }); return; }
+    if (ready && tick === 0) { setSt({ state: "ok", data: ready }); return; }
     let alive = true;
     setSt({ state: "loading", data: null });
     fetch(`${PLATFORM_URL}/api/club/benefit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: account.email, memberId: account.memberId, id: r.id, promotionId: p.legacy ? undefined : p.id }) })
@@ -3530,11 +3554,11 @@ function useRedeemDetails(r, p, level, account) {
       })
       .catch(() => alive && setSt({ state: "error", data: null }));
     return () => { alive = false; };
-  }, [r.id, p && p.id, allowed, account.email, account.memberId, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [r.id, p && p.id, allowed, account.email, account.memberId, tick, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   return { ...st, retry: () => setTick((t) => t + 1) };
 }
 
-function BenefitDetails({ r, promos, initialId, mode, lang, level, account, onClose }) {
+function BenefitDetails({ r, promos, initialId, mode, lang, level, account, preloaded, onClose }) {
   const narrow = useNarrow();
   const closeRef = React.useRef(null);
   const boxRef = React.useRef(null);
@@ -3542,7 +3566,7 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, onCl
   const [copied, setCopied] = useState(false);
   const base = promos.find((x) => x.id === selId) || promos[0];
   const allowed = canUsePromo(level, base);
-  const redeem = useRedeemDetails(r, base, level, account);
+  const redeem = useRedeemDetails(r, base, level, account, preloaded);
   // Con acceso confirmado, los textos completos vienen del servidor; mientras tanto, el aviso público.
   const p = redeem.state === "ok" && redeem.data && redeem.data.i18n ? { ...base, i18n: { ...base.i18n, ...redeem.data.i18n } } : base;
   const online = partnerKind(r) === "online";
@@ -3630,7 +3654,7 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, onCl
           )}
           {allowed && redeem.state === "denied" && <p style={styles.modalText}>{T("Esta promoción es solo para miembros con el nivel requerido.", "This promotion is only for members with the required tier.", "Cette promotion est réservée aux membres du niveau requis.", "Dieses Angebot ist nur für Mitglieder mit der erforderlichen Stufe.")}</p>}
 
-          {qrUrl && mode === "qr" && <QrBlock key={`qr-${base.id}`} url={qrUrl} T={T} label={`${r.name} · ${promoTitle(p, lang)}`} />}
+          {qrUrl && mode === "qr" && <QrBlock key={`qr-${base.id}`} url={qrUrl} T={T} label={`${r.name} · ${promoTitle(p, lang)}`} onShown={() => qrShown(account, r.id, base.id)} />}
 
           {code && (
             <section style={styles.modalSection}>
@@ -3691,15 +3715,24 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, onCl
             </section>
           )}
 
-          {qrUrl && mode !== "qr" && <QrBlock key={base.id} url={qrUrl} T={T} label={`${r.name} · ${promoTitle(p, lang)}`} collapsed />}
+          {qrUrl && mode !== "qr" && <QrBlock key={base.id} url={qrUrl} T={T} label={`${r.name} · ${promoTitle(p, lang)}`} collapsed onShown={() => qrShown(account, r.id, base.id)} />}
         </div>
       </div>
     </div>
   );
 }
 
-function QrBlock({ url, T, label, collapsed }) {
+// «QR generado»: aviso sin esperar respuesta (una vez por promoción en esta visita).
+const QR_SHOWN = new Set();
+function qrShown(account, id, promotionId) {
+  const k = `${id}:${promotionId}`;
+  if (QR_SHOWN.has(k)) return;
+  QR_SHOWN.add(k);
+  post("/api/club/qr-shown", { email: account.email, memberId: account.memberId, id, promotionId }).catch(() => {});
+}
+function QrBlock({ url, T, label, collapsed, onShown }) {
   const [open, setOpen] = useState(!collapsed);
+  useEffect(() => { if (open && onShown) onShown(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <section style={styles.modalSection}>
       {open ? (
@@ -3721,17 +3754,25 @@ const post = (path, body) => fetch(`${PLATFORM_URL}${path}`, { method: "POST", h
 
 // El nivel lo decide el servidor (residente, colaborador o explorador). Mientras responde, se usa el de la cuenta.
 function useMember(account) {
+  const { lang } = useContext(LangContext);
   const [me, setMe] = useState(null);
+  const [failed, setFailed] = useState(false);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let alive = true;
-    post("/api/club/me", { email: account.email, memberId: account.memberId }).then((r) => { if (alive && r.ok) setMe(r.j); }).catch(() => {});
+    setFailed(false);
+    // Perfil y detalles de todos los beneficios a los que tiene acceso en una sola petición: abrir «Detalles» o «Mostrar QR»
+    // después no espera al servidor. Al actualizar (refresh) se conserva lo anterior hasta que llega lo nuevo.
+    post("/api/club/me", { email: account.email, memberId: account.memberId, include: ["benefits"], lang })
+      .then((r) => { if (!alive) return; if (r.ok) setMe(r.j); else setFailed(true); })
+      .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [account.email, account.memberId, tick]);
-  return { me, refresh: () => setTick((t) => t + 1) };
+  }, [account.email, account.memberId, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { me, failed, refresh: () => setTick((t) => t + 1) };
 }
 
-function CollaboratorCode({ account, lang, onDone }) {
+function CollaboratorCode({ account, lang, onDone, as = "team" }) {
+  const pro = as === "professional";
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
   const [st, setSt] = useState({ state: "idle" });
@@ -3741,15 +3782,15 @@ function CollaboratorCode({ account, lang, onDone }) {
     if (!code.trim()) return;
     setSt({ state: "sending" });
     try {
-      const r = await post("/api/club/collaborator", { email: account.email, memberId: account.memberId, code: code.trim() });
+      const r = await post("/api/club/collaborator", { email: account.email, memberId: account.memberId, code: code.trim(), as });
       const s = r.j.status || (r.status === 429 ? "too_many" : "error");
       setSt({ state: s });
       if (s === "ok" || s === "already") { setCode(""); onDone(); }
     } catch { setSt({ state: "error" }); }
   };
   const msg = {
-    ok: T("¡Listo! Ya eres parte del equipo Xtudy en el Club: tienes los descuentos de Explorador y de Residente.", "Done! You're now part of the Xtudy team in the Club: you get both Explorer and Resident discounts.", "C'est fait ! Tu fais maintenant partie de l'équipe Xtudy dans le Club : tu as les réductions Explorateur et Résident.", "Fertig! Du gehörst jetzt im Club zum Xtudy-Team: Du bekommst die Rabatte für Entdecker und Bewohner."),
-    already: T("Ya eras parte del equipo Xtudy en el Club.", "You were already part of the Xtudy team in the Club.", "Tu faisais déjà partie de l'équipe Xtudy dans le Club.", "Du gehörst im Club bereits zum Xtudy-Team."),
+    ok: pro ? T("¡Listo! Ya eres Residente profesionista: tienes los descuentos de Explorador y de Residente.", "Done! You're now a Resident professional: you get both Explorer and Resident discounts.", "C'est fait ! Tu es maintenant Résident professionnel : tu as les réductions Explorateur et Résident.", "Fertig! Du bist jetzt berufstätiger Bewohner: Du bekommst die Rabatte für Entdecker und Bewohner.") : T("¡Listo! Ya eres parte del equipo Xtudy en el Club: tienes los descuentos de Explorador y de Residente.", "Done! You're now part of the Xtudy team in the Club: you get both Explorer and Resident discounts.", "C'est fait ! Tu fais maintenant partie de l'équipe Xtudy dans le Club : tu as les réductions Explorateur et Résident.", "Fertig! Du gehörst jetzt im Club zum Xtudy-Team: Du bekommst die Rabatte für Entdecker und Bewohner."),
+    already: pro ? T("Ya eras Residente profesionista.", "You were already a Resident professional.", "Tu étais déjà Résident professionnel.", "Du warst bereits berufstätiger Bewohner.") : T("Ya eras parte del equipo Xtudy en el Club.", "You were already part of the Xtudy team in the Club.", "Tu faisais déjà partie de l'équipe Xtudy dans le Club.", "Du gehörst im Club bereits zum Xtudy-Team."),
     invalid: T("Ese código no es válido. Revísalo e intenta de nuevo.", "That code isn't valid. Check it and try again.", "Ce code n'est pas valide. Vérifie-le et réessaie.", "Dieser Code ist ungültig. Prüfe ihn und versuche es erneut."),
     expired: T("Ese código ya venció. Pide uno vigente a Xtudy.", "That code has expired. Ask Xtudy for a current one.", "Ce code a expiré. Demande-en un valide à Xtudy.", "Dieser Code ist abgelaufen. Frag Xtudy nach einem gültigen."),
     inactive: T("Ese código ya no está activo. Pide uno vigente a Xtudy.", "That code is no longer active. Ask Xtudy for a current one.", "Ce code n'est plus actif. Demande-en un valide à Xtudy.", "Dieser Code ist nicht mehr aktiv. Frag Xtudy nach einem gültigen."),
@@ -3757,48 +3798,42 @@ function CollaboratorCode({ account, lang, onDone }) {
     error: T("No pudimos validar el código. Intenta de nuevo en un momento.", "We couldn't check the code. Please try again in a moment.", "Impossible de vérifier le code. Réessaie dans un instant.", "Der Code konnte nicht geprüft werden. Bitte versuche es gleich noch einmal."),
   }[st.state];
   if (!open) return (
-    <button type="button" style={styles.collabLink} onClick={() => setOpen(true)}>{T("¿Eres parte del equipo Xtudy? Ingresa tu código.", "Are you part of the Xtudy team? Enter your code.", "Tu fais partie de l'équipe Xtudy ? Saisis ton code.", "Gehörst du zum Xtudy-Team? Gib deinen Code ein.")}</button>
+    <button type="button" style={styles.collabLink} onClick={() => setOpen(true)}>{pro ? T("¿Eres residente profesionista? Ingresa tu código.", "Are you a resident professional? Enter your code.", "Tu es résident professionnel ? Saisis ton code.", "Bist du berufstätiger Bewohner? Gib deinen Code ein.") : T("¿Eres parte del equipo Xtudy? Ingresa tu código.", "Are you part of the Xtudy team? Enter your code.", "Tu fais partie de l'équipe Xtudy ? Saisis ton code.", "Gehörst du zum Xtudy-Team? Gib deinen Code ein.")}</button>
   );
   return (
     <form onSubmit={submit} style={styles.collabBox}>
-      <label style={{ ...styles.label, color: "#CFE6F5" }} htmlFor="collab-code">{T("Código de equipo Xtudy", "Xtudy team code", "Code d'équipe Xtudy", "Xtudy-Team-Code")}</label>
+      <label style={{ ...styles.label, color: "#CFE6F5" }} htmlFor={`collab-code-${as}`}>{pro ? T("Código de residente profesionista", "Resident professional code", "Code résident professionnel", "Code für berufstätige Bewohner") : T("Código de equipo Xtudy", "Xtudy team code", "Code d'équipe Xtudy", "Xtudy-Team-Code")}</label>
       <div style={{ display: "flex", gap: 8 }}>
-        <input id="collab-code" style={styles.input} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" autoCapitalize="characters" maxLength={40} />
+        <input id={`collab-code-${as}`} style={styles.input} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" autoCapitalize="characters" maxLength={40} />
         <button type="submit" style={{ ...styles.benefitPrimary, width: "auto", minWidth: 110 }} disabled={st.state === "sending"}>{st.state === "sending" ? T("Validando…", "Checking…", "Vérification…", "Prüfen…") : T("Validar", "Check", "Valider", "Prüfen")}</button>
       </div>
-      <p style={{ ...styles.partnerFine, color: "#CFE6F5", margin: 0 }}>{T("Es para empleados y colaboradores de Xtudy. Conservas tu cuenta, tus datos y tus beneficios.", "It's for Xtudy employees and collaborators. You keep your account, your details and your benefits.", "C'est pour les employés et collaborateurs de Xtudy. Tu gardes ton compte, tes données et tes avantages.", "Für Mitarbeiter und Partner von Xtudy. Du behältst dein Konto, deine Daten und deine Vorteile.")}</p>
+      <p style={{ ...styles.partnerFine, color: "#CFE6F5", margin: 0 }}>{pro ? T("Para residentes de Xtudy que no son estudiantes. Conservas tu cuenta, tus datos y tus beneficios.", "For Xtudy residents who aren't students. You keep your account, your details and your benefits.", "Pour les résidents Xtudy qui ne sont pas étudiants. Tu gardes ton compte, tes données et tes avantages.", "Für Xtudy-Bewohner, die keine Studierenden sind. Du behältst dein Konto, deine Daten und deine Vorteile.") : T("Es para empleados y colaboradores de Xtudy. Conservas tu cuenta, tus datos y tus beneficios.", "It's for Xtudy employees and collaborators. You keep your account, your details and your benefits.", "C'est pour les employés et collaborateurs de Xtudy. Tu gardes ton compte, tes données et tes avantages.", "Für Mitarbeiter und Partner von Xtudy. Du behältst dein Konto, deine Daten und deine Vorteile.")}</p>
       {msg && <p role="status" style={{ margin: 0, fontSize: 13.5, color: st.state === "ok" || st.state === "already" ? "#BFF0C8" : "#FFD5D0" }}>{msg}</p>}
     </form>
   );
 }
 
-const GOLD_MESSAGE = [
-  "¡Conseguiste nuestra máxima insignia! Ha sido un honor recibirte en Xtudy. Como agradecimiento, te regalamos 5 noches de hospedaje para tu próxima aventura, sujetas a disponibilidad.",
-  "You've earned our highest badge! It has been an honor to host you at Xtudy. As a thank-you, we're giving you 5 nights of accommodation for your next adventure, subject to availability.",
-  "Tu as obtenu notre plus haute distinction ! Ce fut un honneur de t'accueillir chez Xtudy. Pour te remercier, nous t'offrons 5 nuits d'hébergement pour ta prochaine aventure, sous réserve de disponibilité.",
-  "Du hast unser höchstes Abzeichen erreicht! Es war uns eine Ehre, dich bei Xtudy zu begrüßen. Als Dankeschön schenken wir dir 5 Übernachtungen für dein nächstes Abenteuer, je nach Verfügbarkeit.",
-];
 const GOLD_CONDITIONS_TX = [
-  "Cubre 5 noches sin costo de renta en una sola reserva futura, sujeto a disponibilidad. Personal e intransferible; un solo uso. Si la estancia es menor a 5 noches no hay devolución ni saldo a favor; si es mayor, pagas la renta de las noches restantes. No cubre el depósito en garantía ni otros cargos. Las estancias más cortas que el mínimo habitual requieren revisión de Xtudy.",
-  "Covers 5 rent-free nights in one future booking, subject to availability. Personal and non-transferable; single use. If the stay is shorter than 5 nights there is no refund or credit; if longer, you pay rent for the remaining nights. It doesn't cover the security deposit or other charges. Stays shorter than the usual minimum require review by Xtudy.",
-  "Couvre 5 nuits sans loyer dans une seule réservation future, sous réserve de disponibilité. Personnel et non transférable ; usage unique. Si le séjour dure moins de 5 nuits, il n'y a ni remboursement ni crédit ; s'il est plus long, tu paies le loyer des nuits restantes. Ne couvre ni le dépôt de garantie ni d'autres frais. Les séjours plus courts que le minimum habituel nécessitent une validation de Xtudy.",
-  "Deckt 5 mietfreie Nächte in einer einzigen zukünftigen Buchung ab, je nach Verfügbarkeit. Persönlich und nicht übertragbar; einmalig nutzbar. Ist der Aufenthalt kürzer als 5 Nächte, gibt es keine Erstattung oder Gutschrift; ist er länger, zahlst du die Miete der restlichen Nächte. Kaution und sonstige Kosten sind nicht abgedeckt. Aufenthalte unter dem üblichen Minimum werden von Xtudy geprüft.",
+  "Hasta 5 noches sin costo de renta por año calendario (el año de tu fecha de entrada), en una sola reserva, sujetas a disponibilidad. Se renueva cada 1 de enero y las noches no se acumulan entre años. Si tu estancia tiene menos de 5 noches no hay devolución ni saldo a favor; si tiene más, pagas la renta de las noches restantes. Solo cubre renta: no el depósito en garantía ni otros cargos. No se combina con otros códigos de descuento. Las estancias más cortas que el mínimo habitual requieren revisión de Xtudy.",
+  "Up to 5 rent-free nights per calendar year (the year of your move-in date), in a single booking, subject to availability. It renews every January 1 and nights don't carry over between years. If your stay is shorter than 5 nights there is no refund or credit; if longer, you pay rent for the remaining nights. Rent only: it doesn't cover the security deposit or other charges. It can't be combined with other discount codes. Stays shorter than the usual minimum require review by Xtudy.",
+  "Jusqu'à 5 nuits sans loyer par année civile (l'année de ta date d'arrivée), dans une seule réservation, sous réserve de disponibilité. Renouvelé chaque 1er janvier ; les nuits ne se cumulent pas d'une année à l'autre. Si ton séjour dure moins de 5 nuits, il n'y a ni remboursement ni crédit ; s'il est plus long, tu paies le loyer des nuits restantes. Loyer uniquement : ni le dépôt de garantie ni d'autres frais. Non cumulable avec d'autres codes de réduction. Les séjours plus courts que le minimum habituel nécessitent une validation de Xtudy.",
+  "Bis zu 5 mietfreie Nächte pro Kalenderjahr (das Jahr deines Einzugsdatums), in einer einzigen Buchung, je nach Verfügbarkeit. Erneuert sich jeden 1. Januar; Nächte werden nicht ins nächste Jahr übertragen. Ist dein Aufenthalt kürzer als 5 Nächte, gibt es keine Erstattung oder Gutschrift; ist er länger, zahlst du die Miete der restlichen Nächte. Nur Miete: keine Kaution oder sonstigen Kosten. Nicht mit anderen Rabattcodes kombinierbar. Aufenthalte unter dem üblichen Minimum werden von Xtudy geprüft.",
 ];
 const TICKET_STATUS = {
   available: ["Disponible", "Available", "Disponible", "Verfügbar"],
-  applied: ["Aplicado a una reserva en proceso", "Applied to a booking in progress", "Appliqué à une réservation en cours", "Auf eine laufende Buchung angewendet"],
-  redeemed: ["Canjeado", "Redeemed", "Utilisé", "Eingelöst"],
-  expired: ["Vencido", "Expired", "Expiré", "Abgelaufen"],
+  applied: ["Apartado por una reserva en proceso", "Held by a booking in progress", "Réservé par une réservation en cours", "Für eine laufende Buchung reserviert"],
+  redeemed: ["Utilizado", "Used", "Utilisé", "Genutzt"],
   revoked: ["No disponible", "Not available", "Indisponible", "Nicht verfügbar"],
+  inactive: ["No disponible", "Not available", "Indisponible", "Nicht verfügbar"],
 };
 
 // --- V20 · Tarjeta, VIP y Wallet ---------------------------------------------------------------------------------------
 const VIP_TITLE = ["Un reconocimiento especial para ti", "A special recognition for you", "Une reconnaissance spéciale pour toi", "Eine besondere Anerkennung für dich"];
 const VIP_MESSAGE = [
-  "Ha sido un honor recibirte en Xtudy. Eres parte de nuestra lista VIP y queremos agradecerte con 5 noches de hospedaje para tu próxima aventura, sujetas a disponibilidad.",
-  "It has been an honor to host you at Xtudy. You're on our VIP list and, as a thank-you, we'd like to give you 5 nights of accommodation for your next adventure, subject to availability.",
-  "Ce fut un honneur de t'accueillir chez Xtudy. Tu fais partie de notre liste VIP et, pour te remercier, nous t'offrons 5 nuits d'hébergement pour ta prochaine aventure, sous réserve de disponibilité.",
-  "Es war uns eine Ehre, dich bei Xtudy zu begrüßen. Du bist auf unserer VIP-Liste und als Dankeschön schenken wir dir 5 Übernachtungen für dein nächstes Abenteuer, je nach Verfügbarkeit.",
+  "Ser parte de nuestra lista VIP es para siempre. Disfruta de hasta 5 noches de hospedaje sin costo de renta cada año calendario, sujetas a disponibilidad. Reserva en nuestra página con tu código personal.",
+  "Being on our VIP list is forever. Enjoy up to 5 nights of accommodation with no rent every calendar year, subject to availability. Book on our website with your personal code.",
+  "Faire partie de notre liste VIP, c'est pour toujours. Profite de jusqu'à 5 nuits d'hébergement sans loyer chaque année civile, sous réserve de disponibilité. Réserve sur notre site avec ton code personnel.",
+  "Auf unserer VIP-Liste bist du für immer. Genieße jedes Kalenderjahr bis zu 5 Übernachtungen ohne Miete, je nach Verfügbarkeit. Buche auf unserer Website mit deinem persönlichen Code.",
 ];
 // Si el beneficio ya se usó, venció o se revocó, no se anuncian noches disponibles.
 const VIP_MESSAGE_PLAIN = [
@@ -3810,6 +3845,7 @@ const VIP_MESSAGE_PLAIN = [
 const LEVEL_NAME = {
   guest: ["Explorador", "Explorer", "Explorateur", "Entdecker"],
   resident: ["Residente Xtudy", "Xtudy Resident", "Résident Xtudy", "Xtudy-Bewohner"],
+  professional: ["Residente profesionista", "Resident professional", "Résident professionnel", "Berufstätiger Bewohner"],
   team: ["Equipo Xtudy", "Xtudy team", "Équipe Xtudy", "Xtudy-Team"],
   employee: ["Empleado Xtudy", "Xtudy Employee", "Employé Xtudy", "Xtudy-Mitarbeiter"],
   collaborator: ["Colaborador Xtudy", "Xtudy Collaborator", "Collaborateur Xtudy", "Xtudy-Partner"],
@@ -3903,7 +3939,7 @@ function useVipCelebration(me, account) {
     const first = !me.prefs.vipWelcomed;
     if (first) post("/api/club/prefs", { email: account.email, memberId: account.memberId, vipWelcomed: true }).catch(() => {});
     if (!me.prefs.celebrate || prefersReducedMotion()) { if (first) setShow({ special: true, staticOnly: true }); return; }
-    setShow({ special: first });
+    setShow({ special: first, flip: true });
   }, [me && me.gold, me && me.prefs && me.prefs.celebrate]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (show && show.special && !show.done) { const t = setTimeout(() => setShow((s) => (s ? { ...s, staticOnly: true, done: true } : s)), 4200); return () => clearTimeout(t); } return undefined; }, [show && show.special, show && show.done]); // eslint-disable-line react-hooks/exhaustive-deps
   return [show, () => setShow((s) => (s && s.special ? { ...s, staticOnly: true } : null))];
@@ -3912,7 +3948,7 @@ function useVipCelebration(me, account) {
 function MemberCard({ account, lang, levelId, vip, teamToo }) {
   const T = (...a) => tr(lang, ...a);
   // Equipo Xtudy: sin universidad (no son estudiantes). Un residente que también es del equipo muestra ambos.
-  const subline = account.memberType === "team" ? T("Equipo Xtudy", "Xtudy team", "Équipe Xtudy", "Xtudy-Team") : account.university;
+  const subline = account.memberType === "team" ? T("Equipo Xtudy", "Xtudy team", "Équipe Xtudy", "Xtudy-Team") : account.memberType === "professional" ? "Xtudy Club" : account.university;
   const levelText = `${T(...LEVEL_NAME[levelId])}${teamToo ? ` · ${T(...LEVEL_NAME[teamToo])}` : ""}`;
   if (vip) return (
     <div style={styles.vipCard}>
@@ -4013,7 +4049,8 @@ function CardQrSheet({ me, account, lang, levelId, vip, onClose }) {
 function VipSheet({ me, account, lang, onClose, onPrefs }) {
   const T = (...a) => tr(lang, ...a);
   const t = me.ticket;
-  const available = t && t.status === "available";
+  const thisYear = t && t.years ? t.years[0] : null;
+  const available = Boolean(t && t.vipActive && t.years && t.years.some((y) => y.status === "available"));
   const [copied, setCopied] = useState(false);
   const [celebrate, setCelebrate] = useState(me.prefs ? me.prefs.celebrate : true);
   const [req, setReq] = useState({ open: false, checkIn: "", checkOut: "", property: "", message: "", state: "idle" });
@@ -4034,24 +4071,37 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
     sent: T("Recibimos tu solicitud. Xtudy la revisará y te contactará; aún no está confirmada.", "We received your request. Xtudy will review it and contact you; it isn't confirmed yet.", "Nous avons reçu ta demande. Xtudy l'examinera et te contactera ; elle n'est pas encore confirmée.", "Wir haben deine Anfrage erhalten. Xtudy prüft sie und meldet sich; sie ist noch nicht bestätigt."),
     dates: T("Revisa las fechas: la salida debe ser posterior a la llegada y ambas en el futuro.", "Check the dates: check-out must be after check-in and both in the future.", "Vérifie les dates : le départ doit être après l'arrivée et les deux dans le futur.", "Prüfe die Daten: Abreise nach Anreise und beide in der Zukunft."),
     too_many: T("Ya tienes solicitudes pendientes de revisión.", "You already have requests pending review.", "Tu as déjà des demandes en attente.", "Du hast bereits offene Anfragen."),
-    not_available: T("Tu beneficio ya no está disponible para nuevas solicitudes.", "Your benefit is no longer available for new requests.", "Ton avantage n'est plus disponible pour de nouvelles demandes.", "Dein Vorteil ist für neue Anfragen nicht mehr verfügbar."),
+    not_available: T("Tu beneficio de ese año no está disponible para nuevas solicitudes.", "Your benefit for that year isn't available for new requests.", "Ton avantage de cette année n'est pas disponible pour de nouvelles demandes.", "Dein Vorteil für dieses Jahr ist für neue Anfragen nicht verfügbar."),
     error: T("No pudimos enviar la solicitud. Intenta de nuevo.", "We couldn't send the request. Please try again.", "Impossible d'envoyer la demande. Réessaie.", "Die Anfrage konnte nicht gesendet werden. Bitte erneut versuchen."),
   }[req.state === "not_found" ? "error" : req.state];
   return (
     <Sheet title={T(...VIP_TITLE)} onClose={onClose} labelledBy="vip-title">
-      <p style={styles.modalText}>{T(...(available ? VIP_MESSAGE : VIP_MESSAGE_PLAIN))}</p>
-      {t && (available ? (
+      <p style={styles.modalText}>{T(...(t && t.vipActive ? VIP_MESSAGE : VIP_MESSAGE_PLAIN))}</p>
+      {t && (
         <section style={styles.vipBenefit}>
-          <h4 style={styles.modalH}>{T("Tu beneficio · 5 noches sin costo de renta", "Your benefit · 5 rent-free nights", "Ton avantage · 5 nuits sans loyer", "Dein Vorteil · 5 mietfreie Nächte")}</h4>
-          <div style={styles.codeRow}>
-            <code style={styles.codeBox}>{t.code}</code>
-            <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
+          <h4 style={styles.modalH}>{T("Tu beneficio anual · hasta 5 noches sin costo de renta", "Your yearly benefit · up to 5 rent-free nights", "Ton avantage annuel · jusqu'à 5 nuits sans loyer", "Dein jährlicher Vorteil · bis zu 5 mietfreie Nächte")}</h4>
+          <div style={styles.yearRow}>
+            {(t.years || []).map((y) => (
+              <div key={y.year} style={styles.yearPill}>
+                <strong>{y.year}</strong>
+                <span style={{ color: y.status === "available" ? "#1F7A3D" : y.status === "applied" ? colors.blue : colors.muted }}>{T(...(TICKET_STATUS[y.status] || TICKET_STATUS.inactive))}</span>
+              </div>
+            ))}
           </div>
-          <p style={styles.modalText}><strong>{T("Estado", "Status", "Statut", "Status")}:</strong> {T(...TICKET_STATUS.available)}{t.expiresOn ? ` · ${T("vigente hasta", "valid until", "valable jusqu'au", "gültig bis")} ${t.expiresOn}` : ""}</p>
-          <p style={styles.modalText}>{T("Elige tus fechas, y antes de pagar escribe el código en «Código promocional». Cubre la renta de hasta 5 noches de una sola reserva; el depósito y otros cargos no cambian.", "Choose your dates and, before paying, enter the code under “Promo code”. It covers rent for up to 5 nights of a single booking; the deposit and other charges don't change.", "Choisis tes dates et, avant de payer, saisis le code dans « Code promo ». Il couvre le loyer de 5 nuits maximum d'une seule réservation ; le dépôt et les autres frais ne changent pas.", "Wähle deine Daten und gib vor dem Bezahlen den Code unter „Gutscheincode“ ein. Er deckt die Miete für bis zu 5 Nächte einer einzigen Buchung; Kaution und andere Kosten ändern sich nicht.")}</p>
-          <a href={`${PLATFORM_URL}/${lang === "es" ? "es" : "en"}/explorar`} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>{T("Consultar disponibilidad y reservar", "Check availability and book", "Voir les disponibilités et réserver", "Verfügbarkeit prüfen und buchen")} <ChevronRight size={16} /></a>
+          <p style={styles.partnerFine}>{T("El beneficio corresponde al año de tu fecha de entrada y se renueva cada 1 de enero.", "The benefit belongs to the year of your move-in date and renews every January 1.", "L'avantage correspond à l'année de ta date d'arrivée et se renouvelle chaque 1er janvier.", "Der Vorteil gilt für das Jahr deines Einzugsdatums und erneuert sich jeden 1. Januar.")}</p>
+          {t.vipActive && (
+            <>
+              <h4 style={styles.modalH}>{T("Tu código personal", "Your personal code", "Ton code personnel", "Dein persönlicher Code")}</h4>
+              <div style={styles.codeRow}>
+                <code style={styles.codeBox}>{t.code}</code>
+                <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
+              </div>
+              <p style={styles.modalText}>{T("Elige tus fechas en nuestra página y, antes de pagar, escribe tu código en «Código promocional». Cubre la renta de hasta 5 noches de una sola reserva; el depósito y otros cargos no cambian.", "Choose your dates on our website and, before paying, enter your code under “Promo code”. It covers rent for up to 5 nights of a single booking; the deposit and other charges don't change.", "Choisis tes dates sur notre site et, avant de payer, saisis ton code dans « Code promo ». Il couvre le loyer de 5 nuits maximum d'une seule réservation ; le dépôt et les autres frais ne changent pas.", "Wähle deine Daten auf unserer Website und gib vor dem Bezahlen deinen Code unter „Gutscheincode“ ein. Er deckt die Miete für bis zu 5 Nächte einer einzigen Buchung; Kaution und andere Kosten ändern sich nicht.")}</p>
+              {available && <a href={`${PLATFORM_URL}/${lang === "es" ? "es" : "en"}/explorar`} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>{T("Consultar disponibilidad y reservar", "Check availability and book", "Voir les disponibilités et réserver", "Verfügbarkeit prüfen und buchen")} <ChevronRight size={16} /></a>}
+            </>
+          )}
           <p style={styles.partnerFine}>{T(...GOLD_CONDITIONS_TX)}</p>
-          {req.open ? (
+          {available && (req.open ? (
             <form onSubmit={send} style={{ display: "grid", gap: 8 }}>
               <h4 style={styles.modalH}>{T("Solicitar revisión para una estancia corta", "Request review for a short stay", "Demander une validation pour un court séjour", "Prüfung für kurzen Aufenthalt anfragen")}</h4>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -4063,11 +4113,10 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
               <button type="submit" style={styles.benefitPrimary} disabled={req.state === "sending" || req.state === "sent"}>{req.state === "sending" ? T("Enviando…", "Sending…", "Envoi…", "Senden…") : T("Enviar solicitud", "Send request", "Envoyer la demande", "Anfrage senden")}</button>
               {reqMsg && <p role="status" style={styles.modalText}>{reqMsg}</p>}
             </form>
-          ) : <button type="button" style={styles.benefitSecondary} onClick={() => setReq({ ...req, open: true })}>{T("¿Tu estancia es más corta que el mínimo? Solicita una revisión", "Is your stay shorter than the minimum? Request a review", "Ton séjour est plus court que le minimum ? Demande une validation", "Kürzer als das Minimum? Prüfung anfragen")}</button>}
+          ) : <button type="button" style={styles.benefitSecondary} onClick={() => setReq({ ...req, open: true })}>{T("¿Tu estancia es más corta que el mínimo? Solicita una revisión", "Is your stay shorter than the minimum? Request a review", "Ton séjour est plus court que le minimum ? Demande une validation", "Kürzer als das Minimum? Prüfung anfragen")}</button>)}
+          {thisYear && !t.vipActive && <p style={styles.modalText}>{T("Tu beneficio anual no está disponible en este momento.", "Your yearly benefit isn't available right now.", "Ton avantage annuel n'est pas disponible pour le moment.", "Dein jährlicher Vorteil ist derzeit nicht verfügbar.")}</p>}
         </section>
-      ) : (
-        <p style={styles.modalText}><strong>{T("Tu beneficio de 5 noches", "Your 5-night benefit", "Ton avantage de 5 nuits", "Dein 5-Nächte-Vorteil")}:</strong> {T(...(TICKET_STATUS[t.status] || TICKET_STATUS.revoked))}. {T("Tu distinción VIP sigue vigente.", "Your VIP distinction remains active.", "Ta distinction VIP reste active.", "Deine VIP-Auszeichnung bleibt bestehen.")}</p>
-      ))}
+      )}
       <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: colors.ink, borderTop: `1px solid ${colors.line}`, paddingTop: 12 }}>
         <input type="checkbox" checked={celebrate} onChange={toggle} /> {T("Mostrar una pequeña celebración al entrar", "Show a small celebration when I sign in", "Afficher une petite célébration à l'arrivée", "Beim Öffnen eine kleine Feier zeigen")}
       </label>
@@ -4075,16 +4124,61 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
   );
 }
 
+// Código personal de referidos (residentes estudiantes y profesionistas): el amigo recibe 5% en la renta de toda su estancia.
+// El enlace solo precarga el código: el servidor lo valida al aplicarlo en la reserva.
+function ReferralBox({ referral, lang }) {
+  const T = (...a) => tr(lang, ...a);
+  const [copied, setCopied] = useState(null);
+  if (!referral || !referral.active) return null;
+  const copy = (what, text) => navigator.clipboard?.writeText(text).then(() => { setCopied(what); setTimeout(() => setCopied(null), 1800); }).catch(() => {});
+  const share = async () => {
+    const text = T(`Te comparto mi código de Xtudy: ${referral.code}. Te da ${referral.pct}% de descuento en la renta de tu estancia.`, `Here's my Xtudy code: ${referral.code}. It gives you ${referral.pct}% off the rent for your stay.`, `Voici mon code Xtudy : ${referral.code}. Il te donne ${referral.pct} % de réduction sur le loyer de ton séjour.`, `Hier ist mein Xtudy-Code: ${referral.code}. Er gibt dir ${referral.pct} % Rabatt auf die Miete deines Aufenthalts.`);
+    try { if (navigator.share) { await navigator.share({ title: "Xtudy", text, url: referral.shareUrl }); return; } } catch { return; }
+    copy("link", `${text} ${referral.shareUrl}`);
+  };
+  return (
+    <section style={styles.referralBox} aria-labelledby="ref-title">
+      <h3 id="ref-title" style={styles.referralTitle}>{T("Invita a un amigo", "Invite a friend", "Invite un ami", "Lade einen Freund ein")}</h3>
+      <p style={styles.referralText}>{T(`Tu amigo recibe ${referral.pct}% de descuento en la renta de toda su estancia (no en el depósito ni otros cargos) al reservar con tu código.`, `Your friend gets ${referral.pct}% off the rent for their whole stay (not the deposit or other charges) when booking with your code.`, `Ton ami reçoit ${referral.pct} % de réduction sur le loyer de tout son séjour (pas sur le dépôt ni les autres frais) en réservant avec ton code.`, `Dein Freund erhält ${referral.pct} % Rabatt auf die Miete seines gesamten Aufenthalts (nicht auf Kaution oder sonstige Kosten), wenn er mit deinem Code bucht.`)}</p>
+      <div style={styles.codeRow}>
+        <code style={{ ...styles.codeBox, background: "rgba(255,255,255,0.12)", color: "#fff", borderColor: "rgba(255,255,255,0.25)" }}>{referral.code}</code>
+        <button type="button" style={styles.benefitSecondary} onClick={() => copy("code", referral.code)}>{copied === "code" ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
+        <button type="button" style={styles.benefitPrimary} onClick={share}>{copied === "link" ? T("¡Enlace copiado!", "Link copied!", "Lien copié !", "Link kopiert!") : T("Compartir enlace", "Share link", "Partager le lien", "Link teilen")}</button>
+      </div>
+      <p style={{ ...styles.partnerFine, color: "#CFE6F5", margin: 0 }}>{T("No es para tu propia reserva y no se combina con otros códigos. El descuento se confirma al aplicarlo en la reserva.", "It isn't for your own booking and can't be combined with other codes. The discount is confirmed when it's applied to the booking.", "Il n'est pas pour ta propre réservation et ne se cumule pas avec d'autres codes. La réduction est confirmée lorsqu'elle est appliquée à la réservation.", "Er gilt nicht für deine eigene Buchung und ist nicht mit anderen Codes kombinierbar. Der Rabatt wird beim Anwenden in der Buchung bestätigt.")}</p>
+    </section>
+  );
+}
+
+// Mientras el servidor confirma el nivel y la distinción: tarjeta neutra (sin nivel ni textos de permisos).
+function CardSkeleton({ lang }) {
+  return (
+    <div style={{ ...styles.membershipCardBig, background: "#fff" }} aria-busy="true" aria-label={tr(lang, "Cargando tu membresía", "Loading your membership", "Chargement de ton adhésion", "Deine Mitgliedschaft wird geladen")}>
+      <div className="xc-skel-light" style={{ height: 22, width: 110, borderRadius: 6, marginBottom: 26 }} />
+      <div className="xc-skel-light" style={{ height: 22, width: "62%", borderRadius: 6, marginBottom: 10 }} />
+      <div className="xc-skel-light" style={{ height: 14, width: "40%", borderRadius: 6, marginBottom: 26 }} />
+      <div className="xc-skel-light" style={{ height: 14, width: "100%", borderRadius: 6 }} />
+    </div>
+  );
+}
+function GridSkeleton() {
+  return <div style={styles.benefitGrid} aria-hidden="true">{[0, 1, 2].map((i) => <div key={i} className="xc-skel" style={{ height: 168, borderRadius: 16 }} />)}</div>;
+}
+
 function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { lang } = useContext(LangContext);
-  const { me, refresh } = useMember(account);
+  const { me, failed, refresh } = useMember(account);
+  // Hasta que el servidor confirma nivel y distinción no se muestra ninguna membresía (ni permisos) provisional.
+  const loadingMe = !me && !failed;
   const level = me ? me.level : (account.tier === "resident" ? "resident" : "guest");
   // Equipo Xtudy (empleado o colaborador): lo decide el servidor; no es un permiso del panel ni lo hace residente.
   const team = me && (me.team === "employee" || me.team === "collaborator") ? me.team : null;
   const resident = me ? me.resident : account.tier === "resident";
   const gold = Boolean(me && me.gold);
   // Mientras el servidor responde, una cuenta del equipo no se muestra como «Explorador».
-  const cardTier = !me && account.memberType === "team" ? "team" : team && !resident ? team : resident ? "resident" : "guest";
+  const professional = Boolean(me && me.professional);
+  const residentLevel = professional ? "professional" : resident ? "resident" : null;
+  const cardTier = !me && account.memberType === "team" ? "team" : team && !residentLevel ? team : residentLevel || "guest";
   const [qrOpen, setQrOpen] = useState(false);
   const [vipOpen, setVipOpen] = useState(false);
   const [celebration, endCelebrationRaw] = useVipCelebration(me, account);
@@ -4120,7 +4214,15 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
       </div>
 
-      <MemberCard account={account} lang={lang} levelId={cardTier} vip={gold} teamToo={resident ? team : null} />
+      {loadingMe ? <CardSkeleton lang={lang} /> : (
+        <div className={celebration && celebration.flip ? "xc-vip-reveal" : undefined}>
+          <MemberCard account={account} lang={lang} levelId={cardTier} vip={gold} teamToo={residentLevel ? team : null} />
+        </div>
+      )}
+      {failed && !me && (
+        <p role="alert" style={styles.loadNotice}>{tr(lang, "No pudimos confirmar tu nivel en este momento. Mostramos tus beneficios básicos.", "We couldn't confirm your tier right now. We're showing your basic benefits.", "Impossible de confirmer ton niveau pour le moment. Nous affichons tes avantages de base.", "Deine Stufe konnte gerade nicht bestätigt werden. Wir zeigen deine Basisvorteile.")}{" "}
+          <button type="button" style={styles.vipLink} onClick={refresh}>{tr(lang, "Reintentar", "Retry", "Réessayer", "Erneut versuchen")}</button></p>
+      )}
       {gold && (
         <div style={styles.vipLine}>
           <span>✦ {tr(lang, "Estás en nuestra lista VIP.", "You're on our VIP list.", "Tu fais partie de notre liste VIP.", "Du bist auf unserer VIP-Liste.")}</span>
@@ -4135,7 +4237,13 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button type="button" style={styles.cardQrBtn} onClick={() => setQrOpen(true)}><QrCode size={16} /> {tr(lang, "Mi tarjeta de membresía", "My membership card", "Ma carte de membre", "Meine Mitgliedskarte")}</button>
         <WalletButtons me={me} account={account} lang={lang} />
       </div>
-      {me && !team && <div style={{ margin: "6px 0 4px", textAlign: "center" }}><CollaboratorCode account={account} lang={lang} onDone={refresh} /></div>}
+      {me && me.referral && <ReferralBox referral={me.referral} lang={lang} />}
+      {me && (!team || !residentLevel) && (
+        <div style={{ margin: "6px 0 4px", display: "grid", gap: 2, justifyItems: "center", textAlign: "center" }}>
+          {!team && <CollaboratorCode account={account} lang={lang} onDone={refresh} />}
+          {!residentLevel && <CollaboratorCode account={account} lang={lang} onDone={refresh} as="professional" />}
+        </div>
+      )}
       {qrOpen && <CardQrSheet me={me} account={account} lang={lang} levelId={cardTier} vip={gold} onClose={() => setQrOpen(false)} />}
       {vipOpen && me && <VipSheet me={me} account={account} lang={lang} onClose={() => setVipOpen(false)} onPrefs={refresh} />}
 
@@ -4161,7 +4269,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
 
       <h3 style={styles.sectionTitle}><Utensils size={16} /> {tr(lang, "Tus descuentos desbloqueados", "Your unlocked discounts", "Tes réductions débloquées", "Deine freigeschalteten Rabatte")}</h3>
 
-      <div style={styles.benefitGrid}>
+      {loadingMe ? <GridSkeleton /> : <div style={styles.benefitGrid}>
         {unlocked.map(({ r, usable }) => {
           const p = usable.find((x) => x.audience === (level === "resident" ? "resident" : "guest")) || usable[0];
           return (
@@ -4171,12 +4279,12 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           );
         })}
         {unlocked.length === 0 && <p style={styles.emptyText}>{tr(lang, "Aún no tienes descuentos activos.", "You don't have any active discounts yet.", "Tu n'as pas encore de réductions actives.", "Du hast noch keine aktiven Rabatte.")}</p>}
-      </div>
+      </div>}
       {open && (
-        <BenefitDetails r={open.r} promos={open.live} initialId={detail.promoId} mode={detail.mode} lang={lang} level={level} account={account} onClose={closeDetails} />
+        <BenefitDetails r={open.r} promos={open.live} initialId={detail.promoId} mode={detail.mode} lang={lang} level={level} account={account} preloaded={me && me.benefits} onClose={closeDetails} />
       )}
 
-      {lockedByTier.length > 0 && (
+      {!loadingMe && lockedByTier.length > 0 && (
         <>
           <h3 style={styles.sectionTitle}><Lock size={15} /> {tr(lang, "Para residentes y equipo Xtudy", "For residents & the Xtudy team", "Pour résidents et équipe Xtudy", "Für Bewohner & Xtudy-Team")}</h3>
           <div style={styles.lockedGrid}>
@@ -4641,6 +4749,13 @@ img { max-width: 100%; height: auto; }
   align-items: center;
 }
 
+@keyframes xc-shimmer { 0% { background-position: -320px 0; } 100% { background-position: 320px 0; } }
+.xc-skel { background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.16) 50%, rgba(255,255,255,0.06) 100%); background-size: 640px 100%; animation: xc-shimmer 1.3s linear infinite; }
+.xc-skel-light { background: linear-gradient(90deg, #EEF3F7 0%, #F8FAFC 50%, #EEF3F7 100%); background-size: 640px 100%; animation: xc-shimmer 1.3s linear infinite; }
+@keyframes xc-reveal { 0% { transform: perspective(1100px) rotateY(-90deg) translateY(6px) scale(0.96); opacity: 0.2; } 55% { transform: perspective(1100px) rotateY(8deg) translateY(-10px) scale(1.02); opacity: 1; } 78% { transform: perspective(1100px) rotateY(-3deg) translateY(2px) scale(0.995); } 100% { transform: perspective(1100px) rotateY(0deg) translateY(0) scale(1); } }
+.xc-vip-reveal { animation: xc-reveal 1050ms cubic-bezier(.2,.75,.25,1) both; transform-origin: 50% 60%; }
+@media (prefers-reduced-motion: reduce) { .xc-skel, .xc-skel-light { animation: none; } .xc-vip-reveal { animation: none; } }
+
 @media (min-width: 900px) {
   .landing-grid {
     display: grid;
@@ -4731,6 +4846,12 @@ const styles = {
   radioBtn: { flex: 1, padding: "9px 0", borderRadius: 10, border: `1px solid ${colors.line}`, background: "#fff", cursor: "pointer", fontSize: 13.5, color: colors.ink },
   radioBtnActive: { background: colors.blue, color: "#fff", borderColor: colors.blue },
   errorText: { fontSize: 12.5, color: "#B3261E" },
+  yearRow: { display: "flex", gap: 8, flexWrap: "wrap", margin: "4px 0 6px" },
+  yearPill: { display: "grid", gap: 2, background: "#F6F1E6", border: "1px solid #E4D5B4", borderRadius: 12, padding: "8px 12px", minWidth: 130, fontSize: 13.5 },
+  referralBox: { display: "grid", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 16, padding: 16, margin: "14px auto 4px", maxWidth: 560 },
+  referralTitle: { margin: 0, fontFamily: "'Host Grotesk', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" },
+  referralText: { margin: 0, fontSize: 14, lineHeight: 1.5, color: "#E3F0F9" },
+  loadNotice: { textAlign: "center", fontSize: 13.5, color: "#FFE2A8", margin: "8px 0" },
   teamToggle: { display: "block", width: "100%", textAlign: "left", background: "#F2F8FD", border: `1px dashed ${colors.blue}`, borderRadius: 12, color: colors.navy, fontSize: 13.5, fontWeight: 600, padding: "11px 14px", margin: "0 0 16px", cursor: "pointer", fontFamily: "'Inter', sans-serif" },
   teamBox: { display: "grid", gap: 8, background: "#F2F8FD", border: `1px solid ${colors.line}`, borderRadius: 12, padding: 12, margin: "0 0 16px" },
   teamOk: { display: "grid", gap: 6, background: "#E7F5EC", border: "1px solid #9FD3B0", color: "#1F5B33", borderRadius: 12, padding: 12, margin: "0 0 16px", fontSize: 13.5, lineHeight: 1.45 },
