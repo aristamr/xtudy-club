@@ -2411,17 +2411,24 @@ function tr(lang, es, en, fr, de) {
   return en;
 }
 
-// V16 · Aliados y beneficios (se editan en el panel principal). Textos capturados una vez y traducidos:
-// r.i18n[campo] = { text (original), src, es, en, status }. Si aún no hay traducción de ESE texto, se muestra el original.
-// Francés y alemán usan el inglés.
-function txt(r, field, lang) {
+// Aliados y beneficios (se editan en el panel principal). Cada texto se captura una vez y se guarda traducido:
+// r.i18n[campo] = { text (original), src, es, en, fr, de, status, manual }. Las traducciones ya vienen guardadas
+// (no se generan en cada visita). Si falta la de ESE texto, se muestra el original y se indica su idioma.
+// Una traducción solo vale si es del texto actual (la huella `hash` la calcula el panel; aquí basta con `status`).
+function txtShown(r, field, lang) {
   const e = r.i18n && r.i18n[field];
-  if (!e || typeof e.text !== "string") return "";
-  if (e.status === "ok") {
-    const v = lang === "es" ? e.es : e.en;
-    if (v && v.trim()) return v;
-  }
-  return e.text;
+  if (!e || typeof e.text !== "string" || !e.text.trim()) return { text: "", lang: null };
+  if (lang === e.src) return { text: e.text, lang: e.src };
+  const manualHere = e.manual && lang === (e.src === "es" ? "en" : "es");
+  const v = (e.status === "ok" || manualHere) ? e[lang] : "";
+  return v && v.trim() ? { text: v, lang } : { text: e.text, lang: e.src };
+}
+const txt = (r, field, lang) => txtShown(r, field, lang).text;
+const LANG_NAME = { es: ["español", "Spanish", "espagnol", "Spanisch"], en: ["inglés", "English", "anglais", "Englisch"] };
+// Indicación discreta cuando un texto todavía se muestra en su idioma original.
+function OrigLang({ shown, lang }) {
+  if (!shown.lang || shown.lang === lang || !LANG_NAME[shown.lang]) return null;
+  return <span style={styles.origLang}> · {tr(lang, "en ", "in ", "en ", "auf ")}{tr(lang, ...LANG_NAME[shown.lang])}</span>;
 }
 const CATEGORY_LABELS = {
   restaurants: ["Restaurantes", "Restaurants", "Restaurants", "Restaurants"],
@@ -3311,6 +3318,246 @@ function Register({ form, setForm, onSubmit, error, onBack, universities, onGoTo
 
 
 
+
+// ---------------------------------------------------------------------------
+// Catálogo de beneficios: tarjeta compacta + ventana de detalles
+// ---------------------------------------------------------------------------
+// Los códigos promocionales no viajan en la lista pública: se piden al servidor del sitio principal, que comprueba
+// la cuenta y el nivel del miembro antes de entregarlos.
+const PLATFORM_URL = (import.meta.env.VITE_PLATFORM_URL || "https://www.xtudyclub.com").replace(/\/$/, "");
+const normText = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+// «1. Haz esto 2. Haz aquello» → pasos. Si no hay numeración, el texto completo es un paso.
+function toSteps(text) {
+  const t = (text || "").trim();
+  if (!t) return [];
+  const parts = t.split(/(?:^|\s)\d{1,2}[.)]\s+/).map((x) => x.trim()).filter(Boolean);
+  return parts.length >= 2 ? parts : [t];
+}
+// «Pasos de activación» y «Cómo utilizarlo» en una sola secuencia, sin repetir lo que ya se dijo.
+function mergedSteps(r, lang) {
+  const out = [];
+  for (const step of [...toSteps(txt(r, "activationSteps", lang)), ...toSteps(txt(r, "howToUse", lang))]) {
+    const n = normText(step);
+    if (!n) continue;
+    const dup = out.findIndex((o) => normText(o).includes(n) || n.includes(normText(o)));
+    if (dup === -1) out.push(step);
+    else if (n.length > normText(out[dup]).length) out[dup] = step;
+  }
+  return out;
+}
+// Una sola restricción esencial en la tarjeta (el resto va en los detalles).
+function essentialRestriction(r, lang) {
+  if (r.tier === "resident") return tr(lang, "Solo residentes", "Residents only", "Résidents uniquement", "Nur für Bewohner");
+  if (partnerKind(r) !== "online" && r.isFranchise) {
+    const b = getBranches(r);
+    if (b.length === 1) return tr(lang, `Sucursal ${b[0].name}`, `${b[0].name} branch`, `Succursale ${b[0].name}`, `Filiale ${b[0].name}`);
+  }
+  return "";
+}
+const mainCategory = (r, lang) => {
+  const labels = CATEGORY_LABELS[r.categoryId];
+  return labels ? tr(lang, ...labels) : (r.category || "");
+};
+
+function PartnerLogo({ r, size = 44 }) {
+  if (r.logoUrl) return <img src={r.logoUrl} alt="" style={{ ...styles.benefitLogo, height: size, maxWidth: size * 2.2 }} />;
+  const initials = (r.name || "").replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  return <span aria-hidden style={{ ...styles.benefitMono, width: size, height: size }}>{initials}</span>;
+}
+
+function BenefitCard({ r, lang, onPrimary, onDetails }) {
+  const online = partnerKind(r) === "online";
+  const restriction = essentialRestriction(r, lang);
+  return (
+    <article style={styles.benefitCard}>
+      <div style={styles.benefitTop}>
+        <PartnerLogo r={r} />
+        <div style={{ minWidth: 0 }}>
+          <div style={styles.restCategory}>{mainCategory(r, lang)}</div>
+          <h4 style={styles.benefitName}>{r.name}</h4>
+        </div>
+      </div>
+      <div style={styles.benefitDeal}>{formatDiscount(r, lang)}</div>
+      <div style={styles.benefitChipRow}>{restriction && <span style={styles.benefitChip}>{restriction}</span>}</div>
+      <div style={styles.benefitActions}>
+        <button type="button" style={styles.benefitPrimary} onClick={onPrimary}>
+          {online ? <>{tr(lang, "Usar beneficio", "Use perk", "Utiliser l'avantage", "Vorteil nutzen")} <ChevronRight size={14} /></> : <><QrCode size={14} /> {tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}</>}
+        </button>
+        <button type="button" style={styles.benefitSecondary} onClick={onDetails}>{tr(lang, "Ver detalles", "View details", "Voir les détails", "Details ansehen")}</button>
+      </div>
+    </article>
+  );
+}
+
+function useNarrow() {
+  const q = "(max-width: 640px)";
+  const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
+  useEffect(() => { const m = window.matchMedia(q); const f = () => setNarrow(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, []);
+  return narrow;
+}
+
+function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
+  const narrow = useNarrow();
+  const closeRef = React.useRef(null);
+  const boxRef = React.useRef(null);
+  const [code, setCode] = useState({ state: "idle", value: "" });
+  const [copied, setCopied] = useState(false);
+  const online = partnerKind(r) === "online";
+  const physical = !online;
+  const wantsCode = Boolean(r.hasPromoCode || r.promoCode);
+
+  // Bloquea el fondo (la página no se mueve), enfoca «Cerrar», Esc cierra y Tab no sale de la ventana.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current && closeRef.current.focus({ preventScroll: true });
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+      if (e.key === "Tab" && boxRef.current) {
+        const f = boxRef.current.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
+  }, [onClose]);
+
+  // El código se pide al servidor, que verifica la cuenta y el nivel del miembro.
+  useEffect(() => {
+    if (!wantsCode) return;
+    if (r.promoCode) { setCode({ state: "ok", value: r.promoCode }); return; } // registros anteriores aún sin proteger
+    let alive = true;
+    setCode({ state: "loading", value: "" });
+    fetch(`${PLATFORM_URL}/api/club/benefit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: account.email, memberId: account.memberId, id: r.id }) })
+      .then(async (res) => {
+        const j = await res.json().catch(() => ({}));
+        if (!alive) return;
+        if (res.ok && j.promoCode) setCode({ state: "ok", value: j.promoCode });
+        else if (res.status === 403) setCode({ state: "denied", value: "" });
+        else setCode({ state: res.ok ? "none" : "error", value: "" });
+      })
+      .catch(() => alive && setCode({ state: "error", value: "" }));
+    return () => { alive = false; };
+  }, [r.id, wantsCode, r.promoCode, account.email, account.memberId]);
+
+  const copy = () => navigator.clipboard?.writeText(code.value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {});
+  const steps = mergedSteps(r, lang);
+  const stepsShown = [txtShown(r, "activationSteps", lang), txtShown(r, "howToUse", lang)].find((x) => x.text) || { lang: null };
+  const benefitShown = txtShown(r, "benefit", lang);
+  const conditions = txtShown(r, "conditions", lang);
+  const coverage = txtShown(r, "coverage", lang);
+  const branches = getBranches(r);
+  const restriction = essentialRestriction(r, lang);
+  const T = (es, en, fr, de) => tr(lang, es, en, fr, de);
+  const site = r.websiteUrl && /^https?:\/\//.test(r.websiteUrl) ? r.websiteUrl : "";
+
+  return (
+    <div style={styles.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={boxRef} role="dialog" aria-modal="true" aria-labelledby="benefit-title" style={narrow ? styles.sheet : styles.modal}>
+        <div style={styles.modalHead}>
+          <PartnerLogo r={r} size={48} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={styles.restCategory}>{categoryText(r, lang)}</div>
+            <h3 id="benefit-title" style={styles.modalTitle}>{r.name}</h3>
+          </div>
+          <button ref={closeRef} type="button" onClick={onClose} style={styles.modalClose} aria-label={T("Cerrar", "Close", "Fermer", "Schließen")}><X size={20} /></button>
+        </div>
+        <div style={styles.modalBody}>
+          <div style={styles.modalDeal}>{formatDiscount(r, lang)}{benefitShown.text && r.benefitType && r.benefitType !== "percent" ? <OrigLang shown={benefitShown} lang={lang} /> : null}</div>
+          {restriction && <div style={styles.benefitChipRow}><span style={styles.benefitChip}>{restriction}</span></div>}
+
+          {!online && mode === "qr" && <QrBlock url={verifyUrl(r.id)} T={T} />}
+
+          {wantsCode && (
+            <section style={styles.modalSection}>
+              <h4 style={styles.modalH}>{T("Código promocional", "Promo code", "Code promo", "Gutscheincode")}</h4>
+              {code.state === "loading" && <p style={styles.modalText}>{T("Cargando…", "Loading…", "Chargement…", "Wird geladen…")}</p>}
+              {code.state === "ok" && (
+                <div style={styles.codeRow}>
+                  <code style={styles.codeBox}>{code.value}</code>
+                  <button type="button" style={styles.benefitSecondary} onClick={copy}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
+                </div>
+              )}
+              {code.state === "denied" && <p style={styles.modalText}>{T("Este código es solo para miembros con el nivel requerido.", "This code is only for members with the required tier.", "Ce code est réservé aux membres du niveau requis.", "Dieser Code ist nur für Mitglieder mit der erforderlichen Stufe.")}</p>}
+              {(code.state === "error" || code.state === "none") && <p style={styles.modalText}>{T("No pudimos cargar el código. Intenta de nuevo en un momento.", "We couldn't load the code. Please try again in a moment.", "Impossible de charger le code. Réessaie dans un instant.", "Der Code konnte nicht geladen werden. Bitte versuche es gleich noch einmal.")}</p>}
+            </section>
+          )}
+
+          {online && site && (
+            <a href={site} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>
+              {T("Ir al servicio", "Go to the service", "Accéder au service", "Zum Dienst")} <ChevronRight size={16} />
+            </a>
+          )}
+
+          {steps.length > 0 && (
+            <section style={styles.modalSection}>
+              <h4 style={styles.modalH}>{T("Cómo utilizarlo", "How to use it", "Comment l'utiliser", "So nutzt du es")}<OrigLang shown={stepsShown} lang={lang} /></h4>
+              {steps.length > 1 ? <ol style={styles.stepList}>{steps.map((st, i) => <li key={i}>{st}</li>)}</ol> : <p style={styles.modalText}>{steps[0]}</p>}
+            </section>
+          )}
+
+          {(conditions.text || r.validUntil || (r.needsReservation && r.reservationPhone)) && (
+            <section style={styles.modalSection}>
+              <h4 style={styles.modalH}>{T("Condiciones y vigencia", "Conditions and validity", "Conditions et validité", "Bedingungen und Gültigkeit")}{conditions.text && <OrigLang shown={conditions} lang={lang} />}</h4>
+              {conditions.text && <p style={styles.modalText}>{conditions.text}</p>}
+              {r.validUntil && <p style={styles.modalText}>{T("Vigente hasta", "Valid until", "Valable jusqu'au", "Gültig bis")} {r.validUntil}</p>}
+              {partnerKind(r) !== "online" && r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
+                <a href={getReservationUrl(r.reservationPhone)} target="_blank" rel="noopener noreferrer" style={styles.whatsappBtn}
+                  onClick={() => { window.storage.insertOnly(`wa_click:${r.id}:${Date.now()}`, JSON.stringify({ restaurant: r.name, name: account.name, email: account.email, at: new Date().toISOString() }), true).catch(() => {}); }}>
+                  <MessageCircle size={15} /> {r.reservationRequired === false ? T("Reservación recomendada · WhatsApp", "Reservation recommended · WhatsApp", "Réservation recommandée · WhatsApp", "Reservierung empfohlen · WhatsApp") : T("Se requiere reservación · WhatsApp", "Reservation required · WhatsApp", "Réservation requise · WhatsApp", "Reservierung erforderlich · WhatsApp")}
+                </a>
+              )}
+            </section>
+          )}
+
+          {(online || partnerKind(r) === "both") && coverage.text && (
+            <section style={styles.modalSection}>
+              <h4 style={styles.modalH}>{T("Cobertura", "Coverage", "Couverture", "Abdeckung")}<OrigLang shown={coverage} lang={lang} /></h4>
+              <p style={styles.modalText}>{coverage.text}</p>
+            </section>
+          )}
+
+          {physical && (branches.length > 0 || getLocationUrl(r) || trHours(r.promoHours, lang)) && (
+            <section style={styles.modalSection}>
+              <h4 style={styles.modalH}>{branches.length > 1 ? T("Sucursales", "Branches", "Succursales", "Filialen") : T("Ubicación y horario", "Location and hours", "Adresse et horaires", "Standort und Zeiten")}</h4>
+              {trHours(r.promoHours, lang) && <p style={styles.modalText}><Clock size={12} /> {trHours(r.promoHours, lang)}</p>}
+              {r.isFranchise && branches.length > 0 ? branches.map((b, i) => (
+                <div key={i} style={{ marginTop: 6 }}>
+                  {getBranchUrl(r.name, b)
+                    ? <a href={getBranchUrl(r.name, b)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}><MapPin size={13} /> {b.name}{b.address ? ` · ${b.address}` : ""}</a>
+                    : <span style={styles.modalText}>{b.name}</span>}
+                  {trHours(b.hours, lang) && <div style={styles.promoHoursRow}><Clock size={11} /> {trHours(b.hours, lang)}</div>}
+                </div>
+              )) : getLocationUrl(r) && <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}><MapPin size={13} /> {r.address || T("Ver ubicación", "View location", "Voir l'emplacement", "Standort ansehen")}</a>}
+            </section>
+          )}
+
+          {!online && mode !== "qr" && <QrBlock url={verifyUrl(r.id)} T={T} collapsed />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QrBlock({ url, T, collapsed }) {
+  const [open, setOpen] = useState(!collapsed);
+  return (
+    <section style={styles.modalSection}>
+      {open ? (
+        <div style={styles.qrBox}>
+          <QRCode value={url} size={170} />
+          <span style={styles.qrHint}>{T("El mesero lo escanea con la cámara de su celular y confirma tu membresía al instante.", "The waiter scans it with their phone camera and confirms your membership instantly.", "Le serveur le scanne avec l'appareil photo de son téléphone et confirme ton adhésion instantanément.", "Der Kellner scannt ihn mit der Handykamera und bestätigt deine Mitgliedschaft sofort.")}</span>
+        </div>
+      ) : (
+        <button type="button" style={styles.benefitPrimary} onClick={() => setOpen(true)}><QrCode size={14} /> {T("Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}</button>
+      )}
+    </section>
+  );
+}
+
 function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { lang } = useContext(LangContext);
   const myOrder = tierOrder(account.tier);
@@ -3318,8 +3565,15 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const unlocked = visible.filter((r) => tierOrder(r.tier) <= myOrder);
   const lockedResidentOnly = visible.filter((r) => r.tier === "resident" && tierOrder(r.tier) > myOrder);
   const lockedComingSoon = visible.filter((r) => r.tier === "soon");
-  const [copied, setCopied] = useState(null);
-  const [openQrFor, setOpenQrFor] = useState(null);
+  // Detalles de un beneficio: ventana aparte (no alarga la cuadrícula). Al cerrar se regresa al mismo botón y posición.
+  const [detail, setDetail] = useState(null);
+  const openDetails = (id, mode, trigger) => setDetail({ id, mode, trigger });
+  const closeDetails = () => {
+    const t = detail?.trigger;
+    setDetail(null);
+    if (t && t.focus) setTimeout(() => t.focus({ preventScroll: true }), 0);
+  };
+  const openBenefit = detail ? unlocked.find((r) => r.id === detail.id) : null;
 
   const verifyUrl = (restaurantId) => {
     try {
@@ -3398,135 +3652,17 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
 
       <h3 style={styles.sectionTitle}><Utensils size={16} /> {tr(lang, "Tus descuentos desbloqueados", "Your unlocked discounts", "Tes réductions débloquées", "Deine freigeschalteten Rabatte")}</h3>
 
-      <div style={styles.restGrid}>
+      <div style={styles.benefitGrid}>
         {unlocked.map((r) => (
-          <div key={r.id} style={styles.restCard}>
-            <div style={styles.restCardHeader}>
-              <div>
-                <div style={styles.restCategory}>{categoryText(r, lang)}</div>
-                <div style={styles.restName}>{r.name}</div>
-              </div>
-              {r.logoUrl && <img src={r.logoUrl} alt={r.name} style={styles.restLogo} />}
-            </div>
-            {partnerKind(r) !== "physical" && (
-              <div style={styles.onlineBox}>
-                <div style={styles.onlineBadge}>
-                  {tr(lang, "Servicio en línea", "Online service", "Service en ligne", "Online-Service")}
-                  {txt(r, "coverage", lang) ? ` · ${txt(r, "coverage", lang)}` : ""}
-                </div>
-                {r.promoCode && (
-                  <button type="button" style={styles.promoCodeBtn} onClick={() => { navigator.clipboard?.writeText(r.promoCode).then(() => { setCopied(r.id); setTimeout(() => setCopied(null), 1800); }).catch(() => {}); }}>
-                    {tr(lang, "Código", "Code", "Code", "Code")}: <strong>{r.promoCode}</strong> · {copied === r.id ? tr(lang, "¡Copiado!", "Copied!", "Copié !", "Kopiert!") : tr(lang, "Copiar", "Copy", "Copier", "Kopieren")}
-                  </button>
-                )}
-                {txt(r, "activationSteps", lang) && <div style={styles.partnerText}><strong>{tr(lang, "Cómo activarlo", "How to activate", "Comment l'activer", "So aktivierst du es")}:</strong> {txt(r, "activationSteps", lang)}</div>}
-                {r.websiteUrl && /^https?:\/\//.test(r.websiteUrl) && (
-                  <a href={r.websiteUrl} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                    {tr(lang, "Ir al beneficio", "Go to the perk", "Voir l'avantage", "Zum Vorteil")} <ChevronRight size={12} />
-                  </a>
-                )}
-              </div>
-            )}
-            {partnerKind(r) !== "online" && r.isFranchise && (() => {
-              const branches = getBranches(r);
-              if (branches.length === 0) return null;
-              if (branches.length === 1) {
-                return (
-                  <>
-                    <div style={styles.franchiseBadge}>{tr(lang, "Solo en la siguiente sucursal", "Only at this branch", "Seulement dans cette succursale", "Nur in dieser Filiale")}: {branches[0].name}</div>
-                    {getBranchUrl(r.name, branches[0]) && (
-                      <a href={getBranchUrl(r.name, branches[0])} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                        <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${branches[0].name}`, `Location of ${branches[0].name} branch`, `Emplacement de la succursale ${branches[0].name}`, `Standort der Filiale ${branches[0].name}`)}
-                      </a>
-                    )}
-                    {trHours(branches[0].hours, lang) && <div style={styles.promoHoursRow}><Clock size={11} /> {trHours(branches[0].hours, lang)}</div>}
-                  </>
-                );
-              }
-              return (
-                <>
-                  <div style={styles.franchiseBadge}>{tr(lang, "Disponible en", "Available at", "Disponible dans", "Verfügbar in")} {branches.length} {tr(lang, "sucursales", "branches", "succursales", "Filialen")}</div>
-                  <div style={styles.branchLinksRow}>
-                    {branches.map((b, i) => {
-                      const url = getBranchUrl(r.name, b);
-                      return (
-                        <div key={i}>
-                          {url ? (
-                            <a href={url} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                              <MapPin size={12} /> {tr(lang, `Ubicación de sucursal ${b.name}`, `Location of ${b.name} branch`, `Emplacement de la succursale ${b.name}`, `Standort der Filiale ${b.name}`)}
-                            </a>
-                          ) : (
-                            <span style={styles.restAddress}>{b.name}</span>
-                          )}
-                          {trHours(b.hours, lang) && <div style={styles.promoHoursRow}><Clock size={11} /> {trHours(b.hours, lang)}</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
-            {partnerKind(r) !== "online" && !r.isFranchise && getLocationUrl(r) && (
-              <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
-                <MapPin size={12} /> {tr(lang, "Ver ubicación", "View location", "Voir l'emplacement", "Standort ansehen")}
-              </a>
-            )}
-            {partnerKind(r) !== "online" && trHours(r.promoHours, lang) && (
-              <div style={styles.promoHoursRow}>
-                <Clock size={11} /> {trHours(r.promoHours, lang)}
-              </div>
-            )}
-            <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
-            {txt(r, "howToUse", lang) && <div style={styles.partnerText}><strong>{tr(lang, "Cómo usarlo", "How to use it", "Comment l'utiliser", "So nutzt du es")}:</strong> {txt(r, "howToUse", lang)}</div>}
-            {txt(r, "conditions", lang) && <div style={styles.partnerFine}>{txt(r, "conditions", lang)}</div>}
-            {r.validUntil && <div style={styles.partnerFine}>{tr(lang, "Vigente hasta", "Valid until", "Valable jusqu'au", "Gültig bis")} {r.validUntil}</div>}
-            {partnerKind(r) !== "online" && r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
-              <div style={r.reservationRequired === false ? styles.reservationNoticeOptional : styles.reservationNotice}>
-                <span style={r.reservationRequired === false ? styles.reservationLabelOptional : styles.reservationLabel}>
-                  {r.reservationRequired === false
-                    ? tr(lang, "📅 Reservación recomendada", "📅 Reservation recommended", "📅 Réservation recommandée", "📅 Reservierung empfohlen")
-                    : (<>⚠️ {tr(lang, "Se requiere reservación", "Reservation required", "Réservation requise", "Reservierung erforderlich")}</>)}
-                </span>
-                <a
-                  href={getReservationUrl(r.reservationPhone)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.whatsappBtn}
-                  onClick={() => {
-                    // Registra el clic sin detener ni retrasar la apertura de WhatsApp.
-                    window.storage.insertOnly(
-                      `wa_click:${r.id}:${Date.now()}`,
-                      JSON.stringify({ restaurant: r.name, name: account.name, email: account.email, at: new Date().toISOString() }),
-                      true
-                    ).catch(() => {});
-                  }}
-                >
-                  <MessageCircle size={15} />
-                  {tr(lang, "Reservar por WhatsApp", "Book via WhatsApp", "Réserver via WhatsApp", "Über WhatsApp reservieren")}
-                  <ChevronRight size={14} />
-                </a>
-              </div>
-            )}
-            {partnerKind(r) !== "online" && <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
-              <QrCode size={14} /> {openQrFor === r.id ? tr(lang, "Ocultar QR", "Hide QR", "Masquer le QR", "QR ausblenden") : tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}
-            </button>}
-            {partnerKind(r) !== "online" && openQrFor === r.id && (
-              <div style={styles.qrBox}>
-                <QRCode value={verifyUrl(r.id)} size={160} />
-                <span style={styles.qrHint}>
-                  {tr(lang,
-                    "El mesero lo escanea con la cámara de su celular y confirma tu membresía al instante.",
-                    "The waiter scans it with their phone camera and confirms your membership instantly.",
-                    "Le serveur le scanne avec l'appareil photo de son téléphone et confirme ton adhésion instantanément.",
-                    "Der Kellner scannt ihn mit der Handykamera und bestätigt deine Mitgliedschaft sofort."
-                  )}
-                </span>
-              </div>
-            )}
-          </div>
+          <BenefitCard key={r.id} r={r} lang={lang}
+            onPrimary={(e) => openDetails(r.id, partnerKind(r) === "online" ? "use" : "qr", e.currentTarget)}
+            onDetails={(e) => openDetails(r.id, "details", e.currentTarget)} />
         ))}
         {unlocked.length === 0 && <p style={styles.emptyText}>{tr(lang, "Aún no tienes descuentos activos.", "You don't have any active discounts yet.", "Tu n'as pas encore de réductions actives.", "Du hast noch keine aktiven Rabatte.")}</p>}
       </div>
+      {openBenefit && (
+        <BenefitDetails r={openBenefit} mode={detail.mode} lang={lang} account={account} verifyUrl={verifyUrl} onClose={closeDetails} />
+      )}
 
       {lockedResidentOnly.length > 0 && (
         <>
@@ -4138,6 +4274,34 @@ const styles = {
   promoCodeBtn: { justifySelf: "start", border: `1.5px dashed ${colors.blue}`, background: "#F3F9FE", color: colors.navy, borderRadius: 10, padding: "6px 10px", fontSize: 13, cursor: "pointer" },
   partnerText: { fontSize: 12.5, color: colors.ink, lineHeight: 1.45, marginTop: 4 },
   partnerFine: { fontSize: 11, color: colors.muted, lineHeight: 1.4, marginTop: 2 },
+  benefitGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))", gap: 14, alignItems: "stretch" },
+  benefitCard: { background: colors.card, color: colors.ink, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 8, minHeight: 236 },
+  benefitTop: { display: "flex", alignItems: "center", gap: 12 },
+  benefitLogo: { width: "auto", objectFit: "contain", background: "#fff", borderRadius: 10, padding: "4px 6px", border: `1px solid ${colors.line}`, boxSizing: "border-box", flexShrink: 0 },
+  benefitMono: { display: "grid", placeItems: "center", borderRadius: 10, background: "#E6F1FB", color: colors.navy, fontWeight: 800, fontSize: 15, flexShrink: 0 },
+  benefitName: { margin: 0, fontFamily: "'Host Grotesk', sans-serif", fontSize: 16, fontWeight: 700, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" },
+  benefitDeal: { fontSize: 15, color: colors.blue, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" },
+  benefitChipRow: { minHeight: 24 },
+  benefitChip: { display: "inline-block", fontSize: 12, fontWeight: 700, color: colors.navy, background: "#E6F1FB", borderRadius: 999, padding: "4px 10px", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  benefitActions: { marginTop: "auto", display: "grid", gap: 8 },
+  benefitPrimary: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: colors.blue, color: "#fff", border: "none", borderRadius: 10, minHeight: 44, padding: "10px 12px", fontSize: 14, fontWeight: 700, cursor: "pointer", width: "100%" },
+  benefitSecondary: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#fff", color: colors.blue, border: `1px solid ${colors.blue}`, borderRadius: 10, minHeight: 40, padding: "8px 12px", fontSize: 13.5, fontWeight: 600, cursor: "pointer" },
+  modalOverlay: { position: "fixed", inset: 0, background: "rgba(5,31,53,.62)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
+  modal: { background: "#fff", color: colors.ink, borderRadius: 18, width: "min(560px, 100%)", maxHeight: "86vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.35)" },
+  sheet: { background: "#fff", color: colors.ink, borderRadius: "18px 18px 0 0", width: "100%", maxHeight: "90vh", position: "fixed", left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column", boxShadow: "0 -10px 40px rgba(0,0,0,.3)", paddingBottom: "env(safe-area-inset-bottom)" },
+  modalHead: { display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 12px", borderBottom: `1px solid ${colors.line}` },
+  modalTitle: { margin: 0, fontFamily: "'Host Grotesk', sans-serif", fontSize: 19, fontWeight: 700 },
+  modalClose: { border: "none", background: "#F1F5F8", color: colors.ink, borderRadius: 999, width: 44, height: 44, display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 },
+  modalBody: { overflowY: "auto", WebkitOverflowScrolling: "touch", overscrollBehavior: "contain", padding: "14px 18px 20px", display: "grid", gap: 14 },
+  modalDeal: { fontSize: 20, fontWeight: 800, color: colors.blue, lineHeight: 1.3 },
+  modalSection: { display: "grid", gap: 6 },
+  modalH: { margin: 0, fontSize: 13, textTransform: "uppercase", letterSpacing: 0.4, color: colors.muted },
+  modalText: { margin: 0, fontSize: 15, lineHeight: 1.5, color: colors.ink },
+  stepList: { margin: 0, paddingLeft: 22, display: "grid", gap: 6, fontSize: 15, lineHeight: 1.5 },
+  codeRow: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
+  codeBox: { fontSize: 18, fontWeight: 800, letterSpacing: 1, padding: "8px 14px", border: `1.5px dashed ${colors.blue}`, borderRadius: 10, background: "#F3F9FE", color: colors.navy },
+  goBtn: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: colors.blue, color: "#fff", borderRadius: 10, minHeight: 46, fontSize: 15, fontWeight: 700, textDecoration: "none" },
+  origLang: { fontSize: 11, fontWeight: 500, textTransform: "none", letterSpacing: 0, color: colors.muted },
   promoHoursRow: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: colors.muted, marginTop: 3 },
   reservationNotice: { background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "8px 10px", marginTop: 8, marginBottom: 6 },
   reservationLabel: { display: "block", fontSize: 11.5, fontWeight: 700, color: "#7A5A0A", marginBottom: 6 },
