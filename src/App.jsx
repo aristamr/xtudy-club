@@ -2309,7 +2309,7 @@ const SHOW_PLANS = false;
 const DEFAULT_RESIDENT_CODE = "XTUDY2026";
 // La administración del Club vive ahora en el panel principal (www.xtudyclub.com/admin/club). Cuando
 // VITE_UNIFIED_ADMIN_URL está configurada, «Acceso administrador» lleva allá; sin ella, sigue el administrador anterior.
-const UNIFIED_ADMIN_URL = (import.meta.env.VITE_UNIFIED_ADMIN_URL || "").trim();
+const UNIFIED_ADMIN_URL = (import.meta.env.VITE_UNIFIED_ADMIN_URL || `${(import.meta.env.VITE_PLATFORM_URL || "https://www.xtudyclub.com").replace(/\/$/, "")}/admin/club`).trim();
 
 const TIERS = [
   { id: "guest", name: { es: "Explorador", en: "Explorer", fr: "Explorateur", de: "Entdecker" }, price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student", fr: "Pour tout étudiant", de: "Für jeden Studenten" } },
@@ -2671,7 +2671,7 @@ export default function ClubDescuentos() {
       const params = new URLSearchParams(window.location.search);
       const m = params.get("m");
       const r = params.get("r");
-      return m && r ? { m, r } : null;
+      return m && r ? { m, r, p: params.get("p") || "" } : null;
     } catch {
       return null;
     }
@@ -2687,7 +2687,6 @@ export default function ClubDescuentos() {
         const list = await storageGet("restaurants-list", true);
         let restList = DEFAULT_RESTAURANTS;
         if (list) { try { restList = JSON.parse(list); setRestaurants(restList); } catch {} }
-        else persist(() => window.storage.set("restaurants-list", JSON.stringify(DEFAULT_RESTAURANTS), true));
 
         const unis = await storageGet("universities-list", true);
         if (unis) { try { setUniversities(JSON.parse(unis)); } catch {} }
@@ -2698,39 +2697,15 @@ export default function ClubDescuentos() {
           if (session) setAdminUnlocked(true);
         } catch {}
 
+        // Escaneo del QR en el comercio: el SERVIDOR comprueba el nivel del miembro para esa promoción y registra el canje.
         if (verifyParams) {
-          const restaurant = restList.find((r) => r.id === verifyParams.r);
-          const val = await fetchMemberById(verifyParams.m);
-          if (!restaurant) {
-            setVerifyResult({ status: "notfound" });
-          } else if (!val) {
-            setVerifyResult({ status: "notfound" });
-          } else {
-            let acc;
-            try { acc = JSON.parse(val); } catch { acc = null; }
-            if (!acc) {
-              setVerifyResult({ status: "notfound" });
-            } else if (tierOrder(acc.tier) >= tierOrder(restaurant.tier)) {
-              const redemptionKey = `redemption:${restaurant.id}:${Date.now()}`;
-              const redemptionValue = JSON.stringify({ restaurant: restaurant.name, email: acc.email, name: acc.name, tier: acc.tier, at: new Date().toISOString() });
-              console.log("DIAGNOSTICO intentando guardar key:", redemptionKey);
-              let saved = null;
-              for (let attempt = 1; attempt <= 4 && !saved; attempt++) {
-                try {
-                  saved = await window.storage.insertOnly(redemptionKey, redemptionValue, true);
-                } catch (e) {
-                  console.error(`Intento ${attempt} de guardar el canje falló`, e);
-                }
-                if (!saved && attempt < 4) {
-                  await new Promise((r) => setTimeout(r, 500 * attempt));
-                }
-              }
-              console.log("DIAGNOSTICO resultado final saved:", saved);
-              if (!saved) console.error("No se pudo guardar el canje tras varios intentos (posible mala conexión).");
-              setVerifyResult({ status: "ok", name: acc.name, tier: acc.tier, restaurant });
-            } else {
-              setVerifyResult({ status: "tier", name: acc.name, requiredTier: TIER_NAME_ES[restaurant.tier] || restaurant.tier });
-            }
+          try {
+            const qs = `m=${encodeURIComponent(verifyParams.m)}&r=${encodeURIComponent(verifyParams.r)}${verifyParams.p ? `&p=${encodeURIComponent(verifyParams.p)}` : ""}`;
+            const res = await fetch(`${PLATFORM_URL}/api/club/verify?${qs}`);
+            const j = await res.json().catch(() => ({}));
+            setVerifyResult(j && j.status ? j : { status: "notfound" });
+          } catch {
+            setVerifyResult({ status: "error" });
           }
           setLoading(false);
           return;
@@ -2769,10 +2744,9 @@ export default function ClubDescuentos() {
     })();
   }, []);
 
-  const saveRestaurants = (list) => {
-    setRestaurants(list);
-    persist(() => window.storage.set("restaurants-list", JSON.stringify(list), true));
-  };
+  // El catálogo de aliados lo administra el panel principal (que genera la lista pública sin datos de canje restringidos).
+  // Esta app ya no lo escribe: un guardado desde aquí borraría promociones y protecciones.
+  const saveRestaurants = (list) => { setRestaurants(list); };
 
   const saveUniversities = (list) => {
     setUniversities(list);
@@ -3013,10 +2987,11 @@ export default function ClubDescuentos() {
                 <div style={styles.checkinCheck}><Check size={40} color="#fff" strokeWidth={3} /></div>
                 <div style={styles.checkinName}>{verifyResult.name}</div>
                 <div style={styles.checkinTier}>
-                  Miembro de Students Club{verifyResult.tier === "resident" ? " · Residente Xtudy" : ""}
+                  Miembro de Students Club · {verifyResult.level}
                 </div>
-                <div style={styles.checkinDiscountBig}>{formatDiscount(verifyResult.restaurant, "es")}</div>
-                <div style={styles.checkinRest}>{verifyResult.restaurant.name}</div>
+                {verifyResult.promotionTitle && <div style={styles.checkinRest}>{verifyResult.promotionTitle}</div>}
+                <div style={styles.checkinDiscountBig}>{verifyResult.benefit}</div>
+                <div style={styles.checkinRest}>{verifyResult.business}</div>
                 <p style={styles.checkinHint}>Este estudiante tiene acceso confirmado a este descuento.</p>
               </>
             )}
@@ -3024,7 +2999,13 @@ export default function ClubDescuentos() {
               <>
                 <div style={{ ...styles.checkinCheck, background: "#B3261E" }}><X size={40} color="#fff" strokeWidth={3} /></div>
                 <div style={styles.checkinName}>{verifyResult.name}</div>
-                <p style={styles.checkinHint}>Este estudiante no tiene acceso a este restaurante — requiere nivel {verifyResult.requiredTier}.</p>
+                <p style={styles.checkinHint}>Este miembro ({verifyResult.level}) no tiene acceso a esta promoción de {verifyResult.business}: es para {verifyResult.requiredLevel}.</p>
+              </>
+            )}
+            {verifyResult && verifyResult.status === "error" && (
+              <>
+                <div style={{ ...styles.checkinCheck, background: "#B3261E" }}><X size={40} color="#fff" strokeWidth={3} /></div>
+                <p style={styles.checkinHint}>No se pudo verificar en este momento (sin conexión). Intenta de nuevo.</p>
               </>
             )}
             {verifyResult && verifyResult.status === "notfound" && (
@@ -3345,14 +3326,40 @@ function mergedSteps(r, lang) {
   }
   return out;
 }
+// --- Promociones por comercio (V19) ---------------------------------------------------------------------------
+// Un comercio tiene una sola ficha y una o varias promociones (para exploradores o para residentes y colaboradores).
+// La lista pública NO trae datos de canje de las promociones restringidas: el servidor los entrega solo a quien tiene acceso.
+// Un registro anterior (sin «promotions») se convierte aquí en una promoción, sin perder nada.
+function promotionsOf(r) {
+  if (Array.isArray(r.promotions)) return r.promotions;
+  const tier = r.tier === "free" ? "guest" : r.tier;
+  return [{
+    id: `${r.id}-p1`, legacy: true, audience: tier === "resident" ? "resident" : "guest", status: tier === "soon" ? "soon" : "active",
+    benefitType: r.benefitType, discountPercent: r.discountPercent, discount: r.discount, validUntil: r.validUntil, promoHours: r.promoHours,
+    i18n: r.i18n || {}, hasPromoCode: Boolean(r.hasPromoCode || r.promoCode),
+  }];
+}
+const todayMx = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date());
+const promoIsLive = (p) => p.status === "active" && !(/^\d{4}-\d{2}-\d{2}$/.test(p.validUntil || "") && p.validUntil < todayMx());
+const canUsePromo = (level, p) => p.audience === "guest" || level === "resident";
+const promoTitle = (p, lang) => txt(p, "title", lang) || formatDiscount(p, lang);
+const promoHoursOf = (r, p, lang) => txt(p, "hours", lang) || trHours(p.promoHours || (p.legacy ? r.promoHours : null), lang);
+const AUDIENCE_LOCK = ["Residentes y colaboradores", "Residents & collaborators", "Résidents et collaborateurs", "Bewohner & Partner"];
+
 // Una sola restricción esencial en la tarjeta (el resto va en los detalles).
-function essentialRestriction(r, lang) {
-  if (r.tier === "resident") return tr(lang, "Solo residentes", "Residents only", "Résidents uniquement", "Nur für Bewohner");
+function essentialRestriction(r, p, lang) {
+  if (p && p.audience === "resident") return tr(lang, ...AUDIENCE_LOCK);
   if (partnerKind(r) !== "online" && r.isFranchise) {
-    const b = getBranches(r);
+    const b = branchesFor(r, p);
     if (b.length === 1) return tr(lang, `Sucursal ${b[0].name}`, `${b[0].name} branch`, `Succursale ${b[0].name}`, `Filiale ${b[0].name}`);
   }
   return "";
+}
+// Sucursales donde aplica la promoción (vacío = todas las del comercio).
+function branchesFor(r, p) {
+  const all = getBranches(r);
+  const names = (p && p.branchNames) || [];
+  return names.length ? all.filter((b) => names.includes(b.name)) : all;
 }
 const mainCategory = (r, lang) => {
   const labels = CATEGORY_LABELS[r.categoryId];
@@ -3365,9 +3372,9 @@ function PartnerLogo({ r, size = 44 }) {
   return <span aria-hidden style={{ ...styles.benefitMono, width: size, height: size }}>{initials}</span>;
 }
 
-function BenefitCard({ r, lang, onPrimary, onDetails }) {
+function BenefitCard({ r, p, more, lang, onPrimary, onDetails }) {
   const online = partnerKind(r) === "online";
-  const restriction = essentialRestriction(r, lang);
+  const restriction = essentialRestriction(r, p, lang);
   return (
     <article style={styles.benefitCard}>
       <div style={styles.benefitTop}>
@@ -3377,14 +3384,39 @@ function BenefitCard({ r, lang, onPrimary, onDetails }) {
           <h4 style={styles.benefitName}>{r.name}</h4>
         </div>
       </div>
-      <div style={styles.benefitDeal}>{formatDiscount(r, lang)}</div>
-      <div style={styles.benefitChipRow}>{restriction && <span style={styles.benefitChip}>{restriction}</span>}</div>
+      <div style={styles.benefitDeal}>{formatDiscount(p, lang)}</div>
+      <div style={styles.benefitChipRow}>
+        {restriction && <span style={styles.benefitChip}>{restriction}</span>}
+        {more > 0 && <span style={{ ...styles.benefitChip, marginLeft: restriction ? 6 : 0, background: "#F1F5F9" }}>{tr(lang, `+${more} promoción${more > 1 ? "es" : ""}`, `+${more} more`, `+${more} autre${more > 1 ? "s" : ""}`, `+${more} weitere`)}</span>}
+      </div>
       <div style={styles.benefitActions}>
         <button type="button" style={styles.benefitPrimary} onClick={onPrimary}>
           {online ? <>{tr(lang, "Usar beneficio", "Use perk", "Utiliser l'avantage", "Vorteil nutzen")} <ChevronRight size={14} /></> : <><QrCode size={14} /> {tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}</>}
         </button>
         <button type="button" style={styles.benefitSecondary} onClick={onDetails}>{tr(lang, "Ver detalles", "View details", "Voir les détails", "Details ansehen")}</button>
       </div>
+    </article>
+  );
+}
+
+// Tarjeta sin canje: «solo para residentes y colaboradores» (bloqueada por tu nivel) o «Próximamente» (aún no se puede usar).
+// Mostrar el logo no habilita ningún código, QR ni canje.
+function LockedCard({ r, p, kind, lang }) {
+  const soon = kind === "soon";
+  return (
+    <article style={styles.lockedCard} aria-label={`${r.name} · ${soon ? tr(lang, "Próximamente", "Coming soon", "Bientôt", "Demnächst") : tr(lang, ...AUDIENCE_LOCK)}`}>
+      <div style={styles.lockedLogoBox}>{r.logoUrl ? <img src={r.logoUrl} alt="" style={styles.lockedLogoImg} /> : <PartnerLogo r={r} size={40} />}</div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={styles.restCategory}>{mainCategory(r, lang)}</div>
+        <div style={styles.lockedName}>{r.name}</div>
+        {!soon && p && <div style={styles.lockedNotice}>{formatDiscount(p, lang)}</div>}
+        <div style={{ marginTop: 6 }}>
+          {soon
+            ? <span style={styles.tagSoon}>{tr(lang, "Próximamente", "Coming soon", "Bientôt disponible", "Demnächst")}</span>
+            : <span style={styles.tagLocked}><Lock size={11} /> {tr(lang, ...AUDIENCE_LOCK)}</span>}
+        </div>
+      </div>
+      {soon && <Lock size={14} color="#9AAEC0" aria-hidden style={{ flexShrink: 0, alignSelf: "flex-start" }} />}
     </article>
   );
 }
@@ -3396,15 +3428,44 @@ function useNarrow() {
   return narrow;
 }
 
-function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
+// Detalles de canje de una promoción: se piden al servidor, que comprueba la cuenta y el nivel en CADA apertura.
+function useRedeemDetails(r, p, level, account) {
+  const allowed = p && canUsePromo(level, p);
+  const [st, setSt] = useState({ state: "idle", data: null });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!p || !allowed) { setSt({ state: allowed === false ? "denied" : "idle", data: null }); return; }
+    let alive = true;
+    setSt({ state: "loading", data: null });
+    fetch(`${PLATFORM_URL}/api/club/benefit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: account.email, memberId: account.memberId, id: r.id, promotionId: p.legacy ? undefined : p.id }) })
+      .then(async (res) => {
+        const j = await res.json().catch(() => ({}));
+        if (!alive) return;
+        if (res.ok) setSt({ state: "ok", data: j });
+        else setSt({ state: res.status === 403 ? "denied" : "error", data: null });
+      })
+      .catch(() => alive && setSt({ state: "error", data: null }));
+    return () => { alive = false; };
+  }, [r.id, p && p.id, allowed, account.email, account.memberId, tick]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { ...st, retry: () => setTick((t) => t + 1) };
+}
+
+function BenefitDetails({ r, promos, initialId, mode, lang, level, account, verifyUrl, onClose }) {
   const narrow = useNarrow();
   const closeRef = React.useRef(null);
   const boxRef = React.useRef(null);
-  const [code, setCode] = useState({ state: "idle", value: "" });
+  const [selId, setSelId] = useState(initialId);
   const [copied, setCopied] = useState(false);
+  const base = promos.find((x) => x.id === selId) || promos[0];
+  const allowed = canUsePromo(level, base);
+  const redeem = useRedeemDetails(r, base, level, account);
+  // Con acceso confirmado, los textos completos vienen del servidor; mientras tanto, el aviso público.
+  const p = redeem.state === "ok" && redeem.data && redeem.data.i18n ? { ...base, i18n: { ...base.i18n, ...redeem.data.i18n } } : base;
   const online = partnerKind(r) === "online";
   const physical = !online;
-  const wantsCode = Boolean(r.hasPromoCode || r.promoCode);
+  const code = redeem.state === "ok" ? (redeem.data.promoCode || "") : "";
+  const link = redeem.state === "ok" ? (redeem.data.benefitUrl || redeem.data.websiteUrl || "") : "";
+  const qrAllowed = physical && redeem.state === "ok" && redeem.data.qr !== false;
 
   // Bloquea el fondo (la página no se mueve), enfoca «Cerrar», Esc cierra y Tab no sale de la ventana.
   useEffect(() => {
@@ -3414,7 +3475,7 @@ function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
     const onKey = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onClose(); }
       if (e.key === "Tab" && boxRef.current) {
-        const f = boxRef.current.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+        const f = boxRef.current.querySelectorAll('a[href], button:not([disabled]), input, textarea, [tabindex]:not([tabindex="-1"])');
         if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -3425,34 +3486,16 @@ function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
     return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
   }, [onClose]);
 
-  // El código se pide al servidor, que verifica la cuenta y el nivel del miembro.
-  useEffect(() => {
-    if (!wantsCode) return;
-    if (r.promoCode) { setCode({ state: "ok", value: r.promoCode }); return; } // registros anteriores aún sin proteger
-    let alive = true;
-    setCode({ state: "loading", value: "" });
-    fetch(`${PLATFORM_URL}/api/club/benefit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: account.email, memberId: account.memberId, id: r.id }) })
-      .then(async (res) => {
-        const j = await res.json().catch(() => ({}));
-        if (!alive) return;
-        if (res.ok && j.promoCode) setCode({ state: "ok", value: j.promoCode });
-        else if (res.status === 403) setCode({ state: "denied", value: "" });
-        else setCode({ state: res.ok ? "none" : "error", value: "" });
-      })
-      .catch(() => alive && setCode({ state: "error", value: "" }));
-    return () => { alive = false; };
-  }, [r.id, wantsCode, r.promoCode, account.email, account.memberId]);
-
-  const copy = () => navigator.clipboard?.writeText(code.value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {});
-  const steps = mergedSteps(r, lang);
-  const stepsShown = [txtShown(r, "activationSteps", lang), txtShown(r, "howToUse", lang)].find((x) => x.text) || { lang: null };
-  const benefitShown = txtShown(r, "benefit", lang);
-  const conditions = txtShown(r, "conditions", lang);
-  const coverage = txtShown(r, "coverage", lang);
-  const branches = getBranches(r);
-  const restriction = essentialRestriction(r, lang);
+  const copy = () => navigator.clipboard?.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {});
+  const steps = allowed ? mergedSteps(p, lang) : [];
+  const stepsShown = [txtShown(p, "activationSteps", lang), txtShown(p, "howToUse", lang)].find((x) => x.text) || { lang: null };
+  const benefitShown = txtShown(p, "benefit", lang);
+  const conditions = allowed ? txtShown(p, "conditions", lang) : { text: "" };
+  const coverage = allowed ? txtShown(p, "coverage", lang) : { text: "" };
+  const branches = branchesFor(r, p);
+  const hours = allowed ? promoHoursOf(r, p, lang) : "";
+  const restriction = essentialRestriction(r, p, lang);
   const T = (es, en, fr, de) => tr(lang, es, en, fr, de);
-  const site = r.websiteUrl && /^https?:\/\//.test(r.websiteUrl) ? r.websiteUrl : "";
 
   return (
     <div style={styles.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -3466,28 +3509,56 @@ function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
           <button ref={closeRef} type="button" onClick={onClose} style={styles.modalClose} aria-label={T("Cerrar", "Close", "Fermer", "Schließen")}><X size={20} /></button>
         </div>
         <div style={styles.modalBody}>
-          <div style={styles.modalDeal}>{formatDiscount(r, lang)}{benefitShown.text && r.benefitType && r.benefitType !== "percent" ? <OrigLang shown={benefitShown} lang={lang} /> : null}</div>
-          {restriction && <div style={styles.benefitChipRow}><span style={styles.benefitChip}>{restriction}</span></div>}
-
-          {!online && mode === "qr" && <QrBlock url={verifyUrl(r.id)} T={T} />}
-
-          {wantsCode && (
+          {promos.length > 1 && (
             <section style={styles.modalSection}>
-              <h4 style={styles.modalH}>{T("Código promocional", "Promo code", "Code promo", "Gutscheincode")}</h4>
-              {code.state === "loading" && <p style={styles.modalText}>{T("Cargando…", "Loading…", "Chargement…", "Wird geladen…")}</p>}
-              {code.state === "ok" && (
-                <div style={styles.codeRow}>
-                  <code style={styles.codeBox}>{code.value}</code>
-                  <button type="button" style={styles.benefitSecondary} onClick={copy}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
-                </div>
-              )}
-              {code.state === "denied" && <p style={styles.modalText}>{T("Este código es solo para miembros con el nivel requerido.", "This code is only for members with the required tier.", "Ce code est réservé aux membres du niveau requis.", "Dieser Code ist nur für Mitglieder mit der erforderlichen Stufe.")}</p>}
-              {(code.state === "error" || code.state === "none") && <p style={styles.modalText}>{T("No pudimos cargar el código. Intenta de nuevo en un momento.", "We couldn't load the code. Please try again in a moment.", "Impossible de charger le code. Réessaie dans un instant.", "Der Code konnte nicht geladen werden. Bitte versuche es gleich noch einmal.")}</p>}
+              <h4 style={styles.modalH}>{T("Elige una promoción", "Choose a promotion", "Choisis une promotion", "Wähle ein Angebot")}</h4>
+              <div role="radiogroup" style={{ display: "grid", gap: 6 }}>
+                {promos.map((x) => {
+                  const on = x.id === base.id, ok = canUsePromo(level, x);
+                  return (
+                    <button key={x.id} type="button" role="radio" aria-checked={on} onClick={() => setSelId(x.id)} style={{ ...styles.promoChoice, ...(on ? styles.promoChoiceOn : {}) }}>
+                      <span style={{ flex: 1, textAlign: "left" }}>{promoTitle(x, lang)}{txt(x, "title", lang) ? <span style={styles.promoChoiceSub}> · {formatDiscount(x, lang)}</span> : null}</span>
+                      {!ok && <span style={styles.tagLocked}><Lock size={11} /> {T(...AUDIENCE_LOCK)}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <p style={styles.partnerFine}>{T("Son alternativas: elige una por visita. No se acumulan, salvo que sus condiciones lo indiquen.", "These are alternatives: choose one per visit. They can't be combined unless their conditions say so.", "Ce sont des alternatives : choisis-en une par visite. Elles ne se cumulent pas, sauf si leurs conditions l'indiquent.", "Das sind Alternativen: wähle eine pro Besuch. Sie sind nicht kombinierbar, außer die Bedingungen erlauben es.")}</p>
             </section>
           )}
 
-          {online && site && (
-            <a href={site} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>
+          {txt(p, "title", lang) && <div style={styles.modalH}>{txt(p, "title", lang)}</div>}
+          <div style={styles.modalDeal}>{formatDiscount(p, lang)}{benefitShown.text && p.benefitType && p.benefitType !== "percent" ? <OrigLang shown={benefitShown} lang={lang} /> : null}</div>
+          {restriction && <div style={styles.benefitChipRow}><span style={styles.benefitChip}>{restriction}</span></div>}
+
+          {!allowed && (
+            <section style={styles.lockedBox}>
+              <Lock size={16} />
+              <span>{T("Esta promoción es para residentes y colaboradores de Xtudy. Si eres colaborador, ingresa tu código en tu tarjeta para desbloquearla.", "This promotion is for Xtudy residents and collaborators. If you're a collaborator, enter your code on your card to unlock it.", "Cette promotion est réservée aux résidents et collaborateurs Xtudy. Si tu es collaborateur, saisis ton code sur ta carte pour la débloquer.", "Dieses Angebot ist für Xtudy-Bewohner und -Partner. Wenn du Partner bist, gib deinen Code auf deiner Karte ein, um es freizuschalten.")}</span>
+            </section>
+          )}
+
+          {allowed && redeem.state === "loading" && <p style={styles.modalText}>{T("Comprobando tu acceso…", "Checking your access…", "Vérification de ton accès…", "Dein Zugang wird geprüft…")}</p>}
+          {allowed && redeem.state === "error" && (
+            <p style={styles.modalText}>{T("No pudimos confirmar tu acceso. Intenta de nuevo en un momento.", "We couldn't confirm your access. Please try again in a moment.", "Impossible de confirmer ton accès. Réessaie dans un instant.", "Dein Zugang konnte nicht bestätigt werden. Bitte versuche es gleich noch einmal.")}{" "}
+              <button type="button" style={{ ...styles.benefitSecondary, display: "inline-flex", minHeight: 32 }} onClick={redeem.retry}>{T("Reintentar", "Retry", "Réessayer", "Erneut versuchen")}</button></p>
+          )}
+          {allowed && redeem.state === "denied" && <p style={styles.modalText}>{T("Esta promoción es solo para miembros con el nivel requerido.", "This promotion is only for members with the required tier.", "Cette promotion est réservée aux membres du niveau requis.", "Dieses Angebot ist nur für Mitglieder mit der erforderlichen Stufe.")}</p>}
+
+          {qrAllowed && mode === "qr" && <QrBlock url={verifyUrl(r.id, base)} T={T} />}
+
+          {code && (
+            <section style={styles.modalSection}>
+              <h4 style={styles.modalH}>{T("Código promocional", "Promo code", "Code promo", "Gutscheincode")}</h4>
+              <div style={styles.codeRow}>
+                <code style={styles.codeBox}>{code}</code>
+                <button type="button" style={styles.benefitSecondary} onClick={copy}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
+              </div>
+            </section>
+          )}
+
+          {online && /^https?:\/\//.test(link) && (
+            <a href={link} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>
               {T("Ir al servicio", "Go to the service", "Accéder au service", "Zum Dienst")} <ChevronRight size={16} />
             </a>
           )}
@@ -3499,11 +3570,11 @@ function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
             </section>
           )}
 
-          {(conditions.text || r.validUntil || (r.needsReservation && r.reservationPhone)) && (
+          {allowed && (conditions.text || p.validUntil || (r.needsReservation && r.reservationPhone)) && (
             <section style={styles.modalSection}>
               <h4 style={styles.modalH}>{T("Condiciones y vigencia", "Conditions and validity", "Conditions et validité", "Bedingungen und Gültigkeit")}{conditions.text && <OrigLang shown={conditions} lang={lang} />}</h4>
               {conditions.text && <p style={styles.modalText}>{conditions.text}</p>}
-              {r.validUntil && <p style={styles.modalText}>{T("Vigente hasta", "Valid until", "Valable jusqu'au", "Gültig bis")} {r.validUntil}</p>}
+              {p.validUntil && <p style={styles.modalText}>{T("Vigente hasta", "Valid until", "Valable jusqu'au", "Gültig bis")} {p.validUntil}</p>}
               {partnerKind(r) !== "online" && r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
                 <a href={getReservationUrl(r.reservationPhone)} target="_blank" rel="noopener noreferrer" style={styles.whatsappBtn}
                   onClick={() => { window.storage.insertOnly(`wa_click:${r.id}:${Date.now()}`, JSON.stringify({ restaurant: r.name, name: account.name, email: account.email, at: new Date().toISOString() }), true).catch(() => {}); }}>
@@ -3520,10 +3591,10 @@ function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
             </section>
           )}
 
-          {physical && (branches.length > 0 || getLocationUrl(r) || trHours(r.promoHours, lang)) && (
+          {physical && (branches.length > 0 || getLocationUrl(r) || hours) && (
             <section style={styles.modalSection}>
               <h4 style={styles.modalH}>{branches.length > 1 ? T("Sucursales", "Branches", "Succursales", "Filialen") : T("Ubicación y horario", "Location and hours", "Adresse et horaires", "Standort und Zeiten")}</h4>
-              {trHours(r.promoHours, lang) && <p style={styles.modalText}><Clock size={12} /> {trHours(r.promoHours, lang)}</p>}
+              {hours && <p style={styles.modalText}><Clock size={12} /> {hours}</p>}
               {r.isFranchise && branches.length > 0 ? branches.map((b, i) => (
                 <div key={i} style={{ marginTop: 6 }}>
                   {getBranchUrl(r.name, b)
@@ -3535,7 +3606,7 @@ function BenefitDetails({ r, mode, lang, account, verifyUrl, onClose }) {
             </section>
           )}
 
-          {!online && mode !== "qr" && <QrBlock url={verifyUrl(r.id)} T={T} collapsed />}
+          {qrAllowed && mode !== "qr" && <QrBlock key={base.id} url={verifyUrl(r.id, base)} T={T} collapsed />}
         </div>
       </div>
     </div>
@@ -3558,30 +3629,171 @@ function QrBlock({ url, T, collapsed }) {
   );
 }
 
+// --- Nivel efectivo, código de colaborador y Tarjeta Dorada -------------------------------------------------------
+const post = (path, body) => fetch(`${PLATFORM_URL}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+  .then(async (res) => ({ ok: res.ok, status: res.status, j: await res.json().catch(() => ({})) }));
+
+// El nivel lo decide el servidor (residente, colaborador o explorador). Mientras responde, se usa el de la cuenta.
+function useMember(account) {
+  const [me, setMe] = useState(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    post("/api/club/me", { email: account.email, memberId: account.memberId }).then((r) => { if (alive && r.ok) setMe(r.j); }).catch(() => {});
+    return () => { alive = false; };
+  }, [account.email, account.memberId, tick]);
+  return { me, refresh: () => setTick((t) => t + 1) };
+}
+
+function CollaboratorCode({ account, lang, onDone }) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [st, setSt] = useState({ state: "idle" });
+  const T = (...a) => tr(lang, ...a);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setSt({ state: "sending" });
+    try {
+      const r = await post("/api/club/collaborator", { email: account.email, memberId: account.memberId, code: code.trim() });
+      const s = r.j.status || (r.status === 429 ? "too_many" : "error");
+      setSt({ state: s });
+      if (s === "ok" || s === "already") { setCode(""); onDone(); }
+    } catch { setSt({ state: "error" }); }
+  };
+  const msg = {
+    ok: T("¡Listo! Ya tienes acceso de colaborador a las promociones para residentes y colaboradores.", "Done! You now have collaborator access to promotions for residents and collaborators.", "C'est fait ! Tu as maintenant l'accès collaborateur aux promotions pour résidents et collaborateurs.", "Fertig! Du hast jetzt Partnerzugang zu den Angeboten für Bewohner und Partner."),
+    already: T("Ya tenías acceso de colaborador.", "You already had collaborator access.", "Tu avais déjà l'accès collaborateur.", "Du hattest bereits Partnerzugang."),
+    invalid: T("Ese código no es válido. Revísalo e intenta de nuevo.", "That code isn't valid. Check it and try again.", "Ce code n'est pas valide. Vérifie-le et réessaie.", "Dieser Code ist ungültig. Prüfe ihn und versuche es erneut."),
+    expired: T("Ese código ya no está vigente.", "That code is no longer valid.", "Ce code n'est plus valable.", "Dieser Code ist nicht mehr gültig."),
+    too_many: T("Demasiados intentos. Espera un rato antes de volver a intentar.", "Too many attempts. Please wait a while before trying again.", "Trop de tentatives. Attends un peu avant de réessayer.", "Zu viele Versuche. Bitte warte etwas, bevor du es erneut versuchst."),
+    error: T("No pudimos validar el código. Intenta de nuevo en un momento.", "We couldn't check the code. Please try again in a moment.", "Impossible de vérifier le code. Réessaie dans un instant.", "Der Code konnte nicht geprüft werden. Bitte versuche es gleich noch einmal."),
+  }[st.state];
+  if (!open) return (
+    <button type="button" style={styles.collabLink} onClick={() => setOpen(true)}>{T("¿Tienes un código de colaborador?", "Have a collaborator code?", "Tu as un code collaborateur ?", "Hast du einen Partnercode?")}</button>
+  );
+  return (
+    <form onSubmit={submit} style={styles.collabBox}>
+      <label style={{ ...styles.label, color: "#CFE6F5" }} htmlFor="collab-code">{T("Código de colaborador", "Collaborator code", "Code collaborateur", "Partnercode")}</label>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input id="collab-code" style={styles.input} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" autoCapitalize="characters" maxLength={40} />
+        <button type="submit" style={{ ...styles.benefitPrimary, width: "auto", minWidth: 110 }} disabled={st.state === "sending"}>{st.state === "sending" ? T("Validando…", "Checking…", "Vérification…", "Prüfen…") : T("Canjear", "Redeem", "Valider", "Einlösen")}</button>
+      </div>
+      <p style={{ ...styles.partnerFine, color: "#CFE6F5", margin: 0 }}>{T("Si ya eres residente, conservas tu nivel y tus beneficios.", "If you're already a resident, you keep your status and benefits.", "Si tu es déjà résident, tu gardes ton niveau et tes avantages.", "Wenn du schon Bewohner bist, behältst du deine Stufe und Vorteile.")}</p>
+      {msg && <p role="status" style={{ margin: 0, fontSize: 13.5, color: st.state === "ok" || st.state === "already" ? "#BFF0C8" : "#FFD5D0" }}>{msg}</p>}
+    </form>
+  );
+}
+
+const GOLD_MESSAGE = [
+  "¡Conseguiste nuestra máxima insignia! Ha sido un honor recibirte en Xtudy. Como agradecimiento, te regalamos 5 noches de hospedaje para tu próxima aventura, sujetas a disponibilidad.",
+  "You've earned our highest badge! It has been an honor to host you at Xtudy. As a thank-you, we're giving you 5 nights of accommodation for your next adventure, subject to availability.",
+  "Tu as obtenu notre plus haute distinction ! Ce fut un honneur de t'accueillir chez Xtudy. Pour te remercier, nous t'offrons 5 nuits d'hébergement pour ta prochaine aventure, sous réserve de disponibilité.",
+  "Du hast unser höchstes Abzeichen erreicht! Es war uns eine Ehre, dich bei Xtudy zu begrüßen. Als Dankeschön schenken wir dir 5 Übernachtungen für dein nächstes Abenteuer, je nach Verfügbarkeit.",
+];
+const GOLD_CONDITIONS_TX = [
+  "Cubre 5 noches sin costo de renta en una sola reserva futura, sujeto a disponibilidad. Personal e intransferible; un solo uso. Si la estancia es menor a 5 noches no hay devolución ni saldo a favor; si es mayor, pagas la renta de las noches restantes. No cubre el depósito en garantía ni otros cargos. Las estancias más cortas que el mínimo habitual requieren revisión de Xtudy.",
+  "Covers 5 rent-free nights in one future booking, subject to availability. Personal and non-transferable; single use. If the stay is shorter than 5 nights there is no refund or credit; if longer, you pay rent for the remaining nights. It doesn't cover the security deposit or other charges. Stays shorter than the usual minimum require review by Xtudy.",
+  "Couvre 5 nuits sans loyer dans une seule réservation future, sous réserve de disponibilité. Personnel et non transférable ; usage unique. Si le séjour dure moins de 5 nuits, il n'y a ni remboursement ni crédit ; s'il est plus long, tu paies le loyer des nuits restantes. Ne couvre ni le dépôt de garantie ni d'autres frais. Les séjours plus courts que le minimum habituel nécessitent une validation de Xtudy.",
+  "Deckt 5 mietfreie Nächte in einer einzigen zukünftigen Buchung ab, je nach Verfügbarkeit. Persönlich und nicht übertragbar; einmalig nutzbar. Ist der Aufenthalt kürzer als 5 Nächte, gibt es keine Erstattung oder Gutschrift; ist er länger, zahlst du die Miete der restlichen Nächte. Kaution und sonstige Kosten sind nicht abgedeckt. Aufenthalte unter dem üblichen Minimum werden von Xtudy geprüft.",
+];
+const TICKET_STATUS = {
+  available: ["Disponible", "Available", "Disponible", "Verfügbar"],
+  applied: ["Aplicado a una reserva en proceso", "Applied to a booking in progress", "Appliqué à une réservation en cours", "Auf eine laufende Buchung angewendet"],
+  redeemed: ["Canjeado", "Redeemed", "Utilisé", "Eingelöst"],
+  expired: ["Vencido", "Expired", "Expiré", "Abgelaufen"],
+  revoked: ["No disponible", "Not available", "Indisponible", "Nicht verfügbar"],
+};
+
+function GoldPanel({ me, account, lang }) {
+  const T = (...a) => tr(lang, ...a);
+  const t = me.ticket;
+  const [copied, setCopied] = useState(false);
+  const [req, setReq] = useState({ open: false, checkIn: "", checkOut: "", property: "", message: "", state: "idle" });
+  const send = async (e) => {
+    e.preventDefault();
+    setReq((r) => ({ ...r, state: "sending" }));
+    try {
+      const r = await post("/api/club/ticket-request", { email: account.email, memberId: account.memberId, checkIn: req.checkIn, checkOut: req.checkOut, property: req.property, message: req.message });
+      setReq((x) => ({ ...x, state: r.ok ? "sent" : (r.j.error || "error") }));
+    } catch { setReq((x) => ({ ...x, state: "error" })); }
+  };
+  const reqMsg = {
+    sent: T("Recibimos tu solicitud. Xtudy la revisará y te contactará; aún no está confirmada.", "We received your request. Xtudy will review it and contact you; it isn't confirmed yet.", "Nous avons reçu ta demande. Xtudy l'examinera et te contactera ; elle n'est pas encore confirmée.", "Wir haben deine Anfrage erhalten. Xtudy prüft sie und meldet sich; sie ist noch nicht bestätigt."),
+    dates: T("Revisa las fechas: la salida debe ser posterior a la llegada y ambas en el futuro.", "Check the dates: check-out must be after check-in and both in the future.", "Vérifie les dates : le départ doit être après l'arrivée et les deux dans le futur.", "Prüfe die Daten: Abreise nach Anreise und beide in der Zukunft."),
+    too_many: T("Ya tienes solicitudes pendientes de revisión.", "You already have requests pending review.", "Tu as déjà des demandes en attente.", "Du hast bereits offene Anfragen."),
+    not_available: T("Tu Ticket Dorado ya no está disponible para nuevas solicitudes.", "Your Golden Ticket is no longer available for new requests.", "Ton Ticket Doré n'est plus disponible pour de nouvelles demandes.", "Dein Goldenes Ticket ist für neue Anfragen nicht mehr verfügbar."),
+    error: T("No pudimos enviar la solicitud. Intenta de nuevo.", "We couldn't send the request. Please try again.", "Impossible d'envoyer la demande. Réessaie.", "Die Anfrage konnte nicht gesendet werden. Bitte erneut versuchen."),
+  }[req.state === "not_found" ? "error" : req.state];
+  return (
+    <section style={styles.goldPanel} aria-labelledby="gold-title">
+      <h3 id="gold-title" style={styles.goldTitle}><Crown size={16} /> {T("Residente destacado", "Featured resident", "Résident à l'honneur", "Ausgezeichneter Bewohner")}</h3>
+      <p style={styles.goldText}>{T(...GOLD_MESSAGE)}</p>
+      {t && (
+        <div style={styles.ticketBox}>
+          <div style={styles.restCategory}>{T("Tu Ticket Dorado · 5 noches", "Your Golden Ticket · 5 nights", "Ton Ticket Doré · 5 nuits", "Dein Goldenes Ticket · 5 Nächte")}</div>
+          <div style={styles.codeRow}>
+            <code style={styles.codeBox}>{t.code}</code>
+            {t.status === "available" && <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>}
+          </div>
+          <p style={styles.modalText}><strong>{T("Estado", "Status", "Statut", "Status")}:</strong> {T(...(TICKET_STATUS[t.status] || TICKET_STATUS.revoked))}{t.expiresOn && t.status === "available" ? ` · ${T("vigente hasta", "valid until", "valable jusqu'au", "gültig bis")} ${t.expiresOn}` : ""}</p>
+          {t.status === "available" && <p style={styles.modalText}>{T("Para usarlo, reserva en", "To use it, book at", "Pour l'utiliser, réserve sur", "Zum Einlösen buche auf")} <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>{PLATFORM_URL.replace(/^https?:\/\//, "")}</a> {T("y escribe el código en «Código promocional» antes de pagar.", "and enter the code under “Promo code” before paying.", "et saisis le code dans « Code promo » avant de payer.", "und gib den Code vor dem Bezahlen unter „Gutscheincode“ ein.")}</p>}
+          <p style={styles.partnerFine}>{T(...GOLD_CONDITIONS_TX)}</p>
+          {t.status === "available" && (req.open ? (
+            <form onSubmit={send} style={{ display: "grid", gap: 8 }}>
+              <h4 style={styles.modalH}>{T("Solicitar revisión para una estancia corta", "Request review for a short stay", "Demander une validation pour un court séjour", "Prüfung für kurzen Aufenthalt anfragen")}</h4>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <label style={{ ...styles.label, flex: 1, minWidth: 140 }}>{T("Llegada", "Check-in", "Arrivée", "Anreise")}<input type="date" required style={styles.input} value={req.checkIn} onChange={(e) => setReq({ ...req, checkIn: e.target.value })} /></label>
+                <label style={{ ...styles.label, flex: 1, minWidth: 140 }}>{T("Salida", "Check-out", "Départ", "Abreise")}<input type="date" required style={styles.input} value={req.checkOut} onChange={(e) => setReq({ ...req, checkOut: e.target.value })} /></label>
+              </div>
+              <label style={styles.label}>{T("Propiedad (opcional)", "Property (optional)", "Logement (facultatif)", "Unterkunft (optional)")}<input style={styles.input} maxLength={120} value={req.property} onChange={(e) => setReq({ ...req, property: e.target.value })} /></label>
+              <label style={styles.label}>{T("Mensaje (opcional)", "Message (optional)", "Message (facultatif)", "Nachricht (optional)")}<textarea style={{ ...styles.input, minHeight: 70 }} maxLength={600} value={req.message} onChange={(e) => setReq({ ...req, message: e.target.value })} /></label>
+              <button type="submit" style={styles.benefitPrimary} disabled={req.state === "sending" || req.state === "sent"}>{req.state === "sending" ? T("Enviando…", "Sending…", "Envoi…", "Senden…") : T("Enviar solicitud", "Send request", "Envoyer la demande", "Anfrage senden")}</button>
+              {reqMsg && <p role="status" style={styles.modalText}>{reqMsg}</p>}
+            </form>
+          ) : (
+            <button type="button" style={styles.benefitSecondary} onClick={() => setReq({ ...req, open: true })}>{T("¿Tu estancia es más corta que el mínimo? Solicita una revisión", "Is your stay shorter than the minimum? Request a review", "Ton séjour est plus court que le minimum ? Demande une validation", "Kürzer als das Minimum? Prüfung anfragen")}</button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { lang } = useContext(LangContext);
-  const myOrder = tierOrder(account.tier);
-  const visible = restaurants.filter(isPublishedPartner);
-  const unlocked = visible.filter((r) => tierOrder(r.tier) <= myOrder);
-  const lockedResidentOnly = visible.filter((r) => r.tier === "resident" && tierOrder(r.tier) > myOrder);
-  const lockedComingSoon = visible.filter((r) => r.tier === "soon");
+  const { me, refresh } = useMember(account);
+  const level = me ? me.level : (account.tier === "resident" ? "resident" : "guest");
+  const collaborator = Boolean(me && me.collaborator);
+  const resident = me ? me.resident : account.tier === "resident";
+  const gold = Boolean(me && me.gold);
+  const cardTier = resident ? "resident" : collaborator ? "collaborator" : "guest";
+  // Una tarjeta por comercio. Desbloqueadas: con al menos una promoción vigente a tu alcance.
+  const visible = restaurants.filter(isPublishedPartner).map((r) => {
+    const promos = promotionsOf(r);
+    const live = promos.filter(promoIsLive);
+    const usable = live.filter((p) => canUsePromo(level, p));
+    return { r, live, usable, soon: promos.filter((p) => p.status === "soon") };
+  });
+  const unlocked = visible.filter((x) => x.usable.length);
+  const lockedByTier = visible.filter((x) => !x.usable.length && x.live.length);
+  const comingSoon = visible.filter((x) => !x.live.length && x.soon.length);
   // Detalles de un beneficio: ventana aparte (no alarga la cuadrícula). Al cerrar se regresa al mismo botón y posición.
   const [detail, setDetail] = useState(null);
-  const openDetails = (id, mode, trigger) => setDetail({ id, mode, trigger });
+  const openDetails = (id, promoId, mode, trigger) => setDetail({ id, promoId, mode, trigger });
   const closeDetails = () => {
     const t = detail?.trigger;
     setDetail(null);
     if (t && t.focus) setTimeout(() => t.focus({ preventScroll: true }), 0);
   };
-  const openBenefit = detail ? unlocked.find((r) => r.id === detail.id) : null;
+  const open = detail ? unlocked.find((x) => x.r.id === detail.id) : null;
 
-  const verifyUrl = (restaurantId) => {
-    try {
-      return `${window.location.origin}${window.location.pathname}?m=${encodeURIComponent(account.memberId)}&r=${encodeURIComponent(restaurantId)}`;
-    } catch {
-      return `?m=${account.memberId}&r=${restaurantId}`;
-    }
+  // El QR solo lleva el número de miembro, el comercio y la promoción; el servidor decide al escanearlo.
+  const verifyUrl = (restaurantId, p) => {
+    const q = `?m=${encodeURIComponent(account.memberId)}&r=${encodeURIComponent(restaurantId)}${p && !p.legacy ? `&p=${encodeURIComponent(p.id)}` : ""}`;
+    try { return `${window.location.origin}${window.location.pathname}${q}`; } catch { return q; }
   };
+  const tierName = cardTier === "collaborator" ? tr(lang, "Colaborador", "Collaborator", "Collaborateur", "Partner") : TIERS.find((t) => t.id === cardTier)?.name[lang];
 
   return (
     <div className="page-container" style={styles.dashWrap}>
@@ -3593,39 +3805,41 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
       </div>
 
-      <div style={{ ...styles.membershipCardBig, ...(account.tier === "resident" ? styles.membershipCardResident : {}) }}>
-        {account.tier === "resident" && (
+      <div style={{ ...styles.membershipCardBig, ...(cardTier !== "guest" ? styles.membershipCardResident : {}), ...(gold ? styles.membershipCardGold : {}) }}>
+        {(cardTier !== "guest" || gold) && (
           <>
             <div style={styles.residentWatermarkWrap}>
-              <svg width="100" height="100%" viewBox="0 0 90 200" preserveAspectRatio="none" style={styles.residentWatermarkSvg} aria-hidden="true">
-                <path d="M0 0 L45 100 L0 200 L20 200 L65 100 L20 0 Z" fill={colors.blue} />
-                <path d="M55 0 L100 100 L55 200 L75 200 L100 155 L100 45 L75 0 Z" fill={colors.blue} />
+              <svg width="100" height="100%" viewBox="0 0 90 200" preserveAspectRatio="none" style={{ ...styles.residentWatermarkSvg, ...(gold ? { opacity: 0.16 } : {}) }} aria-hidden="true">
+                <path d="M0 0 L45 100 L0 200 L20 200 L65 100 L20 0 Z" fill={gold ? "#9A6B00" : colors.blue} />
+                <path d="M55 0 L100 100 L55 200 L75 200 L100 155 L100 45 L75 0 Z" fill={gold ? "#9A6B00" : colors.blue} />
               </svg>
             </div>
-            <span style={styles.residentBadge}>
-              <Crown size={11} /> {tr(lang, "Residente", "Resident", "Résident", "Bewohner")}
+            <span style={{ ...styles.residentBadge, ...(gold ? styles.goldBadge : {}) }}>
+              <Crown size={11} /> {gold ? tr(lang, "Residente destacado", "Featured resident", "Résident à l'honneur", "Ausgezeichneter Bewohner") : cardTier === "collaborator" ? tr(lang, "Colaborador", "Collaborator", "Collaborateur", "Partner") : tr(lang, "Residente", "Resident", "Résident", "Bewohner")}
             </span>
           </>
         )}
         <div style={{ ...styles.cardPoweredBy, position: "relative", zIndex: 1 }}>Powered by</div>
         <div style={{ ...styles.cardTop, position: "relative", zIndex: 1 }}>
           <img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} />
-          <Star size={18} color={colors.blue} fill={colors.blue} />
+          <Star size={18} color={gold ? "#9A6B00" : colors.blue} fill={gold ? "#C99A2E" : colors.blue} />
         </div>
         <div style={{ position: "relative", zIndex: 1 }}>
           <div style={styles.cardName}>{account.name}</div>
           <div style={styles.cardUni}>{account.university}</div>
           <div style={styles.cardTierRow}>
             <span style={styles.cardTierLabel}>{tr(lang, "Nivel actual", "Current tier", "Niveau actuel", "Aktuelle Stufe")}</span>
-            <span style={styles.cardTierValue}>{TIERS.find((t) => t.id === account.tier)?.name[lang]}</span>
+            <span style={styles.cardTierValue}>{tierName}{resident && collaborator ? ` · ${tr(lang, "Colaborador", "Collaborator", "Collaborateur", "Partner")}` : ""}</span>
           </div>
           <div style={styles.stampsRow}>
             {TIERS.map((t) => (
-              <div key={t.id} style={{ ...styles.stampDot, ...(t.order <= myOrder ? styles.stampDotFilled : {}) }} />
+              <div key={t.id} style={{ ...styles.stampDot, ...(t.order <= (level === "resident" ? 1 : 0) ? styles.stampDotFilled : {}), ...(gold ? { background: "#C99A2E", borderColor: "#9A6B00" } : {}) }} />
             ))}
           </div>
         </div>
       </div>
+      {!collaborator && <div style={{ margin: "10px 0 4px" }}><CollaboratorCode account={account} lang={lang} onDone={refresh} /></div>}
+      {gold && <GoldPanel me={me} account={account} lang={lang} />}
 
       {SHOW_PLANS && account.tier === "guest" && (
         <>
@@ -3639,57 +3853,45 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
               </button>
             ))}
           </div>
-          <p style={styles.demoNote}>
-            {tr(lang,
-              "Nota: en esta versión de prueba, el upgrade es instantáneo y sin cobro real — sirve para validar el interés. El cobro con tarjeta se integra después con Stripe.",
-              "Note: in this test version, the upgrade is instant with no real charge — it's here to validate interest. Card payments will be added later with Stripe.",
-              "Remarque : dans cette version de test, la mise à niveau est instantanée et sans frais réels — elle sert à valider l'intérêt. Le paiement par carte sera intégré plus tard avec Stripe.",
-              "Hinweis: In dieser Testversion erfolgt das Upgrade sofort und ohne echte Abbuchung — es dient nur zur Interessensvalidierung. Die Kartenzahlung wird später mit Stripe integriert."
-            )}
-          </p>
+          <p style={styles.demoNote}>{tr(lang,
+            "Nota: en esta versión de prueba, el upgrade es instantáneo y sin cobro real — sirve para validar el interés. El cobro con tarjeta se integra después con Stripe.",
+            "Note: in this test version, the upgrade is instant with no real charge — it's here to validate interest. Card payments will be added later with Stripe.",
+            "Remarque : dans cette version de test, la mise à niveau est instantanée et sans frais réels — elle sert à valider l'intérêt. Le paiement par carte sera intégré plus tard avec Stripe.",
+            "Hinweis: In dieser Testversion erfolgt das Upgrade sofort und ohne echte Abbuchung — es dient nur zur Interessensvalidierung. Die Kartenzahlung wird später mit Stripe integriert.")}</p>
         </>
       )}
 
       <h3 style={styles.sectionTitle}><Utensils size={16} /> {tr(lang, "Tus descuentos desbloqueados", "Your unlocked discounts", "Tes réductions débloquées", "Deine freigeschalteten Rabatte")}</h3>
 
       <div style={styles.benefitGrid}>
-        {unlocked.map((r) => (
-          <BenefitCard key={r.id} r={r} lang={lang}
-            onPrimary={(e) => openDetails(r.id, partnerKind(r) === "online" ? "use" : "qr", e.currentTarget)}
-            onDetails={(e) => openDetails(r.id, "details", e.currentTarget)} />
-        ))}
+        {unlocked.map(({ r, usable }) => {
+          const p = usable.find((x) => x.audience === (level === "resident" ? "resident" : "guest")) || usable[0];
+          return (
+            <BenefitCard key={r.id} r={r} p={p} more={usable.length - 1} lang={lang}
+              onPrimary={(e) => openDetails(r.id, p.id, partnerKind(r) === "online" ? "use" : "qr", e.currentTarget)}
+              onDetails={(e) => openDetails(r.id, p.id, "details", e.currentTarget)} />
+          );
+        })}
         {unlocked.length === 0 && <p style={styles.emptyText}>{tr(lang, "Aún no tienes descuentos activos.", "You don't have any active discounts yet.", "Tu n'as pas encore de réductions actives.", "Du hast noch keine aktiven Rabatte.")}</p>}
       </div>
-      {openBenefit && (
-        <BenefitDetails r={openBenefit} mode={detail.mode} lang={lang} account={account} verifyUrl={verifyUrl} onClose={closeDetails} />
+      {open && (
+        <BenefitDetails r={open.r} promos={open.live} initialId={detail.promoId} mode={detail.mode} lang={lang} level={level} account={account} verifyUrl={verifyUrl} onClose={closeDetails} />
       )}
 
-      {lockedResidentOnly.length > 0 && (
+      {lockedByTier.length > 0 && (
         <>
-          <h3 style={styles.sectionTitle}><Lock size={15} /> {tr(lang, "Solo para Residentes Xtudy", "Xtudy Residents only", "Réservé aux Résidents Xtudy", "Nur für Xtudy-Bewohner")}</h3>
-          <div style={styles.restGrid}>
-            {lockedResidentOnly.map((r) => (
-              <div key={r.id} style={styles.restCardLocked}>
-                <Lock size={22} color="#8FA5B8" />
-                <div style={styles.restCategory}>{categoryText(r, lang)}</div>
-                <div style={styles.restNameLocked}>{r.name}</div>
-              </div>
-            ))}
+          <h3 style={styles.sectionTitle}><Lock size={15} /> {tr(lang, "Para residentes y colaboradores", "For residents & collaborators", "Pour résidents et collaborateurs", "Für Bewohner & Partner")}</h3>
+          <div style={styles.lockedGrid}>
+            {lockedByTier.map(({ r, live }) => <LockedCard key={r.id} r={r} p={live[0]} kind="tier" lang={lang} />)}
           </div>
         </>
       )}
 
-      {lockedComingSoon.length > 0 && (
+      {comingSoon.length > 0 && (
         <>
-          <h3 style={styles.sectionTitle}><Lock size={15} /> {tr(lang, "Próximamente", "Coming soon", "Bientôt disponible", "Demnächst")}</h3>
-          <div style={styles.restGrid}>
-            {lockedComingSoon.map((r) => (
-              <div key={r.id} style={styles.restCardLocked}>
-                <Lock size={22} color="#8FA5B8" />
-                <div style={styles.restCategory}>{categoryText(r, lang)}</div>
-                <div style={styles.restNameLocked}>{r.name}</div>
-              </div>
-            ))}
+          <h3 style={styles.sectionTitle}>{tr(lang, "Próximamente", "Coming soon", "Bientôt disponible", "Demnächst")}</h3>
+          <div style={styles.lockedGrid}>
+            {comingSoon.map(({ r }) => <LockedCard key={r.id} r={r} kind="soon" lang={lang} />)}
           </div>
         </>
       )}
@@ -4275,6 +4477,26 @@ const styles = {
   partnerText: { fontSize: 12.5, color: colors.ink, lineHeight: 1.45, marginTop: 4 },
   partnerFine: { fontSize: 11, color: colors.muted, lineHeight: 1.4, marginTop: 2 },
   benefitGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 240px), 1fr))", gap: 14, alignItems: "stretch" },
+  lockedGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12, marginBottom: 8 },
+  lockedCard: { display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 12, minWidth: 0 },
+  lockedLogoBox: { width: 64, height: 52, flexShrink: 0, display: "grid", placeItems: "center", background: "#fff", borderRadius: 10, padding: 6, boxSizing: "border-box", border: `1px solid ${colors.line}` },
+  lockedLogoImg: { maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "saturate(0.85)" },
+  lockedName: { fontFamily: "'Host Grotesk', sans-serif", fontWeight: 700, fontSize: 15, color: "#fff", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  lockedNotice: { fontSize: 13, color: "#CFE6F5", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  tagSoon: { display: "inline-block", fontSize: 11, fontWeight: 700, letterSpacing: 0.3, color: "#CFE6F5", border: "1px solid rgba(207,230,245,0.45)", borderRadius: 999, padding: "2px 9px" },
+  tagLocked: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: colors.navy, background: "#E6F1FB", borderRadius: 999, padding: "2px 9px", maxWidth: "100%", boxSizing: "border-box", lineHeight: 1.3 },
+  promoChoice: { display: "flex", alignItems: "center", gap: 8, width: "100%", background: "#fff", color: colors.ink, border: `1px solid ${colors.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44 },
+  promoChoiceOn: { border: `2px solid ${colors.blue}`, background: "#F2F8FD" },
+  promoChoiceSub: { fontWeight: 500, color: colors.muted },
+  lockedBox: { display: "flex", gap: 10, alignItems: "flex-start", background: "#F1F5F9", color: colors.ink, borderRadius: 10, padding: "10px 12px", fontSize: 14, lineHeight: 1.45 },
+  collabLink: { background: "none", border: "none", color: colors.blueLight, textDecoration: "underline", fontSize: 13.5, cursor: "pointer", padding: "6px 0" },
+  collabBox: { display: "grid", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 12, padding: 12, maxWidth: 460 },
+  membershipCardGold: { background: "linear-gradient(135deg, #FFF6DA 0%, #F2D27A 45%, #E2B44B 100%)", border: "1.5px solid #B8860B", boxShadow: "0 10px 30px rgba(184,134,11,0.28)" },
+  goldBadge: { background: "linear-gradient(135deg, #B8860B, #8A6508)", color: "#fff" },
+  goldPanel: { background: "#FFFBEF", color: colors.ink, border: "1.5px solid #E2B44B", borderRadius: 16, padding: 16, margin: "12px 0 4px", display: "grid", gap: 10, maxWidth: 620 },
+  goldTitle: { margin: 0, display: "flex", alignItems: "center", gap: 6, fontFamily: "'Host Grotesk', sans-serif", fontSize: 17, color: "#7A5600" },
+  goldText: { margin: 0, fontSize: 15, lineHeight: 1.5 },
+  ticketBox: { display: "grid", gap: 8, background: "#fff", border: "1px dashed #C99A2E", borderRadius: 12, padding: 12 },
   benefitCard: { background: colors.card, color: colors.ink, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 8, minHeight: 236 },
   benefitTop: { display: "flex", alignItems: "center", gap: 12 },
   benefitLogo: { width: "auto", objectFit: "contain", background: "#fff", borderRadius: 10, padding: "4px 6px", border: `1px solid ${colors.line}`, boxSizing: "border-box", flexShrink: 0 },
