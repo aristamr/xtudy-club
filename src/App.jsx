@@ -3160,11 +3160,62 @@ function Register({ form, setForm, team, setTeam, onCheckTeam, onSubmit, error, 
 // la cuenta y el nivel del miembro antes de entregarlos.
 const PLATFORM_URL = (import.meta.env.VITE_PLATFORM_URL || "https://www.xtudyclub.com").replace(/\/$/, "");
 
-// Medición anónima del Club: automática, sin preguntas, sin cookies ni identificadores. Solo la sección, la vista,
-// el dominio de origen en la entrada y si la vista es la ENTRADA al sitio. Respeta «No medir», GPC y Do Not Track.
+// Medición anónima del Club: automática, sin preguntas y sin datos personales. Solo la sección, la vista, el dominio de
+// origen en la entrada, si la vista es la ENTRADA al sitio y un identificador ALEATORIO de este navegador (`xtudy_vid`,
+// almacenamiento local; no se deriva de IP ni del dispositivo y el servidor solo guarda su huella). Respeta «No medir»,
+// GPC y Do Not Track. Tráfico interno: `?no_medir=1` / `?medir=1`, la cookie sin identificador `xtudy_excluir=1` de
+// *.xtudyclub.com (la pone el panel) y las cuentas marcadas «Cuenta interna: excluir de analítica».
 const MEASURE_KEY = "xtudy_medicion";
+const VID_KEY = "xtudy_vid";
+const EXCL_KEY = "xtudy_excluir";
 const OWN_HOSTS = /(^|\.)xtudyclub\.com$|(^|\.)students-club\.com$|^localhost$/;
-const measureOff = () => { if (navigator.globalPrivacyControl === true || navigator.doNotTrack === "1") return true; try { return localStorage.getItem(MEASURE_KEY) === "no"; } catch { return false; } };
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch {} };
+function visitorId() {
+  try {
+    let v = localStorage.getItem(VID_KEY);
+    if (!v || !/^[A-Za-z0-9_-]{16,64}$/.test(v)) {
+      v = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+      localStorage.setItem(VID_KEY, v);
+    }
+    return v;
+  } catch { return null; }
+}
+function excludedReason() {
+  const v = lsGet(EXCL_KEY);
+  if (v === "browser" || v === "admin" || v === "internal_account") return v;
+  if (v !== "permitido" && document.cookie.split("; ").includes(`${EXCL_KEY}=1`)) return "browser";
+  return null;
+}
+const measureOff = () => { if (navigator.globalPrivacyControl === true || navigator.doNotTrack === "1") return true; return lsGet(MEASURE_KEY) === "no" || excludedReason() !== null; };
+function beacon(body) {
+  try { if (!navigator.sendBeacon?.(`${PLATFORM_URL}/api/t`, new Blob([body], { type: "text/plain" }))) fetch(`${PLATFORM_URL}/api/t`, { method: "POST", body, keepalive: true, mode: "no-cors" }); } catch {}
+}
+// Excluir / volver a incluir este navegador. Solo viaja el identificador aleatorio (nunca correo ni nombre).
+function setExclusion(on, why = "browser") {
+  lsSet(EXCL_KEY, on ? why : "permitido");
+  const host = window.location.hostname;
+  const domain = /(^|\.)xtudyclub\.com$/.test(host) ? "; domain=.xtudyclub.com" : /(^|\.)students-club\.com$/.test(host) ? "; domain=.students-club.com" : "";
+  document.cookie = `${EXCL_KEY}=${on ? "1" : ""}; path=/; max-age=${on ? 63072000 : 0}; SameSite=Lax${domain}${window.location.protocol === "https:" ? "; Secure" : ""}`;
+  const v = visitorId();
+  if (v) beacon(JSON.stringify({ k: on ? "exclude" : "include", v, why, u: `${window.location.origin}/` }));
+}
+// Cuenta interna (decidido en el servidor): excluir; si dejó de serlo, volver a medir solo lo que esta marca excluyó.
+function applyInternalAccount(internal) {
+  const cur = lsGet(EXCL_KEY);
+  if (internal && cur !== "internal_account" && cur !== "admin" && cur !== "browser") setExclusion(true, "internal_account");
+  else if (!internal && cur === "internal_account") setExclusion(false);
+}
+(function applyQueryFlag() {
+  try {
+    const u = new URL(window.location.href);
+    const off = u.searchParams.get("no_medir") === "1", on = u.searchParams.get("medir") === "1";
+    if (!off && !on) return;
+    setExclusion(off);
+    u.searchParams.delete("no_medir"); u.searchParams.delete("medir");
+    window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+  } catch {}
+})();
 let firstHit = true;
 function sendHit(kind, view) {
   if (measureOff()) return;
@@ -3175,8 +3226,8 @@ function sendHit(kind, view) {
   const u = new URL(window.location.origin + window.location.pathname.replace(/\/$/, "") + (view && view !== "landing" ? `/${view}` : ""));
   const q = new URLSearchParams(window.location.search);
   for (const k of ["utm_source", "utm_medium", "utm_campaign"]) if (q.get(k)) u.searchParams.set(k, q.get(k));
-  const body = JSON.stringify({ k: kind, s: "club", u: u.toString(), r: entry ? r : "", e: entry ? 1 : 0 });
-  try { if (!navigator.sendBeacon?.(`${PLATFORM_URL}/api/t`, new Blob([body], { type: "text/plain" }))) fetch(`${PLATFORM_URL}/api/t`, { method: "POST", body, keepalive: true, mode: "no-cors" }); } catch {}
+  const v = visitorId();
+  beacon(JSON.stringify({ k: kind, s: "club", u: u.toString(), r: entry ? r : "", e: entry ? 1 : 0, ...(v ? { v } : {}) }));
 }
 // Control discreto (no es una pregunta): desactivar o reactivar la medición anónima en este navegador.
 function MeasureToggle() {
@@ -3184,11 +3235,11 @@ function MeasureToggle() {
   const [off, setOff] = useState(null);
   useEffect(() => { setOff(measureOff()); }, []);
   if (off === null) return null;
-  const flip = () => { try { if (off) localStorage.removeItem(MEASURE_KEY); else localStorage.setItem(MEASURE_KEY, "no"); } catch {} setOff(measureOff()); };
+  const flip = () => { lsSet(MEASURE_KEY, off ? null : "no"); if (off && excludedReason()) setExclusion(false); setOff(measureOff()); };
   return (
     <p style={{ fontSize: 12, color: "#8ea4b8", textAlign: "center", margin: "18px 0 8px" }}>
       {off ? tr(lang, "La medición anónima está desactivada en este navegador.", "Anonymous measurement is turned off in this browser.", "La mesure anonyme est désactivée dans ce navigateur.", "Die anonyme Messung ist in diesem Browser deaktiviert.")
-           : tr(lang, "Medimos visitas de forma anónima, sin cookies ni datos personales.", "We measure visits anonymously, without cookies or personal data.", "Nous mesurons les visites de façon anonyme, sans cookies ni données personnelles.", "Wir messen Besuche anonym, ohne Cookies oder personenbezogene Daten.")}{" "}
+           : tr(lang, "Medimos visitas de forma anónima con un identificador aleatorio de este navegador, sin cookies de seguimiento ni datos personales.", "We measure visits anonymously with a random identifier stored in this browser, without tracking cookies or personal data.", "Nous mesurons les visites de façon anonyme avec un identifiant aléatoire de ce navigateur, sans cookies de suivi ni données personnelles.", "Wir messen Besuche anonym mit einer zufälligen Kennung dieses Browsers, ohne Tracking-Cookies oder personenbezogene Daten.")}{" "}
       <button type="button" onClick={flip} style={{ background: "none", border: 0, padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer", font: "inherit" }}>
         {off ? tr(lang, "Volver a medir", "Measure again", "Mesurer à nouveau", "Wieder messen") : tr(lang, "No medir mis visitas", "Don't measure my visits", "Ne pas mesurer mes visites", "Meine Besuche nicht messen")}
       </button>
@@ -3547,7 +3598,7 @@ function useMember(account) {
     // Perfil y detalles de todos los beneficios a los que tiene acceso en una sola petición: abrir «Detalles» o «Mostrar QR»
     // después no espera al servidor. Al actualizar (refresh) se conserva lo anterior hasta que llega lo nuevo.
     const load = (attempt) => post("/api/club/me", { email: account.email, memberId: account.memberId, include: ["benefits"], lang })
-      .then((r) => { if (!alive) return; if (r.ok) setMe(r.j); else if (r.status >= 500 && attempt === 0) setTimeout(() => alive && load(1), 1200); else setFailed(true); })
+      .then((r) => { if (!alive) return; if (r.ok) { setMe(r.j); applyInternalAccount(Boolean(r.j.analyticsInternal)); } else if (r.status >= 500 && attempt === 0) setTimeout(() => alive && load(1), 1200); else setFailed(true); })
       .catch(() => { if (!alive) return; if (attempt === 0) setTimeout(() => alive && load(1), 1200); else setFailed(true); });
     load(0);
     return () => { alive = false; };
