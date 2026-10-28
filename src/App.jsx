@@ -2411,7 +2411,55 @@ function tr(lang, es, en, fr, de) {
   return en;
 }
 
+// V16 · Aliados y beneficios (se editan en el panel principal). Textos capturados una vez y traducidos:
+// r.i18n[campo] = { text (original), src, es, en, status }. Si aún no hay traducción de ESE texto, se muestra el original.
+// Francés y alemán usan el inglés.
+function txt(r, field, lang) {
+  const e = r.i18n && r.i18n[field];
+  if (!e || typeof e.text !== "string") return "";
+  if (e.status === "ok") {
+    const v = lang === "es" ? e.es : e.en;
+    if (v && v.trim()) return v;
+  }
+  return e.text;
+}
+const CATEGORY_LABELS = {
+  restaurants: ["Restaurantes", "Restaurants", "Restaurants", "Restaurants"],
+  cafes: ["Cafeterías", "Cafés", "Cafés", "Cafés"],
+  bars: ["Bares", "Bars", "Bars", "Bars"],
+  nightclubs: ["Antros", "Nightclubs", "Boîtes de nuit", "Clubs"],
+  esim: ["eSIM y conectividad", "eSIM & connectivity", "eSIM et connectivité", "eSIM & Konnektivität"],
+  airlines: ["Aerolíneas", "Airlines", "Compagnies aériennes", "Fluggesellschaften"],
+  travel: ["Viajes y transporte", "Travel & transport", "Voyages et transport", "Reisen & Transport"],
+  health: ["Salud y bienestar", "Health & wellness", "Santé et bien-être", "Gesundheit & Wellness"],
+  sports: ["Deporte", "Sports", "Sport", "Sport"],
+  entertainment: ["Entretenimiento", "Entertainment", "Divertissement", "Unterhaltung"],
+  shopping: ["Compras", "Shopping", "Shopping", "Shopping"],
+  other: ["Otros", "Other", "Autres", "Sonstiges"],
+};
+// Categoría traducida; la subcategoría escrita antes (ej. «Hot dogs») se conserva en español.
+function categoryText(r, lang) {
+  const labels = CATEGORY_LABELS[r.categoryId];
+  if (!labels) return r.category || "";
+  const main = tr(lang, ...labels);
+  const sub = (r.category || "").trim();
+  return sub && sub !== labels[0] ? `${main} · ${sub}` : main;
+}
+const partnerKind = (r) => (r.kind === "online" || r.kind === "both" ? r.kind : "physical");
+// Borradores y beneficios vencidos no se muestran a los estudiantes.
+function isPublishedPartner(r) {
+  if (r.status === "draft") return false;
+  const v = (r.validUntil || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date());
+    if (v < today) return false;
+  }
+  return true;
+}
+
 function formatDiscount(r, lang) {
+  const typed = r.benefitType && r.benefitType !== "percent" ? txt(r, "benefit", lang) : "";
+  if (typed) return typed;
   if (r.discountPercent !== undefined && r.discountPercent !== null && r.discountPercent !== "") {
     return tr(lang, `${r.discountPercent}% de descuento`, `${r.discountPercent}% off`, `${r.discountPercent}% de réduction`, `${r.discountPercent}% Rabatt`);
   }
@@ -3266,9 +3314,11 @@ function Register({ form, setForm, onSubmit, error, onBack, universities, onGoTo
 function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { lang } = useContext(LangContext);
   const myOrder = tierOrder(account.tier);
-  const unlocked = restaurants.filter((r) => tierOrder(r.tier) <= myOrder);
-  const lockedResidentOnly = restaurants.filter((r) => r.tier === "resident" && tierOrder(r.tier) > myOrder);
-  const lockedComingSoon = restaurants.filter((r) => r.tier === "soon");
+  const visible = restaurants.filter(isPublishedPartner);
+  const unlocked = visible.filter((r) => tierOrder(r.tier) <= myOrder);
+  const lockedResidentOnly = visible.filter((r) => r.tier === "resident" && tierOrder(r.tier) > myOrder);
+  const lockedComingSoon = visible.filter((r) => r.tier === "soon");
+  const [copied, setCopied] = useState(null);
   const [openQrFor, setOpenQrFor] = useState(null);
 
   const verifyUrl = (restaurantId) => {
@@ -3353,12 +3403,31 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           <div key={r.id} style={styles.restCard}>
             <div style={styles.restCardHeader}>
               <div>
-                <div style={styles.restCategory}>{r.category}</div>
+                <div style={styles.restCategory}>{categoryText(r, lang)}</div>
                 <div style={styles.restName}>{r.name}</div>
               </div>
               {r.logoUrl && <img src={r.logoUrl} alt={r.name} style={styles.restLogo} />}
             </div>
-            {r.isFranchise && (() => {
+            {partnerKind(r) !== "physical" && (
+              <div style={styles.onlineBox}>
+                <div style={styles.onlineBadge}>
+                  {tr(lang, "Servicio en línea", "Online service", "Service en ligne", "Online-Service")}
+                  {txt(r, "coverage", lang) ? ` · ${txt(r, "coverage", lang)}` : ""}
+                </div>
+                {r.promoCode && (
+                  <button type="button" style={styles.promoCodeBtn} onClick={() => { navigator.clipboard?.writeText(r.promoCode).then(() => { setCopied(r.id); setTimeout(() => setCopied(null), 1800); }).catch(() => {}); }}>
+                    {tr(lang, "Código", "Code", "Code", "Code")}: <strong>{r.promoCode}</strong> · {copied === r.id ? tr(lang, "¡Copiado!", "Copied!", "Copié !", "Kopiert!") : tr(lang, "Copiar", "Copy", "Copier", "Kopieren")}
+                  </button>
+                )}
+                {txt(r, "activationSteps", lang) && <div style={styles.partnerText}><strong>{tr(lang, "Cómo activarlo", "How to activate", "Comment l'activer", "So aktivierst du es")}:</strong> {txt(r, "activationSteps", lang)}</div>}
+                {r.websiteUrl && /^https?:\/\//.test(r.websiteUrl) && (
+                  <a href={r.websiteUrl} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
+                    {tr(lang, "Ir al beneficio", "Go to the perk", "Voir l'avantage", "Zum Vorteil")} <ChevronRight size={12} />
+                  </a>
+                )}
+              </div>
+            )}
+            {partnerKind(r) !== "online" && r.isFranchise && (() => {
               const branches = getBranches(r);
               if (branches.length === 0) return null;
               if (branches.length === 1) {
@@ -3397,18 +3466,21 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                 </>
               );
             })()}
-            {!r.isFranchise && getLocationUrl(r) && (
+            {partnerKind(r) !== "online" && !r.isFranchise && getLocationUrl(r) && (
               <a href={getLocationUrl(r)} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>
                 <MapPin size={12} /> {tr(lang, "Ver ubicación", "View location", "Voir l'emplacement", "Standort ansehen")}
               </a>
             )}
-            {trHours(r.promoHours, lang) && (
+            {partnerKind(r) !== "online" && trHours(r.promoHours, lang) && (
               <div style={styles.promoHoursRow}>
                 <Clock size={11} /> {trHours(r.promoHours, lang)}
               </div>
             )}
             <div style={styles.restDiscount}>{formatDiscount(r, lang)}</div>
-            {r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
+            {txt(r, "howToUse", lang) && <div style={styles.partnerText}><strong>{tr(lang, "Cómo usarlo", "How to use it", "Comment l'utiliser", "So nutzt du es")}:</strong> {txt(r, "howToUse", lang)}</div>}
+            {txt(r, "conditions", lang) && <div style={styles.partnerFine}>{txt(r, "conditions", lang)}</div>}
+            {r.validUntil && <div style={styles.partnerFine}>{tr(lang, "Vigente hasta", "Valid until", "Valable jusqu'au", "Gültig bis")} {r.validUntil}</div>}
+            {partnerKind(r) !== "online" && r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
               <div style={r.reservationRequired === false ? styles.reservationNoticeOptional : styles.reservationNotice}>
                 <span style={r.reservationRequired === false ? styles.reservationLabelOptional : styles.reservationLabel}>
                   {r.reservationRequired === false
@@ -3435,10 +3507,10 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
                 </a>
               </div>
             )}
-            <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
+            {partnerKind(r) !== "online" && <button style={styles.qrBtn} onClick={() => setOpenQrFor(openQrFor === r.id ? null : r.id)}>
               <QrCode size={14} /> {openQrFor === r.id ? tr(lang, "Ocultar QR", "Hide QR", "Masquer le QR", "QR ausblenden") : tr(lang, "Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}
-            </button>
-            {openQrFor === r.id && (
+            </button>}
+            {partnerKind(r) !== "online" && openQrFor === r.id && (
               <div style={styles.qrBox}>
                 <QRCode value={verifyUrl(r.id)} size={160} />
                 <span style={styles.qrHint}>
@@ -3463,7 +3535,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
             {lockedResidentOnly.map((r) => (
               <div key={r.id} style={styles.restCardLocked}>
                 <Lock size={22} color="#8FA5B8" />
-                <div style={styles.restCategory}>{r.category}</div>
+                <div style={styles.restCategory}>{categoryText(r, lang)}</div>
                 <div style={styles.restNameLocked}>{r.name}</div>
               </div>
             ))}
@@ -3478,7 +3550,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
             {lockedComingSoon.map((r) => (
               <div key={r.id} style={styles.restCardLocked}>
                 <Lock size={22} color="#8FA5B8" />
-                <div style={styles.restCategory}>{r.category}</div>
+                <div style={styles.restCategory}>{categoryText(r, lang)}</div>
                 <div style={styles.restNameLocked}>{r.name}</div>
               </div>
             ))}
@@ -4051,7 +4123,7 @@ const styles = {
   restCardLocked: { background: "rgba(255,255,255,0.05)", border: "1px dashed rgba(255,255,255,0.25)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" },
   restCategory: { fontSize: 11, color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5 },
   restCardHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 2 },
-  restLogo: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: `1px solid ${colors.line}`, flexShrink: 0 },
+  restLogo: { width: "auto", maxWidth: 96, height: 40, padding: "3px 5px", boxSizing: "border-box", background: "#fff", borderRadius: 8, objectFit: "contain", border: `1px solid ${colors.line}`, flexShrink: 0 },
   franchiseCheckLabel: { display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#fff", gridColumn: "1 / -1" },
   termsNotice: { fontSize: 11.5, color: colors.muted, lineHeight: 1.5, margin: "2px 0 0" },
   termsLink: { color: colors.blue, fontWeight: 600, textDecoration: "underline" },
@@ -4061,6 +4133,11 @@ const styles = {
   branchLinksRow: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 2 },
   branchRow: { display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "center" },
   franchiseBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: colors.blue, padding: "5px 9px", borderRadius: 8, display: "inline-block", marginTop: 3, marginBottom: 2 },
+  onlineBox: { display: "grid", gap: 6, margin: "6px 0" },
+  onlineBadge: { fontSize: 11, fontWeight: 700, color: colors.blue, textTransform: "uppercase", letterSpacing: 0.3 },
+  promoCodeBtn: { justifySelf: "start", border: `1.5px dashed ${colors.blue}`, background: "#F3F9FE", color: colors.navy, borderRadius: 10, padding: "6px 10px", fontSize: 13, cursor: "pointer" },
+  partnerText: { fontSize: 12.5, color: colors.ink, lineHeight: 1.45, marginTop: 4 },
+  partnerFine: { fontSize: 11, color: colors.muted, lineHeight: 1.4, marginTop: 2 },
   promoHoursRow: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: colors.muted, marginTop: 3 },
   reservationNotice: { background: "#FEF3E2", border: "1px solid #F0C674", borderRadius: 10, padding: "8px 10px", marginTop: 8, marginBottom: 6 },
   reservationLabel: { display: "block", fontSize: 11.5, fontWeight: 700, color: "#7A5A0A", marginBottom: 6 },
@@ -4069,7 +4146,7 @@ const styles = {
   whatsappBtn: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#25D366", color: "#fff", fontWeight: 700, fontSize: 12.5, padding: "8px 10px", borderRadius: 8, textDecoration: "none" },
   hoursGroup: { gridColumn: "1 / -1", marginTop: 4 },
   logoUploadRow: { display: "flex", alignItems: "center", gap: 10 },
-  logoPreview: { width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(255,255,255,0.2)" },
+  logoPreview: { width: 40, height: 40, borderRadius: 8, objectFit: "contain", background: "#fff", border: "1px solid rgba(255,255,255,0.2)" },
   logoUploadBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" },
   removeLogoBtn: { background: "none", border: "none", color: "#FF8A8A", fontSize: 12, fontWeight: 600, textDecoration: "underline", cursor: "pointer", padding: 0 },
   hoursInputsRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 8, marginTop: 6 },
