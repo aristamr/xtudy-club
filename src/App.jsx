@@ -2307,6 +2307,9 @@ var qrcode = function() {
 const SHOW_PLANS = false;
 
 const DEFAULT_RESIDENT_CODE = "XTUDY2026";
+// La administración del Club vive ahora en el panel principal (www.xtudyclub.com/admin/club). Cuando
+// VITE_UNIFIED_ADMIN_URL está configurada, «Acceso administrador» lleva allá; sin ella, sigue el administrador anterior.
+const UNIFIED_ADMIN_URL = (import.meta.env.VITE_UNIFIED_ADMIN_URL || "").trim();
 
 const TIERS = [
   { id: "guest", name: { es: "Explorador", en: "Explorer", fr: "Explorateur", de: "Entdecker" }, price: 0, order: 0, tagline: { es: "Para cualquier estudiante", en: "For any student", fr: "Pour tout étudiant", de: "Für jeden Studenten" } },
@@ -2988,7 +2991,7 @@ export default function ClubDescuentos() {
       <AppHeader />
 
       {view === "landing" && (
-        <Landing onStart={() => setView("register")} onAdmin={() => setView("admin-login")} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
+        <Landing onStart={() => setView("register")} onAdmin={() => { if (UNIFIED_ADMIN_URL) { window.location.assign(UNIFIED_ADMIN_URL); return; } setView("admin-login"); }} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
       )}
 
       {view === "register" && (
