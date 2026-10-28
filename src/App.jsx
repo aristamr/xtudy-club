@@ -2830,7 +2830,6 @@ export default function ClubDescuentos() {
     <div style={styles.app}>
       <style>{fontImport}</style>
       <AppHeader />
-      <MeasureNotice />
 
       {view === "landing" && (
         <Landing onStart={() => setView("register")} onAdmin={() => window.location.assign(UNIFIED_ADMIN_URL)} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
@@ -2849,6 +2848,7 @@ export default function ClubDescuentos() {
       )}
 
 
+      <MeasureToggle />
     </div>
     </LangContext.Provider>
   );
@@ -3160,37 +3160,39 @@ function Register({ form, setForm, team, setTeam, onCheckTeam, onSubmit, error, 
 // la cuenta y el nivel del miembro antes de entregarlos.
 const PLATFORM_URL = (import.meta.env.VITE_PLATFORM_URL || "https://www.xtudyclub.com").replace(/\/$/, "");
 
-// Medición anónima del Club (sin cookies): solo la sección, la vista y el dominio de origen. Nunca correo, nombre ni códigos.
-// Respeta «No medir», Global Privacy Control y Do Not Track.
+// Medición anónima del Club: automática, sin preguntas, sin cookies ni identificadores. Solo la sección, la vista,
+// el dominio de origen en la entrada y si la vista es la ENTRADA al sitio. Respeta «No medir», GPC y Do Not Track.
 const MEASURE_KEY = "xtudy_medicion";
-const measureChoice = () => { try { return localStorage.getItem(MEASURE_KEY); } catch { return null; } };
-const privacySignal = () => navigator.globalPrivacyControl === true || navigator.doNotTrack === "1";
+const OWN_HOSTS = /(^|\.)xtudyclub\.com$|(^|\.)students-club\.com$|^localhost$/;
+const measureOff = () => { if (navigator.globalPrivacyControl === true || navigator.doNotTrack === "1") return true; try { return localStorage.getItem(MEASURE_KEY) === "no"; } catch { return false; } };
+let firstHit = true;
 function sendHit(kind, view) {
-  if (privacySignal() || measureChoice() === "no") return;
-  let r = ""; try { r = document.referrer ? new URL(document.referrer).origin : ""; } catch {}
+  if (measureOff()) return;
+  let r = "", external = true;
+  try { if (document.referrer) { const ref = new URL(document.referrer); r = ref.origin; external = !OWN_HOSTS.test(ref.hostname); } } catch {}
+  const entry = kind === "pageview" && firstHit && external;
+  if (kind === "pageview") firstHit = false;
   const u = new URL(window.location.origin + window.location.pathname.replace(/\/$/, "") + (view && view !== "landing" ? `/${view}` : ""));
   const q = new URLSearchParams(window.location.search);
   for (const k of ["utm_source", "utm_medium", "utm_campaign"]) if (q.get(k)) u.searchParams.set(k, q.get(k));
-  const body = JSON.stringify({ k: kind, s: "club", u: u.toString(), r });
+  const body = JSON.stringify({ k: kind, s: "club", u: u.toString(), r: entry ? r : "", e: entry ? 1 : 0 });
   try { if (!navigator.sendBeacon?.(`${PLATFORM_URL}/api/t`, new Blob([body], { type: "text/plain" }))) fetch(`${PLATFORM_URL}/api/t`, { method: "POST", body, keepalive: true, mode: "no-cors" }); } catch {}
 }
-function MeasureNotice() {
+// Control discreto (no es una pregunta): desactivar o reactivar la medición anónima en este navegador.
+function MeasureToggle() {
   const { lang } = useContext(LangContext);
-  const [ask, setAsk] = useState(false);
-  useEffect(() => { setAsk(measureChoice() === null && !privacySignal()); }, []);
-  // Mientras el aviso está abierto, la página deja espacio abajo para que ningún botón quede tapado.
-  useEffect(() => { if (!ask) return; const prev = document.body.style.paddingBottom; document.body.style.paddingBottom = "140px"; return () => { document.body.style.paddingBottom = prev; }; }, [ask]);
-  if (!ask) return null;
-  const decide = (v) => { try { localStorage.setItem(MEASURE_KEY, v); } catch {} setAsk(false); };
-  const text = tr(lang, "Medimos las visitas de forma anónima, sin cookies ni datos personales, para mejorar el Club.", "We measure visits anonymously, without cookies or personal data, to improve the Club.", "Nous mesurons les visites de façon anonyme, sans cookies ni données personnelles, pour améliorer le Club.", "Wir messen Besuche anonym, ohne Cookies oder personenbezogene Daten, um den Club zu verbessern.");
+  const [off, setOff] = useState(null);
+  useEffect(() => { setOff(measureOff()); }, []);
+  if (off === null) return null;
+  const flip = () => { try { if (off) localStorage.removeItem(MEASURE_KEY); else localStorage.setItem(MEASURE_KEY, "no"); } catch {} setOff(measureOff()); };
   return (
-    <div role="region" aria-label={text} style={{ position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 60, maxWidth: 560, margin: "0 auto", display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", background: "#fff", color: colors.ink, borderRadius: 16, padding: "12px 14px", boxShadow: "0 10px 30px rgba(8,48,79,.25)", fontSize: 14 }}>
-      <p style={{ margin: 0, flex: "1 1 240px", lineHeight: 1.4 }}>{text}</p>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={() => decide("no")} style={{ ...styles.benefitSecondary, minHeight: 38 }}>{tr(lang, "No medir", "Don't measure", "Ne pas mesurer", "Nicht messen")}</button>
-        <button type="button" onClick={() => decide("si")} style={{ ...styles.benefitPrimary, width: "auto", minHeight: 38, padding: "0 16px" }}>{tr(lang, "Entendido", "Got it", "Compris", "Verstanden")}</button>
-      </div>
-    </div>
+    <p style={{ fontSize: 12, color: "#8ea4b8", textAlign: "center", margin: "18px 0 8px" }}>
+      {off ? tr(lang, "La medición anónima está desactivada en este navegador.", "Anonymous measurement is turned off in this browser.", "La mesure anonyme est désactivée dans ce navigateur.", "Die anonyme Messung ist in diesem Browser deaktiviert.")
+           : tr(lang, "Medimos visitas de forma anónima, sin cookies ni datos personales.", "We measure visits anonymously, without cookies or personal data.", "Nous mesurons les visites de façon anonyme, sans cookies ni données personnelles.", "Wir messen Besuche anonym, ohne Cookies oder personenbezogene Daten.")}{" "}
+      <button type="button" onClick={flip} style={{ background: "none", border: 0, padding: 0, color: "inherit", textDecoration: "underline", cursor: "pointer", font: "inherit" }}>
+        {off ? tr(lang, "Volver a medir", "Measure again", "Mesurer à nouveau", "Wieder messen") : tr(lang, "No medir mis visitas", "Don't measure my visits", "Ne pas mesurer mes visites", "Meine Besuche nicht messen")}
+      </button>
+    </p>
   );
 }
 const normText = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
