@@ -10,6 +10,7 @@ const LangContext = createContext({ lang: "es", setLang: () => {} });
 
 import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown, Clock, MessageCircle } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
+import { sb } from "./lib/storagePolyfill";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
 // Se ejecuta 100% en el navegador, sin llamadas externas.
@@ -2611,7 +2612,7 @@ function persist(fn) {
 // la tabla directamente, para no exponer todas las cuentas ni el código real.
 async function fetchAccountByEmail(email) {
   try {
-    const { data, error } = await supabase.rpc("get_account_by_email", { p_email: email });
+    const { data, error } = await sb(() => supabase.rpc("get_account_by_email", { p_email: email }));
     if (error || !data) return null;
     return data;
   } catch {
@@ -2621,7 +2622,7 @@ async function fetchAccountByEmail(email) {
 
 async function fetchMemberById(memberId) {
   try {
-    const { data, error } = await supabase.rpc("get_member_by_id", { p_member_id: memberId });
+    const { data, error } = await sb(() => supabase.rpc("get_member_by_id", { p_member_id: memberId }));
     if (error || !data) return null;
     return data;
   } catch {
@@ -2631,7 +2632,7 @@ async function fetchMemberById(memberId) {
 
 async function checkResidentCode(code) {
   try {
-    const { data, error } = await supabase.rpc("check_resident_code", { p_code: code });
+    const { data, error } = await sb(() => supabase.rpc("check_resident_code", { p_code: code }));
     if (error) return false;
     return !!data;
   } catch {
@@ -2697,17 +2698,10 @@ export default function ClubDescuentos() {
           if (session) setAdminUnlocked(true);
         } catch {}
 
-        // Escaneo del QR en el comercio: el SERVIDOR comprueba el nivel del miembro para esa promoción y registra el canje.
+        // QR anteriores (llevaban el número de miembro): se llevan a la validación de comercios de Xtudy, donde un empleado
+        // autorizado ve el estado actual y confirma el canje. Abrirlos no canjea nada.
         if (verifyParams) {
-          try {
-            const qs = `m=${encodeURIComponent(verifyParams.m)}&r=${encodeURIComponent(verifyParams.r)}${verifyParams.p ? `&p=${encodeURIComponent(verifyParams.p)}` : ""}`;
-            const res = await fetch(`${PLATFORM_URL}/api/club/verify?${qs}`);
-            const j = await res.json().catch(() => ({}));
-            setVerifyResult(j && j.status ? j : { status: "notfound" });
-          } catch {
-            setVerifyResult({ status: "error" });
-          }
-          setLoading(false);
+          window.location.replace(`${PLATFORM_URL}/c/m/${encodeURIComponent(verifyParams.m)}`);
           return;
         }
 
@@ -2828,6 +2822,9 @@ export default function ClubDescuentos() {
 
   const logout = () => {
     persist(() => window.storage.delete("my-email", false));
+    // La próxima entrada al perfil es una visita nueva (vuelve la celebración VIP una vez).
+    try { Object.keys(sessionStorage).filter((k) => k.startsWith("vip-cel:")).forEach((k) => sessionStorage.removeItem(k)); } catch { /* sin almacenamiento */ }
+    CELEBRATED.clear();
     setAccount(null);
     setView("landing");
   };
@@ -3450,7 +3447,7 @@ function useRedeemDetails(r, p, level, account) {
   return { ...st, retry: () => setTick((t) => t + 1) };
 }
 
-function BenefitDetails({ r, promos, initialId, mode, lang, level, account, verifyUrl, onClose }) {
+function BenefitDetails({ r, promos, initialId, mode, lang, level, account, cardQr, onClose }) {
   const narrow = useNarrow();
   const closeRef = React.useRef(null);
   const boxRef = React.useRef(null);
@@ -3465,7 +3462,7 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, veri
   const physical = !online;
   const code = redeem.state === "ok" ? (redeem.data.promoCode || "") : "";
   const link = redeem.state === "ok" ? (redeem.data.benefitUrl || redeem.data.websiteUrl || "") : "";
-  const qrAllowed = physical && redeem.state === "ok" && redeem.data.qr !== false;
+  const qrAllowed = physical && redeem.state === "ok" && redeem.data.qr !== false && Boolean(cardQr);
 
   // Bloquea el fondo (la página no se mueve), enfoca «Cerrar», Esc cierra y Tab no sale de la ventana.
   useEffect(() => {
@@ -3545,7 +3542,7 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, veri
           )}
           {allowed && redeem.state === "denied" && <p style={styles.modalText}>{T("Esta promoción es solo para miembros con el nivel requerido.", "This promotion is only for members with the required tier.", "Cette promotion est réservée aux membres du niveau requis.", "Dieses Angebot ist nur für Mitglieder mit der erforderlichen Stufe.")}</p>}
 
-          {qrAllowed && mode === "qr" && <QrBlock url={verifyUrl(r.id, base)} T={T} />}
+          {qrAllowed && mode === "qr" && <QrBlock url={cardQr} T={T} />}
 
           {code && (
             <section style={styles.modalSection}>
@@ -3606,7 +3603,7 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, veri
             </section>
           )}
 
-          {qrAllowed && mode !== "qr" && <QrBlock key={base.id} url={verifyUrl(r.id, base)} T={T} collapsed />}
+          {qrAllowed && mode !== "qr" && <QrBlock key={base.id} url={cardQr} T={T} collapsed />}
         </div>
       </div>
     </div>
@@ -3620,7 +3617,7 @@ function QrBlock({ url, T, collapsed }) {
       {open ? (
         <div style={styles.qrBox}>
           <QRCode value={url} size={170} />
-          <span style={styles.qrHint}>{T("El mesero lo escanea con la cámara de su celular y confirma tu membresía al instante.", "The waiter scans it with their phone camera and confirms your membership instantly.", "Le serveur le scanne avec l'appareil photo de son téléphone et confirme ton adhésion instantanément.", "Der Kellner scannt ihn mit der Handykamera und bestätigt deine Mitgliedschaft sofort.")}</span>
+          <span style={styles.qrHint}>{T("Es tu tarjeta de miembro: el empleado la escanea, elige este beneficio y confirma el canje. Escanearla no gasta nada.", "This is your member card: the employee scans it, picks this perk and confirms the redemption. Scanning alone doesn't use anything.", "C'est ta carte de membre : l'employé la scanne, choisit cet avantage et confirme. Le scan seul ne consomme rien.", "Das ist deine Mitgliedskarte: Der Mitarbeiter scannt sie, wählt diesen Vorteil und bestätigt die Einlösung. Scannen allein verbraucht nichts.")}</span>
         </div>
       ) : (
         <button type="button" style={styles.benefitPrimary} onClick={() => setOpen(true)}><QrCode size={14} /> {T("Mostrar QR", "Show QR", "Afficher le QR", "QR anzeigen")}</button>
@@ -3705,10 +3702,225 @@ const TICKET_STATUS = {
   revoked: ["No disponible", "Not available", "Indisponible", "Nicht verfügbar"],
 };
 
-function GoldPanel({ me, account, lang }) {
+// --- V20 · Tarjeta, VIP y Wallet ---------------------------------------------------------------------------------------
+const VIP_TITLE = ["Un reconocimiento especial para ti", "A special recognition for you", "Une reconnaissance spéciale pour toi", "Eine besondere Anerkennung für dich"];
+const VIP_MESSAGE = [
+  "Ha sido un honor recibirte en Xtudy. Eres parte de nuestra lista VIP y queremos agradecerte con 5 noches de hospedaje para tu próxima aventura, sujetas a disponibilidad.",
+  "It has been an honor to host you at Xtudy. You're on our VIP list and, as a thank-you, we'd like to give you 5 nights of accommodation for your next adventure, subject to availability.",
+  "Ce fut un honneur de t'accueillir chez Xtudy. Tu fais partie de notre liste VIP et, pour te remercier, nous t'offrons 5 nuits d'hébergement pour ta prochaine aventure, sous réserve de disponibilité.",
+  "Es war uns eine Ehre, dich bei Xtudy zu begrüßen. Du bist auf unserer VIP-Liste und als Dankeschön schenken wir dir 5 Übernachtungen für dein nächstes Abenteuer, je nach Verfügbarkeit.",
+];
+// Si el beneficio ya se usó, venció o se revocó, no se anuncian noches disponibles.
+const VIP_MESSAGE_PLAIN = [
+  "Ha sido un honor recibirte en Xtudy. Eres parte de nuestra lista VIP.",
+  "It has been an honor to host you at Xtudy. You're on our VIP list.",
+  "Ce fut un honneur de t'accueillir chez Xtudy. Tu fais partie de notre liste VIP.",
+  "Es war uns eine Ehre, dich bei Xtudy zu begrüßen. Du bist auf unserer VIP-Liste.",
+];
+const LEVEL_NAME = {
+  guest: ["Explorador", "Explorer", "Explorateur", "Entdecker"],
+  resident: ["Residente Xtudy", "Xtudy Resident", "Résident Xtudy", "Xtudy-Bewohner"],
+  collaborator: ["Colaborador", "Collaborator", "Collaborateur", "Partner"],
+};
+const prefersReducedMotion = () => { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+
+// Ventana accesible reutilizable: modal en escritorio, panel desde abajo en móvil; Esc cierra, el fondo no se mueve.
+function Sheet({ title, onClose, children, labelledBy = "sheet-title" }) {
+  const narrow = useNarrow();
+  const boxRef = React.useRef(null), closeRef = React.useRef(null);
+  const { lang } = useContext(LangContext);
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current && closeRef.current.focus({ preventScroll: true });
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+      if (e.key === "Tab" && boxRef.current) {
+        const f = boxRef.current.querySelectorAll('a[href], button:not([disabled]), input, textarea, [tabindex]:not([tabindex="-1"])');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
+  }, [onClose]);
+  return (
+    <div style={styles.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={boxRef} role="dialog" aria-modal="true" aria-labelledby={labelledBy} style={narrow ? styles.sheet : styles.modal}>
+        <div style={styles.modalHead}>
+          <h3 id={labelledBy} style={{ ...styles.modalTitle, flex: 1 }}>{title}</h3>
+          <button ref={closeRef} type="button" onClick={onClose} style={styles.modalClose} aria-label={tr(lang, "Cerrar", "Close", "Fermer", "Schließen")}><X size={20} /></button>
+        </div>
+        <div style={styles.modalBody}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// Celebración VIP: partículas doradas suaves (≈2.6 s), sin sonido, sin bloquear nada (pointer-events: none) y sin destellos.
+function VipCelebration({ special, onDone }) {
+  const ref = React.useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return undefined;
+    const ctx = c.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = window.innerWidth, H = window.innerHeight;
+    c.width = W * dpr; c.height = H * dpr; ctx.scale(dpr, dpr);
+    const palette = ["#E8D5A8", "#D9C08E", "#C9A96A", "#F3E7C9", "#B8935A"];
+    const bursts = special ? [[0.3, 0.32, 0], [0.7, 0.28, 380], [0.5, 0.22, 760]] : [[0.5, 0.3, 0], [0.34, 0.36, 420]];
+    const parts = [];
+    const spawn = (bx, by) => {
+      const n = special ? 46 : 34;
+      for (let i = 0; i < n; i++) {
+        const a = (Math.PI * 2 * i) / n + Math.random() * 0.3, v = 1.4 + Math.random() * 2.4;
+        parts.push({ x: bx * W, y: by * H, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.6, life: 0, max: 70 + Math.random() * 40, r: 1.4 + Math.random() * 1.8, col: palette[i % palette.length] });
+      }
+    };
+    const timers = bursts.map(([x, y, at]) => setTimeout(() => spawn(x, y), at));
+    let raf = 0; const start = performance.now(); const total = special ? 3200 : 2600;
+    const tick = (t) => {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of parts) {
+        p.life++; p.vy += 0.035; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy;
+        const alpha = Math.max(0, 1 - p.life / p.max) * 0.9;
+        if (alpha <= 0) continue;
+        ctx.globalAlpha = alpha; ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      }
+      if (t - start < total) raf = requestAnimationFrame(tick); else onDone();
+    };
+    raf = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(raf); timers.forEach(clearTimeout); };
+  }, [special, onDone]);
+  return <canvas ref={ref} aria-hidden="true" style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 60 }} />;
+}
+
+// Se muestra una vez por visita (pestaña nueva o regreso al perfil), nunca por re-renderizados ni al abrir detalles.
+const CELEBRATED = new Set();
+function useVipCelebration(me, account) {
+  const [show, setShow] = useState(null);
+  useEffect(() => {
+    if (!me || !me.gold || !me.prefs) return;
+    const key = `vip-cel:${account.memberId}`;
+    if (CELEBRATED.has(key)) return;
+    CELEBRATED.add(key);
+    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch { /* sin almacenamiento: basta la marca en memoria */ }
+    const first = !me.prefs.vipWelcomed;
+    if (first) post("/api/club/prefs", { email: account.email, memberId: account.memberId, vipWelcomed: true }).catch(() => {});
+    if (!me.prefs.celebrate || prefersReducedMotion()) { if (first) setShow({ special: true, staticOnly: true }); return; }
+    setShow({ special: first });
+  }, [me && me.gold, me && me.prefs && me.prefs.celebrate]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (show && show.special && !show.done) { const t = setTimeout(() => setShow((s) => (s ? { ...s, staticOnly: true, done: true } : s)), 4200); return () => clearTimeout(t); } return undefined; }, [show && show.special, show && show.done]); // eslint-disable-line react-hooks/exhaustive-deps
+  return [show, () => setShow((s) => (s && s.special ? { ...s, staticOnly: true } : null))];
+}
+
+function MemberCard({ account, lang, levelId, vip, collaboratorToo }) {
+  const T = (...a) => tr(lang, ...a);
+  if (vip) return (
+    <div style={styles.vipCard}>
+      <div style={styles.vipSheen} aria-hidden="true" />
+      <div style={styles.vipTop}>
+        <img src={WORDMARK_WHITE_DATA} alt="Xtudy" style={{ height: 20, width: "auto" }} />
+        <span style={styles.vipBadge}>✦ Xtudy VIP</span>
+      </div>
+      <div style={{ position: "relative" }}>
+        <div style={styles.vipName}>{account.name}</div>
+        <div style={styles.vipUni}>{account.university}</div>
+        <div style={styles.vipRule} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <span style={styles.vipLabel}>{T("Nivel actual", "Current tier", "Niveau actuel", "Aktuelle Stufe")}</span>
+          <span style={styles.vipLevel}>{T(...LEVEL_NAME[levelId])}{collaboratorToo ? ` · ${T(...LEVEL_NAME.collaborator)}` : ""}</span>
+        </div>
+        <div style={styles.vipMember}>{account.memberId}</div>
+      </div>
+    </div>
+  );
+  const level = levelId;
+  return (
+    <div style={{ ...styles.membershipCardBig, ...(level !== "guest" ? styles.membershipCardResident : {}) }}>
+      {level !== "guest" && (
+        <>
+          <div style={styles.residentWatermarkWrap}>
+            <svg width="100" height="100%" viewBox="0 0 90 200" preserveAspectRatio="none" style={styles.residentWatermarkSvg} aria-hidden="true">
+              <path d="M0 0 L45 100 L0 200 L20 200 L65 100 L20 0 Z" fill={colors.blue} /><path d="M55 0 L100 100 L55 200 L75 200 L100 155 L100 45 L75 0 Z" fill={colors.blue} />
+            </svg>
+          </div>
+          <span style={styles.residentBadge}><Crown size={11} /> {T(...LEVEL_NAME[level])}</span>
+        </>
+      )}
+      <div style={{ ...styles.cardPoweredBy, position: "relative", zIndex: 1 }}>Powered by</div>
+      <div style={{ ...styles.cardTop, position: "relative", zIndex: 1 }}><img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} /><Star size={18} color={colors.blue} fill={colors.blue} /></div>
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={styles.cardName}>{account.name}</div>
+        <div style={styles.cardUni}>{account.university}</div>
+        <div style={styles.cardTierRow}>
+          <span style={styles.cardTierLabel}>{T("Nivel actual", "Current tier", "Niveau actuel", "Aktuelle Stufe")}</span>
+          <span style={styles.cardTierValue}>{T(...LEVEL_NAME[level])}{collaboratorToo ? ` · ${T(...LEVEL_NAME.collaborator)}` : ""}</span>
+        </div>
+        <div style={styles.stampsRow}>{TIERS.map((t) => <div key={t.id} style={{ ...styles.stampDot, ...(t.order <= (level !== "guest" ? 1 : 0) ? styles.stampDotFilled : {}) }} />)}</div>
+      </div>
+    </div>
+  );
+}
+
+const isApple = () => /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent || "");
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent || "") || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+// Botones de Wallet: solo aparecen si el servidor tiene la plataforma configurada (nunca un botón que falle).
+function WalletButtons({ me, account, lang }) {
+  const T = (...a) => tr(lang, ...a);
+  const [busy, setBusy] = useState(null), [err, setErr] = useState("");
+  if (!me || !me.wallet || (!me.wallet.apple && !me.wallet.google)) return null;
+  const go = async (platform) => {
+    setBusy(platform); setErr("");
+    try {
+      const r = await post("/api/club/wallet", { email: account.email, memberId: account.memberId, platform });
+      if (r.ok && r.j.url) { window.location.href = r.j.url; return; }
+      setErr(T("No pudimos preparar tu tarjeta para Wallet. Intenta de nuevo.", "We couldn't prepare your Wallet card. Please try again.", "Impossible de préparer ta carte pour Wallet. Réessaie.", "Deine Wallet-Karte konnte nicht vorbereitet werden. Bitte erneut versuchen."));
+    } catch { setErr(T("Sin conexión. Intenta de nuevo.", "No connection. Please try again.", "Pas de connexion. Réessaie.", "Keine Verbindung. Bitte erneut versuchen.")); }
+    setBusy(null);
+  };
+  const showApple = me.wallet.apple && isApple(), showGoogle = me.wallet.google && !isIOS();
+  return (
+    <div style={{ display: "grid", gap: 8, justifyItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        {showApple && <button type="button" style={styles.walletBtn} disabled={Boolean(busy)} onClick={() => go("apple")}>{busy === "apple" ? T("Preparando…", "Preparing…", "Préparation…", "Wird vorbereitet…") : T("Agregar a Apple Wallet", "Add to Apple Wallet", "Ajouter à Apple Wallet", "Zu Apple Wallet hinzufügen")}</button>}
+        {showGoogle && <button type="button" style={styles.walletBtn} disabled={Boolean(busy)} onClick={() => go("google")}>{busy === "google" ? T("Preparando…", "Preparing…", "Préparation…", "Wird vorbereitet…") : T("Agregar a Google Wallet", "Add to Google Wallet", "Ajouter à Google Wallet", "Zu Google Wallet hinzufügen")}</button>}
+      </div>
+      {!showApple && !showGoogle && <p style={{ ...styles.partnerFine, color: "#CFE6F5", textAlign: "center", margin: 0 }}>{T("Para guardarla en Wallet, abre Xtudy Club desde tu teléfono.", "To save it to Wallet, open Xtudy Club on your phone.", "Pour l'enregistrer dans Wallet, ouvre Xtudy Club sur ton téléphone.", "Um sie in Wallet zu speichern, öffne Xtudy Club auf deinem Handy.")}</p>}
+      {err && <p role="alert" style={{ margin: 0, color: "#FFD5D0", fontSize: 13.5 }}>{err}</p>}
+    </div>
+  );
+}
+
+// La tarjeta para mostrar en el comercio: un QR de membresía (referencia opaca; el servidor decide en cada escaneo).
+function CardQrSheet({ me, account, lang, levelId, vip, onClose, refresh }) {
+  const T = (...a) => tr(lang, ...a);
+  useEffect(() => { const t = setInterval(refresh, 30000); return () => clearInterval(t); }, [refresh]);
+  return (
+    <Sheet title={T("Tu tarjeta de Xtudy Club", "Your Xtudy Club card", "Ta carte Xtudy Club", "Deine Xtudy-Club-Karte")} onClose={onClose} labelledBy="card-qr-title">
+      {me && me.card ? (
+        <div style={{ display: "grid", gap: 12, justifyItems: "center", textAlign: "center" }}>
+          <div style={{ background: "#fff", padding: 12, borderRadius: 14, border: `1px solid ${colors.line}` }}><QRCode value={me.card.qr} size={220} /></div>
+          <div><div style={{ fontWeight: 700, fontSize: 18 }}>{account.name}</div><div style={styles.partnerFine}>{T(...LEVEL_NAME[levelId])}{vip ? " · Xtudy VIP" : ""} · {me.card.memberId}</div></div>
+          <p style={styles.modalText}>{T("Muéstralo en el comercio. Un empleado lo escanea, revisa qué beneficios puedes usar y confirma el canje. Puede pedirte tu identificación de estudiante.", "Show it at the business. An employee scans it, checks which perks you can use and confirms the redemption. They may ask for your student ID.", "Montre-le au commerce. Un employé le scanne, vérifie tes avantages et confirme l'utilisation. Il peut te demander ta carte d'étudiant.", "Zeige ihn im Geschäft. Ein Mitarbeiter scannt ihn, prüft deine Vorteile und bestätigt die Einlösung. Er kann nach deinem Studentenausweis fragen.")}</p>
+          <div style={styles.tempCode}><span style={styles.partnerFine}>{T("Si te piden un código temporal:", "If they ask for a temporary code:", "Si on te demande un code temporaire :", "Falls nach einem temporären Code gefragt wird:")}</span> <strong style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 20, letterSpacing: 2 }}>{me.card.code.slice(0, 3)} {me.card.code.slice(3)}</strong></div>
+          <p style={styles.partnerFine}>{T("Los servicios en línea se usan desde tu perfil, no con este QR.", "Online services are used from your profile, not with this QR.", "Les services en ligne s'utilisent depuis ton profil, pas avec ce QR.", "Online-Dienste nutzt du über dein Profil, nicht mit diesem QR.")}</p>
+        </div>
+      ) : <p style={styles.modalText}>{T("Cargando tu tarjeta… Se necesita conexión para mostrarla.", "Loading your card… A connection is needed to show it.", "Chargement de ta carte… Une connexion est nécessaire.", "Deine Karte wird geladen… Dafür ist eine Verbindung nötig.")}</p>}
+    </Sheet>
+  );
+}
+
+function VipSheet({ me, account, lang, onClose, onPrefs }) {
   const T = (...a) => tr(lang, ...a);
   const t = me.ticket;
+  const available = t && t.status === "available";
   const [copied, setCopied] = useState(false);
+  const [celebrate, setCelebrate] = useState(me.prefs ? me.prefs.celebrate : true);
   const [req, setReq] = useState({ open: false, checkIn: "", checkOut: "", property: "", message: "", state: "idle" });
   const send = async (e) => {
     e.preventDefault();
@@ -3718,28 +3930,33 @@ function GoldPanel({ me, account, lang }) {
       setReq((x) => ({ ...x, state: r.ok ? "sent" : (r.j.error || "error") }));
     } catch { setReq((x) => ({ ...x, state: "error" })); }
   };
+  const toggle = async () => {
+    const v = !celebrate; setCelebrate(v);
+    await post("/api/club/prefs", { email: account.email, memberId: account.memberId, celebrate: v }).catch(() => {});
+    onPrefs();
+  };
   const reqMsg = {
     sent: T("Recibimos tu solicitud. Xtudy la revisará y te contactará; aún no está confirmada.", "We received your request. Xtudy will review it and contact you; it isn't confirmed yet.", "Nous avons reçu ta demande. Xtudy l'examinera et te contactera ; elle n'est pas encore confirmée.", "Wir haben deine Anfrage erhalten. Xtudy prüft sie und meldet sich; sie ist noch nicht bestätigt."),
     dates: T("Revisa las fechas: la salida debe ser posterior a la llegada y ambas en el futuro.", "Check the dates: check-out must be after check-in and both in the future.", "Vérifie les dates : le départ doit être après l'arrivée et les deux dans le futur.", "Prüfe die Daten: Abreise nach Anreise und beide in der Zukunft."),
     too_many: T("Ya tienes solicitudes pendientes de revisión.", "You already have requests pending review.", "Tu as déjà des demandes en attente.", "Du hast bereits offene Anfragen."),
-    not_available: T("Tu Ticket Dorado ya no está disponible para nuevas solicitudes.", "Your Golden Ticket is no longer available for new requests.", "Ton Ticket Doré n'est plus disponible pour de nouvelles demandes.", "Dein Goldenes Ticket ist für neue Anfragen nicht mehr verfügbar."),
+    not_available: T("Tu beneficio ya no está disponible para nuevas solicitudes.", "Your benefit is no longer available for new requests.", "Ton avantage n'est plus disponible pour de nouvelles demandes.", "Dein Vorteil ist für neue Anfragen nicht mehr verfügbar."),
     error: T("No pudimos enviar la solicitud. Intenta de nuevo.", "We couldn't send the request. Please try again.", "Impossible d'envoyer la demande. Réessaie.", "Die Anfrage konnte nicht gesendet werden. Bitte erneut versuchen."),
   }[req.state === "not_found" ? "error" : req.state];
   return (
-    <section style={styles.goldPanel} aria-labelledby="gold-title">
-      <h3 id="gold-title" style={styles.goldTitle}><Crown size={16} /> {T("Residente destacado", "Featured resident", "Résident à l'honneur", "Ausgezeichneter Bewohner")}</h3>
-      <p style={styles.goldText}>{T(...GOLD_MESSAGE)}</p>
-      {t && (
-        <div style={styles.ticketBox}>
-          <div style={styles.restCategory}>{T("Tu Ticket Dorado · 5 noches", "Your Golden Ticket · 5 nights", "Ton Ticket Doré · 5 nuits", "Dein Goldenes Ticket · 5 Nächte")}</div>
+    <Sheet title={T(...VIP_TITLE)} onClose={onClose} labelledBy="vip-title">
+      <p style={styles.modalText}>{T(...(available ? VIP_MESSAGE : VIP_MESSAGE_PLAIN))}</p>
+      {t && (available ? (
+        <section style={styles.vipBenefit}>
+          <h4 style={styles.modalH}>{T("Tu beneficio · 5 noches sin costo de renta", "Your benefit · 5 rent-free nights", "Ton avantage · 5 nuits sans loyer", "Dein Vorteil · 5 mietfreie Nächte")}</h4>
           <div style={styles.codeRow}>
             <code style={styles.codeBox}>{t.code}</code>
-            {t.status === "available" && <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>}
+            <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
           </div>
-          <p style={styles.modalText}><strong>{T("Estado", "Status", "Statut", "Status")}:</strong> {T(...(TICKET_STATUS[t.status] || TICKET_STATUS.revoked))}{t.expiresOn && t.status === "available" ? ` · ${T("vigente hasta", "valid until", "valable jusqu'au", "gültig bis")} ${t.expiresOn}` : ""}</p>
-          {t.status === "available" && <p style={styles.modalText}>{T("Para usarlo, reserva en", "To use it, book at", "Pour l'utiliser, réserve sur", "Zum Einlösen buche auf")} <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" style={styles.locationLink}>{PLATFORM_URL.replace(/^https?:\/\//, "")}</a> {T("y escribe el código en «Código promocional» antes de pagar.", "and enter the code under “Promo code” before paying.", "et saisis le code dans « Code promo » avant de payer.", "und gib den Code vor dem Bezahlen unter „Gutscheincode“ ein.")}</p>}
+          <p style={styles.modalText}><strong>{T("Estado", "Status", "Statut", "Status")}:</strong> {T(...TICKET_STATUS.available)}{t.expiresOn ? ` · ${T("vigente hasta", "valid until", "valable jusqu'au", "gültig bis")} ${t.expiresOn}` : ""}</p>
+          <p style={styles.modalText}>{T("Elige tus fechas, y antes de pagar escribe el código en «Código promocional». Cubre la renta de hasta 5 noches de una sola reserva; el depósito y otros cargos no cambian.", "Choose your dates and, before paying, enter the code under “Promo code”. It covers rent for up to 5 nights of a single booking; the deposit and other charges don't change.", "Choisis tes dates et, avant de payer, saisis le code dans « Code promo ». Il couvre le loyer de 5 nuits maximum d'une seule réservation ; le dépôt et les autres frais ne changent pas.", "Wähle deine Daten und gib vor dem Bezahlen den Code unter „Gutscheincode“ ein. Er deckt die Miete für bis zu 5 Nächte einer einzigen Buchung; Kaution und andere Kosten ändern sich nicht.")}</p>
+          <a href={`${PLATFORM_URL}/${lang === "es" ? "es" : "en"}/explorar`} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>{T("Consultar disponibilidad y reservar", "Check availability and book", "Voir les disponibilités et réserver", "Verfügbarkeit prüfen und buchen")} <ChevronRight size={16} /></a>
           <p style={styles.partnerFine}>{T(...GOLD_CONDITIONS_TX)}</p>
-          {t.status === "available" && (req.open ? (
+          {req.open ? (
             <form onSubmit={send} style={{ display: "grid", gap: 8 }}>
               <h4 style={styles.modalH}>{T("Solicitar revisión para una estancia corta", "Request review for a short stay", "Demander une validation pour un court séjour", "Prüfung für kurzen Aufenthalt anfragen")}</h4>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -3751,12 +3968,15 @@ function GoldPanel({ me, account, lang }) {
               <button type="submit" style={styles.benefitPrimary} disabled={req.state === "sending" || req.state === "sent"}>{req.state === "sending" ? T("Enviando…", "Sending…", "Envoi…", "Senden…") : T("Enviar solicitud", "Send request", "Envoyer la demande", "Anfrage senden")}</button>
               {reqMsg && <p role="status" style={styles.modalText}>{reqMsg}</p>}
             </form>
-          ) : (
-            <button type="button" style={styles.benefitSecondary} onClick={() => setReq({ ...req, open: true })}>{T("¿Tu estancia es más corta que el mínimo? Solicita una revisión", "Is your stay shorter than the minimum? Request a review", "Ton séjour est plus court que le minimum ? Demande une validation", "Kürzer als das Minimum? Prüfung anfragen")}</button>
-          ))}
-        </div>
-      )}
-    </section>
+          ) : <button type="button" style={styles.benefitSecondary} onClick={() => setReq({ ...req, open: true })}>{T("¿Tu estancia es más corta que el mínimo? Solicita una revisión", "Is your stay shorter than the minimum? Request a review", "Ton séjour est plus court que le minimum ? Demande une validation", "Kürzer als das Minimum? Prüfung anfragen")}</button>}
+        </section>
+      ) : (
+        <p style={styles.modalText}><strong>{T("Tu beneficio de 5 noches", "Your 5-night benefit", "Ton avantage de 5 nuits", "Dein 5-Nächte-Vorteil")}:</strong> {T(...(TICKET_STATUS[t.status] || TICKET_STATUS.revoked))}. {T("Tu distinción VIP sigue vigente.", "Your VIP distinction remains active.", "Ta distinction VIP reste active.", "Deine VIP-Auszeichnung bleibt bestehen.")}</p>
+      ))}
+      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: colors.ink, borderTop: `1px solid ${colors.line}`, paddingTop: 12 }}>
+        <input type="checkbox" checked={celebrate} onChange={toggle} /> {T("Mostrar una pequeña celebración al entrar", "Show a small celebration when I sign in", "Afficher une petite célébration à l'arrivée", "Beim Öffnen eine kleine Feier zeigen")}
+      </label>
+    </Sheet>
   );
 }
 
@@ -3768,6 +3988,10 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const resident = me ? me.resident : account.tier === "resident";
   const gold = Boolean(me && me.gold);
   const cardTier = resident ? "resident" : collaborator ? "collaborator" : "guest";
+  const [qrOpen, setQrOpen] = useState(false);
+  const [vipOpen, setVipOpen] = useState(false);
+  const [celebration, endCelebrationRaw] = useVipCelebration(me, account);
+  const endCelebration = React.useCallback(() => { endCelebrationRaw(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Una tarjeta por comercio. Desbloqueadas: con al menos una promoción vigente a tu alcance.
   const visible = restaurants.filter(isPublishedPartner).map((r) => {
     const promos = promotionsOf(r);
@@ -3788,12 +4012,8 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   };
   const open = detail ? unlocked.find((x) => x.r.id === detail.id) : null;
 
-  // El QR solo lleva el número de miembro, el comercio y la promoción; el servidor decide al escanearlo.
-  const verifyUrl = (restaurantId, p) => {
-    const q = `?m=${encodeURIComponent(account.memberId)}&r=${encodeURIComponent(restaurantId)}${p && !p.legacy ? `&p=${encodeURIComponent(p.id)}` : ""}`;
-    try { return `${window.location.origin}${window.location.pathname}${q}`; } catch { return q; }
-  };
-  const tierName = cardTier === "collaborator" ? tr(lang, "Colaborador", "Collaborator", "Collaborateur", "Partner") : TIERS.find((t) => t.id === cardTier)?.name[lang];
+  // QR de membresía (referencia opaca): el comercio lo escanea y su empleado elige y confirma el beneficio en el servidor.
+  const cardQr = me && me.card ? me.card.qr : null;
 
   return (
     <div className="page-container" style={styles.dashWrap}>
@@ -3805,41 +4025,24 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
       </div>
 
-      <div style={{ ...styles.membershipCardBig, ...(cardTier !== "guest" ? styles.membershipCardResident : {}), ...(gold ? styles.membershipCardGold : {}) }}>
-        {(cardTier !== "guest" || gold) && (
-          <>
-            <div style={styles.residentWatermarkWrap}>
-              <svg width="100" height="100%" viewBox="0 0 90 200" preserveAspectRatio="none" style={{ ...styles.residentWatermarkSvg, ...(gold ? { opacity: 0.16 } : {}) }} aria-hidden="true">
-                <path d="M0 0 L45 100 L0 200 L20 200 L65 100 L20 0 Z" fill={gold ? "#9A6B00" : colors.blue} />
-                <path d="M55 0 L100 100 L55 200 L75 200 L100 155 L100 45 L75 0 Z" fill={gold ? "#9A6B00" : colors.blue} />
-              </svg>
-            </div>
-            <span style={{ ...styles.residentBadge, ...(gold ? styles.goldBadge : {}) }}>
-              <Crown size={11} /> {gold ? tr(lang, "Residente destacado", "Featured resident", "Résident à l'honneur", "Ausgezeichneter Bewohner") : cardTier === "collaborator" ? tr(lang, "Colaborador", "Collaborator", "Collaborateur", "Partner") : tr(lang, "Residente", "Resident", "Résident", "Bewohner")}
-            </span>
-          </>
-        )}
-        <div style={{ ...styles.cardPoweredBy, position: "relative", zIndex: 1 }}>Powered by</div>
-        <div style={{ ...styles.cardTop, position: "relative", zIndex: 1 }}>
-          <img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} />
-          <Star size={18} color={gold ? "#9A6B00" : colors.blue} fill={gold ? "#C99A2E" : colors.blue} />
+      <MemberCard account={account} lang={lang} levelId={cardTier} vip={gold} collaboratorToo={resident && collaborator} />
+      {gold && (
+        <div style={styles.vipLine}>
+          <span>✦ {tr(lang, "Estás en nuestra lista VIP.", "You're on our VIP list.", "Tu fais partie de notre liste VIP.", "Du bist auf unserer VIP-Liste.")}</span>
+          <button type="button" style={styles.vipLink} onClick={() => setVipOpen(true)}>{tr(lang, "¿Qué significa?", "What does it mean?", "Qu'est-ce que ça veut dire ?", "Was bedeutet das?")}</button>
         </div>
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div style={styles.cardName}>{account.name}</div>
-          <div style={styles.cardUni}>{account.university}</div>
-          <div style={styles.cardTierRow}>
-            <span style={styles.cardTierLabel}>{tr(lang, "Nivel actual", "Current tier", "Niveau actuel", "Aktuelle Stufe")}</span>
-            <span style={styles.cardTierValue}>{tierName}{resident && collaborator ? ` · ${tr(lang, "Colaborador", "Collaborator", "Collaborateur", "Partner")}` : ""}</span>
-          </div>
-          <div style={styles.stampsRow}>
-            {TIERS.map((t) => (
-              <div key={t.id} style={{ ...styles.stampDot, ...(t.order <= (level === "resident" ? 1 : 0) ? styles.stampDotFilled : {}), ...(gold ? { background: "#C99A2E", borderColor: "#9A6B00" } : {}) }} />
-            ))}
-          </div>
-        </div>
+      )}
+      {celebration && !celebration.staticOnly && <VipCelebration special={celebration.special} onDone={endCelebration} />}
+      {celebration && celebration.special && !celebration.done && (
+        <div role="status" style={styles.vipToast}>✦ {tr(lang, "¡Bienvenido a la lista VIP de Xtudy!", "Welcome to the Xtudy VIP list!", "Bienvenue dans la liste VIP de Xtudy !", "Willkommen auf der VIP-Liste von Xtudy!")}</div>
+      )}
+      <div style={styles.cardActions}>
+        <button type="button" style={styles.cardQrBtn} onClick={() => setQrOpen(true)}><QrCode size={16} /> {tr(lang, "Mostrar mi tarjeta", "Show my card", "Afficher ma carte", "Meine Karte zeigen")}</button>
+        <WalletButtons me={me} account={account} lang={lang} />
       </div>
-      {!collaborator && <div style={{ margin: "10px 0 4px" }}><CollaboratorCode account={account} lang={lang} onDone={refresh} /></div>}
-      {gold && <GoldPanel me={me} account={account} lang={lang} />}
+      {!collaborator && <div style={{ margin: "6px 0 4px", textAlign: "center" }}><CollaboratorCode account={account} lang={lang} onDone={refresh} /></div>}
+      {qrOpen && <CardQrSheet me={me} account={account} lang={lang} levelId={cardTier} vip={gold} onClose={() => setQrOpen(false)} refresh={refresh} />}
+      {vipOpen && me && <VipSheet me={me} account={account} lang={lang} onClose={() => setVipOpen(false)} onPrefs={refresh} />}
 
       {SHOW_PLANS && account.tier === "guest" && (
         <>
@@ -3875,7 +4078,7 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         {unlocked.length === 0 && <p style={styles.emptyText}>{tr(lang, "Aún no tienes descuentos activos.", "You don't have any active discounts yet.", "Tu n'as pas encore de réductions actives.", "Du hast noch keine aktiven Rabatte.")}</p>}
       </div>
       {open && (
-        <BenefitDetails r={open.r} promos={open.live} initialId={detail.promoId} mode={detail.mode} lang={lang} level={level} account={account} verifyUrl={verifyUrl} onClose={closeDetails} />
+        <BenefitDetails r={open.r} promos={open.live} initialId={detail.promoId} mode={detail.mode} lang={lang} level={level} account={account} cardQr={cardQr} onClose={closeDetails} />
       )}
 
       {lockedByTier.length > 0 && (
@@ -4497,6 +4700,24 @@ const styles = {
   goldTitle: { margin: 0, display: "flex", alignItems: "center", gap: 6, fontFamily: "'Host Grotesk', sans-serif", fontSize: 17, color: "#7A5600" },
   goldText: { margin: 0, fontSize: 15, lineHeight: 1.5 },
   ticketBox: { display: "grid", gap: 8, background: "#fff", border: "1px dashed #C99A2E", borderRadius: 12, padding: 12 },
+  vipCard: { position: "relative", overflow: "hidden", maxWidth: 420, margin: "0 auto 14px", borderRadius: 18, padding: 22, color: "#F4EBD8", background: "linear-gradient(150deg, #0B2A45 0%, #0A1F35 55%, #12324F 100%)", border: "1px solid rgba(217,192,142,0.55)", boxShadow: "0 10px 26px rgba(0,0,0,0.28)" },
+  vipSheen: { position: "absolute", inset: 0, background: "linear-gradient(115deg, transparent 0%, rgba(232,213,168,0.10) 38%, rgba(232,213,168,0.02) 52%, transparent 70%)", pointerEvents: "none" },
+  vipTop: { position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  vipBadge: { fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: "#E8D5A8", border: "1px solid rgba(232,213,168,0.7)", borderRadius: 999, padding: "3px 10px", background: "rgba(232,213,168,0.08)" },
+  vipName: { fontFamily: "'Host Grotesk', sans-serif", fontSize: 20, fontWeight: 700, color: "#FFFFFF" },
+  vipUni: { fontSize: 12.5, color: "#C9D6E2", marginTop: 2 },
+  vipRule: { height: 1, background: "linear-gradient(90deg, rgba(217,192,142,0.75), rgba(217,192,142,0.1))", margin: "14px 0 10px" },
+  vipLabel: { fontSize: 11.5, color: "#C9D6E2" },
+  vipLevel: { fontSize: 13.5, fontWeight: 700, color: "#E8D5A8" },
+  vipMember: { marginTop: 10, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: 1.5, color: "#AFC0CF" },
+  vipLine: { display: "flex", gap: 8, justifyContent: "center", alignItems: "center", flexWrap: "wrap", fontSize: 14, color: "#E8D5A8", margin: "0 auto 10px", textAlign: "center" },
+  vipLink: { background: "none", border: "none", color: "#CFE6F5", textDecoration: "underline", fontSize: 14, cursor: "pointer", padding: "6px 4px", minHeight: 32 },
+  vipToast: { position: "fixed", left: "50%", top: 18, transform: "translateX(-50%)", zIndex: 61, background: "#0B2A45", color: "#F4EBD8", border: "1px solid rgba(217,192,142,0.7)", borderRadius: 999, padding: "10px 18px", fontSize: 14.5, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", pointerEvents: "none", maxWidth: "calc(100vw - 32px)", textAlign: "center" },
+  vipBenefit: { display: "grid", gap: 8, background: "#FBF7EE", border: "1px solid #E6D8B8", borderRadius: 12, padding: 12 },
+  cardActions: { display: "grid", gap: 10, justifyItems: "center", margin: "4px auto 8px", maxWidth: 420 },
+  cardQrBtn: { display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: colors.navy, border: "none", borderRadius: 999, minHeight: 44, padding: "10px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer" },
+  walletBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#000", color: "#fff", border: "1px solid #3a3a3a", borderRadius: 10, minHeight: 44, padding: "10px 16px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  tempCode: { background: "#F2F6F9", borderRadius: 10, padding: "8px 12px", display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap", justifyContent: "center" },
   benefitCard: { background: colors.card, color: colors.ink, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 8, minHeight: 236 },
   benefitTop: { display: "flex", alignItems: "center", gap: 12 },
   benefitLogo: { width: "auto", objectFit: "contain", background: "#fff", borderRadius: 10, padding: "4px 6px", border: `1px solid ${colors.line}`, boxSizing: "border-box", flexShrink: 0 },

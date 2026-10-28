@@ -1,5 +1,16 @@
 import { supabase } from "./supabaseClient";
 
+// Supabase emite al momento un token de corta vida para cada petición; si el reloj de su base de datos va unos segundos
+// atrás, responde «JWT issued at future» (PGRST303) aunque nada esté mal de nuestro lado. Se reintenta UNA vez tras una
+// pausa breve (sin bucles); si vuelve a fallar, se trata como cualquier otro error.
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+export async function sb(run) {
+  const first = await run();
+  if (first?.error?.code !== "PGRST303") return first;
+  await wait(1500);
+  return run();
+}
+
 // Este archivo hace que window.storage funcione fuera de Claude,
 // usando Supabase para datos "compartidos" y localStorage para datos
 // "personales" (igual que en el entorno original). No hace falta tocar
@@ -11,11 +22,7 @@ async function get(key, shared) {
       const value = localStorage.getItem(key);
       return value === null ? null : { key, value, shared: false };
     }
-    const { data, error } = await supabase
-      .from("kv_store")
-      .select("value")
-      .eq("key", key)
-      .maybeSingle();
+    const { data, error } = await sb(() => supabase.from("kv_store").select("value").eq("key", key).maybeSingle());
     if (error || !data) return null;
     return { key, value: data.value, shared: true };
   } catch (e) {
@@ -30,7 +37,7 @@ async function set(key, value, shared) {
       localStorage.setItem(key, value);
       return { key, value, shared: false };
     }
-    const { error } = await supabase.from("kv_store").upsert({ key, value });
+    const { error } = await sb(() => supabase.from("kv_store").upsert({ key, value }));
     if (error) {
       console.error("storage.set error", error);
       return null;
@@ -52,7 +59,7 @@ async function insertOnly(key, value, shared) {
       localStorage.setItem(key, value);
       return { key, value, shared: false };
     }
-    const { error } = await supabase.from("kv_store").insert({ key, value });
+    const { error } = await sb(() => supabase.from("kv_store").insert({ key, value }));
     if (error) {
       console.error("storage.insertOnly error", error);
       return null;
@@ -70,7 +77,7 @@ async function del(key, shared) {
       localStorage.removeItem(key);
       return { key, deleted: true, shared: false };
     }
-    const { error } = await supabase.from("kv_store").delete().eq("key", key);
+    const { error } = await sb(() => supabase.from("kv_store").delete().eq("key", key));
     if (error) return null;
     return { key, deleted: true, shared: true };
   } catch (e) {
@@ -89,9 +96,7 @@ async function list(prefix, shared) {
       }
       return { keys, prefix, shared: false };
     }
-    let query = supabase.from("kv_store").select("key");
-    if (prefix) query = query.like("key", `${prefix}%`);
-    const { data, error } = await query;
+    const { data, error } = await sb(() => { let q = supabase.from("kv_store").select("key"); if (prefix) q = q.like("key", `${prefix}%`); return q; });
     if (error) return { keys: [], prefix, shared: true };
     return { keys: (data || []).map((row) => row.key), prefix, shared: true };
   } catch (e) {
@@ -109,7 +114,7 @@ async function updateOnly(key, value, shared) {
       localStorage.setItem(key, value);
       return { key, value, shared: false };
     }
-    const { error } = await supabase.from("kv_store").update({ value }).eq("key", key);
+    const { error } = await sb(() => supabase.from("kv_store").update({ value }).eq("key", key));
     if (error) {
       console.error("storage.updateOnly error", error);
       return null;
