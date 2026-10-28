@@ -2794,6 +2794,13 @@ export default function ClubDescuentos() {
   };
 
 
+  // Una visita por vista del Club; abrir el registro es «inicio de registro» (el registro completado lo cuenta el servidor).
+  useEffect(() => {
+    if (loading || verifyParams) return;
+    sendHit("pageview", view === "dashboard" ? "perfil" : view);
+    if (view === "register") sendHit("signup_start", view);
+  }, [view, loading]);
+
   if (loading) {
     return (
       <div style={styles.loadingWrap}><style>{fontImport}</style><div style={styles.stamp} /></div>
@@ -2823,6 +2830,7 @@ export default function ClubDescuentos() {
     <div style={styles.app}>
       <style>{fontImport}</style>
       <AppHeader />
+      <MeasureNotice />
 
       {view === "landing" && (
         <Landing onStart={() => setView("register")} onAdmin={() => window.location.assign(UNIFIED_ADMIN_URL)} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
@@ -3151,6 +3159,38 @@ function Register({ form, setForm, team, setTeam, onCheckTeam, onSubmit, error, 
 // Los códigos promocionales no viajan en la lista pública: se piden al servidor del sitio principal, que comprueba
 // la cuenta y el nivel del miembro antes de entregarlos.
 const PLATFORM_URL = (import.meta.env.VITE_PLATFORM_URL || "https://www.xtudyclub.com").replace(/\/$/, "");
+
+// Medición anónima del Club (sin cookies): solo la sección, la vista y el dominio de origen. Nunca correo, nombre ni códigos.
+// Respeta «No medir», Global Privacy Control y Do Not Track.
+const MEASURE_KEY = "xtudy_medicion";
+const measureChoice = () => { try { return localStorage.getItem(MEASURE_KEY); } catch { return null; } };
+const privacySignal = () => navigator.globalPrivacyControl === true || navigator.doNotTrack === "1";
+function sendHit(kind, view) {
+  if (privacySignal() || measureChoice() === "no") return;
+  let r = ""; try { r = document.referrer ? new URL(document.referrer).origin : ""; } catch {}
+  const u = new URL(window.location.origin + window.location.pathname.replace(/\/$/, "") + (view && view !== "landing" ? `/${view}` : ""));
+  const q = new URLSearchParams(window.location.search);
+  for (const k of ["utm_source", "utm_medium", "utm_campaign"]) if (q.get(k)) u.searchParams.set(k, q.get(k));
+  const body = JSON.stringify({ k: kind, s: "club", u: u.toString(), r });
+  try { if (!navigator.sendBeacon?.(`${PLATFORM_URL}/api/t`, new Blob([body], { type: "text/plain" }))) fetch(`${PLATFORM_URL}/api/t`, { method: "POST", body, keepalive: true, mode: "no-cors" }); } catch {}
+}
+function MeasureNotice() {
+  const { lang } = useContext(LangContext);
+  const [ask, setAsk] = useState(false);
+  useEffect(() => { setAsk(measureChoice() === null && !privacySignal()); }, []);
+  if (!ask) return null;
+  const decide = (v) => { try { localStorage.setItem(MEASURE_KEY, v); } catch {} setAsk(false); };
+  const text = tr(lang, "Medimos las visitas de forma anónima, sin cookies ni datos personales, para mejorar el Club.", "We measure visits anonymously, without cookies or personal data, to improve the Club.", "Nous mesurons les visites de façon anonyme, sans cookies ni données personnelles, pour améliorer le Club.", "Wir messen Besuche anonym, ohne Cookies oder personenbezogene Daten, um den Club zu verbessern.");
+  return (
+    <div role="region" aria-label={text} style={{ position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 60, maxWidth: 560, margin: "0 auto", display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", background: "#fff", color: colors.ink, borderRadius: 16, padding: "12px 14px", boxShadow: "0 10px 30px rgba(8,48,79,.25)", fontSize: 14 }}>
+      <p style={{ margin: 0, flex: "1 1 240px", lineHeight: 1.4 }}>{text}</p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="button" onClick={() => decide("no")} style={{ ...styles.benefitSecondary, minHeight: 38 }}>{tr(lang, "No medir", "Don't measure", "Ne pas mesurer", "Nicht messen")}</button>
+        <button type="button" onClick={() => decide("si")} style={{ ...styles.benefitPrimary, width: "auto", minHeight: 38, padding: "0 16px" }}>{tr(lang, "Entendido", "Got it", "Compris", "Verstanden")}</button>
+      </div>
+    </div>
+  );
+}
 const normText = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 // «1. Haz esto 2. Haz aquello» → pasos. Si no hay numeración, el texto completo es un paso.
 function toSteps(text) {
