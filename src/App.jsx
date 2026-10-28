@@ -9,7 +9,6 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
 import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown, Clock, MessageCircle } from "lucide-react";
-import { supabase } from "./lib/supabaseClient";
 import { sb } from "./lib/storagePolyfill";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
@@ -2307,7 +2306,6 @@ var qrcode = function() {
 // Cuando quieras activar el cobro real con Stripe para el upgrade a Residente, cambia esto a true e integra el cobro.
 const SHOW_PLANS = false;
 
-const DEFAULT_RESIDENT_CODE = "XTUDY2026";
 // La administración del Club vive ahora en el panel principal (www.xtudyclub.com/admin/club). Cuando
 // VITE_UNIFIED_ADMIN_URL está configurada, «Acceso administrador» lleva allá; sin ella, sigue el administrador anterior.
 const UNIFIED_ADMIN_URL = (import.meta.env.VITE_UNIFIED_ADMIN_URL || `${(import.meta.env.VITE_PLATFORM_URL || "https://www.xtudyclub.com").replace(/\/$/, "")}/admin/club`).trim();
@@ -2531,35 +2529,6 @@ function getReservationUrl(phone) {
 
 // Sube el logo de un restaurante al espacio de almacenamiento y regresa el link
 // público para guardarlo. Solo funciona si quien lo llama tiene sesión de admin.
-async function uploadRestaurantLogo(file, restaurantId) {
-  if (!file) return null;
-  if (!file.type.startsWith("image/")) {
-    alert("Ese archivo no es una imagen. Sube un JPG, PNG o similar.");
-    return null;
-  }
-  if (file.size > 3 * 1024 * 1024) {
-    alert("La imagen pesa demasiado (máximo 3MB). Intenta con una más ligera.");
-    return null;
-  }
-  const ext = file.name.split(".").pop();
-  const path = `${restaurantId}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("restaurant-logos").upload(path, file, { upsert: true });
-  if (error) {
-    console.error("Error subiendo logo:", error);
-    alert("No se pudo subir la imagen. Revisa tu conexión e intenta de nuevo.");
-    return null;
-  }
-  const { data } = supabase.storage.from("restaurant-logos").getPublicUrl(path);
-  return data?.publicUrl || null;
-}
-
-function genMemberId() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let id = "";
-  for (let i = 0; i < 7; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return `XT-${id}`;
-}
-
 function QRCode({ value, size = 140 }) {
   const data = useMemo(() => {
     try {
@@ -2608,33 +2577,15 @@ function persist(fn) {
 
 // Estas 3 funciones usan funciones seguras en Supabase (RPC) en vez de leer
 // la tabla directamente, para no exponer todas las cuentas ni el código real.
-async function fetchAccountByEmail(email) {
+// Entrar con el correo: lo resuelve el servidor del sitio (el navegador ya no lee cuentas de Supabase directamente).
+async function loginByEmail(email) {
   try {
-    const { data, error } = await sb(() => supabase.rpc("get_account_by_email", { p_email: email }));
-    if (error || !data) return null;
-    return data;
+    const res = await fetch(`${PLATFORM_URL}/api/club/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+    const j = await res.json().catch(() => ({}));
+    if (res.ok && j.account) return { status: "ok", account: j.account };
+    return { status: j.status || (res.status === 404 ? "not_found" : "error") };
   } catch {
-    return null;
-  }
-}
-
-async function fetchMemberById(memberId) {
-  try {
-    const { data, error } = await sb(() => supabase.rpc("get_member_by_id", { p_member_id: memberId }));
-    if (error || !data) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-async function checkResidentCode(code) {
-  try {
-    const { data, error } = await sb(() => supabase.rpc("check_resident_code", { p_code: code }));
-    if (error) return false;
-    return !!data;
-  } catch {
-    return false;
+    return { status: "error" };
   }
 }
 
@@ -2649,17 +2600,8 @@ export default function ClubDescuentos() {
   const [formError, setFormError] = useState("");
   // Registro del equipo Xtudy (empleado o colaborador): el código lo valida el servidor y decide el tipo.
   const [team, setTeam] = useState({ open: false, code: "", kind: null, status: "", busy: false });
-  const [residentAccessCode, setResidentAccessCode] = useState(DEFAULT_RESIDENT_CODE);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [allAccounts, setAllAccounts] = useState([]);
-  const [redemptions, setRedemptions] = useState([]);
-  const [waClicks, setWaClicks] = useState([]);
-  const [newRest, setNewRest] = useState({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false, logoUrl: "" });
-  const [newUni, setNewUni] = useState({ name: "", tipo: "Pública" });
 
   const [lang, setLangState] = useState("es");
   const setLang = (l) => {
@@ -2691,12 +2633,8 @@ export default function ClubDescuentos() {
 
         const unis = await storageGet("universities-list", true);
         if (unis) { try { setUniversities(JSON.parse(unis)); } catch {} }
-        else persist(() => window.storage.set("universities-list", JSON.stringify(DEFAULT_UNIVERSITIES), true));
 
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) setAdminUnlocked(true);
-        } catch {}
+        // El administrador anterior de esta app se retiró: el Club se administra en el panel de Xtudy (/admin/club).
 
         // QR anteriores (llevaban el número de miembro): se llevan a la validación de comercios de Xtudy, donde un empleado
         // autorizado ve el estado actual y confirma el canje. Abrirlos no canjea nada.
@@ -2706,21 +2644,8 @@ export default function ClubDescuentos() {
         }
 
         if (myEmail) {
-          const acc = await fetchAccountByEmail(myEmail);
-          if (acc) {
-            try {
-              let parsedAcc = JSON.parse(acc);
-              if (!parsedAcc.memberId) {
-                parsedAcc = { ...parsedAcc, memberId: genMemberId() };
-                persist(async () => {
-                  await window.storage.updateOnly(`account:${parsedAcc.email}`, JSON.stringify(parsedAcc), true);
-                  await window.storage.insertOnly(`member:${parsedAcc.memberId}`, JSON.stringify({ memberId: parsedAcc.memberId, name: parsedAcc.name, email: parsedAcc.email, tier: parsedAcc.tier }), true);
-                });
-              }
-              setAccount(parsedAcc);
-              setView("dashboard");
-            } catch {}
-          }
+          const r = await loginByEmail(myEmail);
+          if (r.status === "ok") { setAccount(r.account); setView("dashboard"); }
         }
         // Desde el sitio principal (xtudyclub.com): «Iniciar sesión en Xtudy Club» abre directo el acceso de miembros
         // y el idioma elegido allá se conserva.
@@ -2737,22 +2662,6 @@ export default function ClubDescuentos() {
       }
     })();
   }, []);
-
-  // El catálogo de aliados lo administra el panel principal (que genera la lista pública sin datos de canje restringidos).
-  // Esta app ya no lo escribe: un guardado desde aquí borraría promociones y protecciones.
-  const saveRestaurants = (list) => { setRestaurants(list); };
-
-  const saveUniversities = (list) => {
-    setUniversities(list);
-    persist(() => window.storage.set("universities-list", JSON.stringify(list), true));
-  };
-
-  const updateResidentCode = (code) => {
-    const trimmed = code.trim();
-    if (!trimmed) return;
-    setResidentAccessCode(trimmed);
-    persist(() => window.storage.set("resident-access-code", trimmed, true));
-  };
 
   const checkTeamCode = async () => {
     const code = team.code.trim();
@@ -2779,23 +2688,18 @@ export default function ClubDescuentos() {
     }
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     if (!emailPattern.test(form.email.trim())) {
-      setFormError("Escribe un correo electrónico válido (ej. nombre@correo.com).");
+      setFormError(tr(lang, "Escribe un correo electrónico válido (ej. nombre@correo.com).", "Enter a valid email (e.g. name@email.com).", "Saisis un e-mail valide (ex. nom@email.com).", "Gib eine gültige E-Mail-Adresse ein (z. B. name@mail.com)."));
       return;
     }
     const phoneDigits = form.phone.replace(/\D/g, "");
     const countryInfo = COUNTRY_CODES.find((c) => c.code === form.countryCode);
     if (countryInfo && countryInfo.digits) {
       if (phoneDigits.length !== countryInfo.digits) {
-        setFormError(`El teléfono debe tener ${countryInfo.digits} dígitos para ${countryInfo.name}.`);
+        setFormError(tr(lang, `El teléfono debe tener ${countryInfo.digits} dígitos para ${countryInfo.name}.`, `The phone number must have ${countryInfo.digits} digits for ${countryInfo.name}.`, `Le numéro doit comporter ${countryInfo.digits} chiffres pour ${countryInfo.name}.`, `Die Telefonnummer muss für ${countryInfo.name} ${countryInfo.digits} Ziffern haben.`));
         return;
       }
     } else if (phoneDigits.length < 6 || phoneDigits.length > 15) {
-      setFormError("Escribe un número de teléfono válido.");
-      return;
-    }
-    const existing = await fetchAccountByEmail(form.email.trim().toLowerCase());
-    if (existing) {
-      setFormError("duplicate-email");
+      setFormError(tr(lang, "Escribe un número de teléfono válido.", "Enter a valid phone number.", "Saisis un numéro de téléphone valide.", "Gib eine gültige Telefonnummer ein."));
       return;
     }
     if (isTeam || isPro) {
@@ -2829,44 +2733,31 @@ export default function ClubDescuentos() {
       }
       return;
     }
-    if (form.isXtudy === "si") {
-      const codeOk = await checkResidentCode(form.residentCode);
-      if (!codeOk) {
-        setFormError("El código de residente Xtudy no es correcto. Verifícalo con administración.");
+    // Estudiante: la cuenta la crea el servidor (el código de residentes se valida allá, nunca en el navegador).
+    try {
+      const r = await fetch(`${PLATFORM_URL}/api/club/register`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: `${form.countryCode === "other" ? "" : form.countryCode + " "}${form.phone.trim()}`,
+          studentId: form.studentId.trim(), university: form.university, isXtudy: form.isXtudy, residentCode: form.isXtudy === "si" ? form.residentCode : "" }) });
+      const j = await r.json().catch(() => ({}));
+      if (j.status === "ok" && j.account) {
+        setAccount(j.account);
+        setView("dashboard");
+        persist(() => window.storage.set("my-email", j.account.email, false));
         return;
       }
+      if (j.status === "exists") { setFormError("duplicate-email"); return; }
+      if (j.status === "resident_code") { setFormError(tr(lang, "El código de residente Xtudy no es correcto. Verifícalo con administración.", "The Xtudy resident code isn't correct. Check it with administration.", "Le code résident Xtudy n'est pas correct. Vérifie-le auprès de l'administration.", "Der Xtudy-Bewohner-Code ist nicht korrekt. Prüfe ihn bei der Verwaltung.")); return; }
+      if (j.status === "too_many") { setFormError(tr(lang, ...TEAM_CODE_MSG.too_many)); return; }
+      setFormError(j.status === "bad_request"
+        ? tr(lang, "Revisa tus datos y vuelve a intentar.", "Check your details and try again.", "Vérifie tes informations et réessaie.", "Prüfe deine Angaben und versuche es erneut.")
+        : tr(lang, "No pudimos crear tu cuenta en este momento. Intenta de nuevo.", "We couldn't create your account right now. Please try again.", "Impossible de créer ton compte pour le moment. Réessaie.", "Dein Konto konnte gerade nicht erstellt werden. Bitte versuche es erneut."));
+    } catch {
+      setFormError(tr(lang, "Sin conexión. Revisa tu internet e intenta de nuevo.", "No connection. Check your internet and try again.", "Pas de connexion. Vérifie ton internet et réessaie.", "Keine Verbindung. Prüfe dein Internet und versuche es erneut."));
     }
-    const newAccount = {
-      name: form.name.trim(),
-      email: form.email.trim().toLowerCase(),
-      phone: `${form.countryCode === "other" ? "" : form.countryCode + " "}${form.phone.trim()}`,
-      studentId: form.studentId.trim(),
-      university: form.university,
-      isXtudy: form.isXtudy,
-      tier: form.isXtudy === "si" ? "resident" : "guest",
-      createdAt: new Date().toISOString(),
-      memberId: genMemberId(),
-      acceptedTermsAt: new Date().toISOString(),
-    };
-    // Avanza de inmediato: nunca deja al usuario atorado esperando la red.
-    setAccount(newAccount);
-    setView("dashboard");
-    persist(async () => {
-      await window.storage.insertOnly(`account:${newAccount.email}`, JSON.stringify(newAccount), true);
-      await window.storage.insertOnly(`member:${newAccount.memberId}`, JSON.stringify({ memberId: newAccount.memberId, name: newAccount.name, email: newAccount.email, tier: newAccount.tier }), true);
-      await window.storage.set("my-email", newAccount.email, false);
-    });
   };
 
-  const changeTier = (tierId) => {
-    if (!account) return;
-    const updated = { ...account, tier: tierId };
-    setAccount(updated);
-    persist(async () => {
-      await window.storage.updateOnly(`account:${account.email}`, JSON.stringify(updated), true);
-      if (updated.memberId) await window.storage.updateOnly(`member:${updated.memberId}`, JSON.stringify({ memberId: updated.memberId, name: updated.name, email: updated.email, tier: updated.tier }), true);
-    });
-  };
+  // Cambiar de nivel desde el navegador ya no es posible (lo decide el servidor); se conserva la firma por compatibilidad.
+  const changeTier = () => {};
 
   const logout = () => {
     persist(() => window.storage.delete("my-email", false));
@@ -2881,133 +2772,24 @@ export default function ClubDescuentos() {
     setLoginError("");
     const email = loginEmail.trim().toLowerCase();
     if (!email) {
-      setLoginError("Escribe el correo con el que te registraste.");
+      setLoginError(tr(lang, "Escribe el correo con el que te registraste.", "Enter the email you signed up with.", "Saisis l'e-mail avec lequel tu t'es inscrit.", "Gib die E-Mail ein, mit der du dich registriert hast."));
       return;
     }
     (async () => {
-      const val = await fetchAccountByEmail(email);
-      if (!val) {
-        setLoginError("No encontramos una cuenta con ese correo. ¿Ya te registraste?");
+      const r = await loginByEmail(email);
+      if (r.status === "ok") {
+        setAccount(r.account);
+        setView("dashboard");
+        persist(() => window.storage.set("my-email", r.account.email, false));
         return;
       }
-      try {
-        const parsedAcc = JSON.parse(val);
-        setAccount(parsedAcc);
-        setView("dashboard");
-        persist(() => window.storage.set("my-email", parsedAcc.email, false));
-      } catch {
-        setLoginError("Ocurrió un problema al leer tu cuenta. Intenta de nuevo.");
-      }
+      setLoginError(r.status === "not_found"
+        ? tr(lang, "No encontramos una cuenta con ese correo. ¿Ya te registraste?", "We couldn't find an account with that email. Have you signed up?", "Aucun compte avec cet e-mail. Tu t'es déjà inscrit ?", "Kein Konto mit dieser E-Mail gefunden. Hast du dich schon registriert?")
+        : r.status === "too_many" ? tr(lang, ...TEAM_CODE_MSG.too_many)
+        : tr(lang, "Ocurrió un problema al leer tu cuenta. Intenta de nuevo.", "There was a problem reading your account. Please try again.", "Un problème est survenu en lisant ton compte. Réessaie.", "Beim Lesen deines Kontos ist ein Problem aufgetreten. Bitte versuche es erneut."));
     })();
   };
 
-  const loadAdminData = () => {
-    persist(async () => {
-      try {
-        const savedCode = await storageGet("resident-access-code", true);
-        if (savedCode) setResidentAccessCode(savedCode);
-      } catch {}
-      try {
-        const idx = await window.storage.list("account:", true);
-        const keys = idx?.keys || [];
-        const accs = [];
-        for (const k of keys) {
-          const val = await storageGet(k, true);
-          if (val) { try { accs.push(JSON.parse(val)); } catch {} }
-        }
-        setAllAccounts(accs);
-      } catch { setAllAccounts([]); }
-      try {
-        const ridx = await window.storage.list("redemption:", true);
-        const rkeys = ridx?.keys || [];
-        const reds = [];
-        for (const k of rkeys) {
-          const val = await storageGet(k, true);
-          if (val) { try { reds.push({ ...JSON.parse(val), _key: k }); } catch {} }
-        }
-        reds.sort((a, b) => new Date(b.at) - new Date(a.at));
-        setRedemptions(reds);
-      } catch { setRedemptions([]); }
-      try {
-        const widx = await window.storage.list("wa_click:", true);
-        const wkeys = widx?.keys || [];
-        const clicks = [];
-        for (const k of wkeys) {
-          const val = await storageGet(k, true);
-          if (val) { try { clicks.push({ ...JSON.parse(val), _key: k }); } catch {} }
-        }
-        clicks.sort((a, b) => new Date(b.at) - new Date(a.at));
-        setWaClicks(clicks);
-      } catch { setWaClicks([]); }
-    });
-  };
-
-  useEffect(() => {
-    if (view !== "admin" || !adminUnlocked) return;
-    const interval = setInterval(() => {
-      loadAdminData();
-    }, 15000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, adminUnlocked]);
-
-  const submitAdminLogin = async () => {
-    setFormError("");
-    try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: adminEmail.trim(),
-        password: adminPassword,
-      });
-      if (authError) {
-        setFormError("Correo o contraseña incorrectos.");
-        return;
-      }
-      setAdminUnlocked(true);
-      setView("admin");
-      loadAdminData();
-    } catch {
-      setFormError("Ocurrió un problema al iniciar sesión. Intenta de nuevo.");
-    }
-  };
-
-  const removeAccount = (acc) => {
-    if (!window.confirm(`¿Seguro que quieres borrar el registro de ${acc.name} (${acc.email})? Esto no se puede deshacer.`)) return;
-    setAllAccounts((prev) => prev.filter((a) => a.email !== acc.email));
-    persist(async () => {
-      await window.storage.delete(`account:${acc.email}`, true);
-      if (acc.memberId) await window.storage.delete(`member:${acc.memberId}`, true);
-    });
-  };
-
-  const removeRedemption = (item) => {
-    if (!window.confirm(`¿Borrar este canje de ${item.name || item.email} en ${item.restaurant}?`)) return;
-    setRedemptions((prev) => prev.filter((r) => r._key !== item._key));
-    persist(() => window.storage.delete(item._key, true));
-  };
-
-  const removeWaClick = (item) => {
-    if (!window.confirm(`¿Borrar este clic de ${item.name || item.email} en ${item.restaurant}?`)) return;
-    setWaClicks((prev) => prev.filter((c) => c._key !== item._key));
-    persist(() => window.storage.delete(item._key, true));
-  };
-
-  const addRestaurant = () => {
-    if (!newRest.name.trim() || !newRest.code.trim()) return;
-    const toSave = { ...newRest };
-    if (!toSave.needsReservation) toSave.reservationPhone = "";
-    saveRestaurants([...restaurants, { id: `r${Date.now()}`, ...toSave }]);
-    setNewRest({ name: "", category: "", discountPercent: "", code: "", tier: "guest", address: "", isFranchise: false, branch: "", mapsLink: "", promoHours: { es: "", en: "", fr: "", de: "" }, reservationPhone: "", reservationRequired: true, needsReservation: false, logoUrl: "" });
-  };
-  const removeRestaurant = (id) => saveRestaurants(restaurants.filter((r) => r.id !== id));
-  const updateRestaurantTier = (id, tier) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, tier } : r)));
-  const updateRestaurant = (id, patch) => saveRestaurants(restaurants.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-
-  const addUniversity = () => {
-    if (!newUni.name.trim()) return;
-    saveUniversities([...universities.slice(0, -1), { ...newUni }, universities[universities.length - 1]]);
-    setNewUni({ name: "", tipo: "Pública" });
-  };
-  const removeUniversity = (name) => saveUniversities(universities.filter((u) => u.name !== name));
 
   if (loading) {
     return (
@@ -3072,7 +2854,7 @@ export default function ClubDescuentos() {
       <AppHeader />
 
       {view === "landing" && (
-        <Landing onStart={() => setView("register")} onAdmin={() => { if (UNIFIED_ADMIN_URL) { window.location.assign(UNIFIED_ADMIN_URL); return; } setView("admin-login"); }} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
+        <Landing onStart={() => setView("register")} onAdmin={() => window.location.assign(UNIFIED_ADMIN_URL)} onLogin={() => { setLoginError(""); setLoginEmail(""); setView("login"); }} />
       )}
 
       {view === "register" && (
@@ -3087,21 +2869,7 @@ export default function ClubDescuentos() {
         <Dashboard account={account} restaurants={restaurants} onChangeTier={changeTier} onLogout={logout} />
       )}
 
-      {view === "admin-login" && (
-        <AdminLogin email={adminEmail} setEmail={setAdminEmail} password={adminPassword} setPassword={setAdminPassword} onSubmit={submitAdminLogin} error={formError} onBack={() => { setFormError(""); setView("landing"); }} />
-      )}
 
-      {view === "admin" && adminUnlocked && (
-        <AdminPanel
-          accounts={allAccounts} restaurants={restaurants} universities={universities} redemptions={redemptions} waClicks={waClicks}
-          newRest={newRest} setNewRest={setNewRest} onAddRest={addRestaurant} onRemoveRest={removeRestaurant} onUpdateRestTier={updateRestaurantTier} onUpdateRest={updateRestaurant}
-          newUni={newUni} setNewUni={setNewUni} onAddUni={addUniversity} onRemoveUni={removeUniversity}
-          onRemoveAccount={removeAccount} onRemoveRedemption={removeRedemption} onRemoveWaClick={removeWaClick}
-          residentAccessCode={residentAccessCode} onUpdateResidentCode={updateResidentCode}
-          onRefresh={loadAdminData}
-          onBack={() => setView("landing")}
-        />
-      )}
     </div>
     </LangContext.Provider>
   );
@@ -3686,7 +3454,7 @@ function BenefitDetails({ r, promos, initialId, mode, lang, level, account, prel
               {p.validUntil && <p style={styles.modalText}>{T("Vigente hasta", "Valid until", "Valable jusqu'au", "Gültig bis")} {p.validUntil}</p>}
               {partnerKind(r) !== "online" && r.needsReservation !== false && getReservationUrl(r.reservationPhone) && (
                 <a href={getReservationUrl(r.reservationPhone)} target="_blank" rel="noopener noreferrer" style={styles.whatsappBtn}
-                  onClick={() => { window.storage.insertOnly(`wa_click:${r.id}:${Date.now()}`, JSON.stringify({ restaurant: r.name, name: account.name, email: account.email, at: new Date().toISOString() }), true).catch(() => {}); }}>
+                  onClick={() => { post("/api/club/wa-click", { email: account.email, memberId: account.memberId, id: r.id }).catch(() => {}); }}>
                   <MessageCircle size={15} /> {r.reservationRequired === false ? T("Reservación recomendada · WhatsApp", "Reservation recommended · WhatsApp", "Réservation recommandée · WhatsApp", "Reservierung empfohlen · WhatsApp") : T("Se requiere reservación · WhatsApp", "Reservation required · WhatsApp", "Réservation requise · WhatsApp", "Reservierung erforderlich · WhatsApp")}
                 </a>
               )}
@@ -3763,9 +3531,10 @@ function useMember(account) {
     setFailed(false);
     // Perfil y detalles de todos los beneficios a los que tiene acceso en una sola petición: abrir «Detalles» o «Mostrar QR»
     // después no espera al servidor. Al actualizar (refresh) se conserva lo anterior hasta que llega lo nuevo.
-    post("/api/club/me", { email: account.email, memberId: account.memberId, include: ["benefits"], lang })
-      .then((r) => { if (!alive) return; if (r.ok) setMe(r.j); else setFailed(true); })
-      .catch(() => { if (alive) setFailed(true); });
+    const load = (attempt) => post("/api/club/me", { email: account.email, memberId: account.memberId, include: ["benefits"], lang })
+      .then((r) => { if (!alive) return; if (r.ok) setMe(r.j); else if (r.status >= 500 && attempt === 0) setTimeout(() => alive && load(1), 1200); else setFailed(true); })
+      .catch(() => { if (!alive) return; if (attempt === 0) setTimeout(() => alive && load(1), 1200); else setFailed(true); });
+    load(0);
     return () => { alive = false; };
   }, [account.email, account.memberId, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   return { me, failed, refresh: () => setTick((t) => t + 1) };
@@ -4150,6 +3919,16 @@ function ReferralBox({ referral, lang }) {
   );
 }
 
+// Si no se pudo confirmar el nivel: tarjeta neutra con el nombre (sin nivel, distinción ni permisos provisionales).
+function NeutralCard({ account, lang }) {
+  return (
+    <div style={{ ...styles.membershipCardBig, background: "#fff" }}>
+      <div style={{ ...styles.cardTop, position: "relative" }}><img src={WORDMARK_BLUE_DATA} alt="Xtudy" style={styles.cardBrandImg} /></div>
+      <div style={styles.cardName}>{account.name}</div>
+      <div style={styles.cardTierRow}><span style={styles.cardTierLabel}>{tr(lang, "Nivel actual", "Current tier", "Niveau actuel", "Aktuelle Stufe")}</span><span style={styles.cardTierValue}>{tr(lang, "Por confirmar", "To be confirmed", "À confirmer", "Wird bestätigt")}</span></div>
+    </div>
+  );
+}
 // Mientras el servidor confirma el nivel y la distinción: tarjeta neutra (sin nivel ni textos de permisos).
 function CardSkeleton({ lang }) {
   return (
@@ -4170,10 +3949,10 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const { me, failed, refresh } = useMember(account);
   // Hasta que el servidor confirma nivel y distinción no se muestra ninguna membresía (ni permisos) provisional.
   const loadingMe = !me && !failed;
-  const level = me ? me.level : (account.tier === "resident" ? "resident" : "guest");
+  const level = me ? me.level : "guest";
   // Equipo Xtudy (empleado o colaborador): lo decide el servidor; no es un permiso del panel ni lo hace residente.
   const team = me && (me.team === "employee" || me.team === "collaborator") ? me.team : null;
-  const resident = me ? me.resident : account.tier === "resident";
+  const resident = me ? me.resident : false;
   const gold = Boolean(me && me.gold);
   // Mientras el servidor responde, una cuenta del equipo no se muestra como «Explorador».
   const professional = Boolean(me && me.professional);
@@ -4214,13 +3993,13 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
       </div>
 
-      {loadingMe ? <CardSkeleton lang={lang} /> : (
+      {loadingMe ? <CardSkeleton lang={lang} /> : !me ? <NeutralCard account={account} lang={lang} /> : (
         <div className={celebration && celebration.flip ? "xc-vip-reveal" : undefined}>
           <MemberCard account={account} lang={lang} levelId={cardTier} vip={gold} teamToo={residentLevel ? team : null} />
         </div>
       )}
       {failed && !me && (
-        <p role="alert" style={styles.loadNotice}>{tr(lang, "No pudimos confirmar tu nivel en este momento. Mostramos tus beneficios básicos.", "We couldn't confirm your tier right now. We're showing your basic benefits.", "Impossible de confirmer ton niveau pour le moment. Nous affichons tes avantages de base.", "Deine Stufe konnte gerade nicht bestätigt werden. Wir zeigen deine Basisvorteile.")}{" "}
+        <p role="alert" style={styles.loadNotice}>{tr(lang, "No pudimos confirmar tu nivel en este momento. Mostramos solo los beneficios para todos.", "We couldn't confirm your tier right now. We're only showing benefits open to everyone.", "Impossible de confirmer ton niveau pour le moment. Nous n'affichons que les avantages ouverts à tous.", "Deine Stufe konnte gerade nicht bestätigt werden. Wir zeigen nur Vorteile für alle.")}{" "}
           <button type="button" style={styles.vipLink} onClick={refresh}>{tr(lang, "Reintentar", "Retry", "Réessayer", "Erneut versuchen")}</button></p>
       )}
       {gold && (
@@ -4301,431 +4080,6 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function AdminLogin({ email, setEmail, password, setPassword, onSubmit, error, onBack }) {
-  return (
-    <div style={styles.centerWrap}>
-      <div style={styles.panel}>
-        <button style={styles.backLink} onClick={onBack}><X size={16} /></button>
-        <div style={styles.eyebrow}>ACCESO RESTRINGIDO</div>
-        <h2 style={styles.h2}>Panel de administrador</h2>
-        <p style={styles.formSub}>Solo para uso interno del equipo Xtudy.</p>
-        <div style={styles.form}>
-          <label style={styles.label}>Correo
-            <input style={styles.input} type="email" placeholder="ejemplo@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </label>
-          <label style={styles.label}>Contraseña
-            <input style={styles.input} type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </label>
-          {error && <div style={styles.errorText}>{error}</div>}
-          <button style={styles.ctaBtn} onClick={onSubmit}>Entrar</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminPanel({ accounts, restaurants, universities, redemptions, waClicks, newRest, setNewRest, onAddRest, onRemoveRest, onUpdateRestTier, onUpdateRest, newUni, setNewUni, onAddUni, onRemoveUni, onRemoveAccount, onRemoveRedemption, onRemoveWaClick, residentAccessCode, onUpdateResidentCode, onRefresh, onBack }) {
-  const [editingRestId, setEditingRestId] = useState(null);
-  const [editDraft, setEditDraft] = useState({});
-  const [uploadingLogoNew, setUploadingLogoNew] = useState(false);
-  const [uploadingLogoEdit, setUploadingLogoEdit] = useState(false);
-
-  const handleNewLogoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingLogoNew(true);
-    const url = await uploadRestaurantLogo(file, `new-${Date.now()}`);
-    if (url) setNewRest({ ...newRest, logoUrl: url });
-    setUploadingLogoNew(false);
-  };
-
-  const handleEditLogoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingLogoEdit(true);
-    const url = await uploadRestaurantLogo(file, editingRestId || `edit-${Date.now()}`);
-    if (url) setEditDraft({ ...editDraft, logoUrl: url });
-    setUploadingLogoEdit(false);
-  };
-
-  const startEditRest = (r) => {
-    setEditingRestId(r.id);
-    setEditDraft({
-      name: r.name,
-      category: r.category,
-      code: r.code,
-      address: r.address || "",
-      discountPercent: r.discountPercent ?? "",
-      discount: r.discountPercent ? "" : (r.discount || ""),
-      isFranchise: r.isFranchise || false,
-      mapsLink: r.mapsLink || "",
-      promoHours: typeof r.promoHours === "string"
-        ? { es: r.promoHours, en: "", fr: "", de: "" }
-        : (r.promoHours || { es: "", en: "", fr: "", de: "" }),
-      reservationPhone: r.reservationPhone || "",
-      reservationRequired: r.reservationRequired !== undefined ? r.reservationRequired : true,
-      needsReservation: r.needsReservation !== undefined ? r.needsReservation : !!(r.reservationPhone && r.reservationPhone.trim()),
-      logoUrl: r.logoUrl || "",
-      branches: getBranches(r).length > 0
-        ? getBranches(r).map((b) => ({ ...b, hours: typeof b.hours === "string" ? { es: b.hours, en: "", fr: "", de: "" } : (b.hours || { es: "", en: "", fr: "", de: "" }) }))
-        : [{ name: "", mapsLink: "", hours: { es: "", en: "", fr: "", de: "" } }],
-    });
-  };
-  const saveEditRest = (id) => {
-    const patch = { ...editDraft };
-    if (patch.discountPercent === "") delete patch.discountPercent;
-    if (!patch.needsReservation) patch.reservationPhone = "";
-    if (patch.isFranchise) {
-      patch.branches = patch.branches.filter((b) => b.name.trim() || (b.mapsLink || "").trim() || (b.address || "").trim());
-      patch.branch = patch.branches[0]?.name || "";
-    } else {
-      patch.branches = [];
-      patch.branch = "";
-    }
-    onUpdateRest(id, patch);
-    setEditingRestId(null);
-  };
-  const updateBranchField = (i, field, value) => {
-    setEditDraft((prev) => {
-      const branches = [...prev.branches];
-      branches[i] = { ...branches[i], [field]: value };
-      return { ...prev, branches };
-    });
-  };
-  const updateBranchHours = (i, hourLang, value) => {
-    setEditDraft((prev) => {
-      const branches = [...prev.branches];
-      const currentHours = typeof branches[i].hours === "object" && branches[i].hours ? branches[i].hours : { es: "", en: "", fr: "", de: "" };
-      branches[i] = { ...branches[i], hours: { ...currentHours, [hourLang]: value } };
-      return { ...prev, branches };
-    });
-  };
-  const addBranchRow = () => setEditDraft((prev) => ({ ...prev, branches: [...prev.branches, { name: "", mapsLink: "", hours: { es: "", en: "", fr: "", de: "" } }] }));
-  const removeBranchRow = (i) => setEditDraft((prev) => ({ ...prev, branches: prev.branches.filter((_, idx) => idx !== i) }));
-
-  const [codeInput, setCodeInput] = useState(residentAccessCode);
-  useEffect(() => { setCodeInput(residentAccessCode); }, [residentAccessCode]);
-  const counts = TIERS.map((t) => ({ ...t, count: accounts.filter((a) => a.tier === t.id).length, adminName: TIER_NAME_ES[t.id] }));
-
-  const byRestaurant = {};
-  const byUser = {};
-  (redemptions || []).forEach((r) => {
-    byRestaurant[r.restaurant] = (byRestaurant[r.restaurant] || 0) + 1;
-    const key = r.email || "sin identificar";
-    byUser[key] = (byUser[key] || 0) + 1;
-  });
-
-  const waByRestaurant = {};
-  (waClicks || []).forEach((c) => {
-    waByRestaurant[c.restaurant] = (waByRestaurant[c.restaurant] || 0) + 1;
-  });
-
-  const downloadCsv = (filename, rows) => {
-    const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const exportAccounts = () => {
-    const rows = [["Nombre", "Correo", "Teléfono", "Matrícula/ID", "Universidad", "Cliente Xtudy", "Nivel", "Fecha de registro"]];
-    accounts.forEach((a) => rows.push([a.name, a.email, a.phone, a.studentId || "", a.university, a.isXtudy === "si" ? "Sí" : "No", TIER_NAME_ES[a.tier] || a.tier, a.createdAt]));
-    downloadCsv("registros_xtudy_club.csv", rows);
-  };
-
-  const exportRedemptions = () => {
-    const rows = [["Estudiante", "Correo", "Restaurante", "Nivel", "Fecha y hora"]];
-    (redemptions || []).forEach((r) => rows.push([r.name, r.email, r.restaurant, TIER_NAME_ES[r.tier] || r.tier, r.at]));
-    downloadCsv("canjes_xtudy_club.csv", rows);
-  };
-
-  return (
-    <div className="page-container" style={styles.dashWrap}>
-      <div style={styles.dashHeader}>
-        <div><div style={styles.eyebrow}>PANEL INTERNO</div><h2 style={styles.h2}>Administración</h2></div>
-        <button style={styles.exportBtn} onClick={onRefresh}>⟳ Actualizar</button>
-        <button style={styles.logoutBtn} onClick={onBack}><X size={15} /> Cerrar</button>
-      </div>
-
-      <div style={styles.exportRow}>
-        <button style={styles.exportBtn} onClick={exportAccounts}>⬇ Exportar registros (CSV)</button>
-        <button style={styles.exportBtn} onClick={exportRedemptions}>⬇ Exportar canjes (CSV)</button>
-      </div>
-
-      <h3 style={styles.sectionTitle}>Código de acceso para residentes Xtudy</h3>
-      <p style={styles.formSub}>Los estudiantes que viven en Xtudy usan este código al registrarse para obtener el nivel Residente gratis, sin pagar. Cámbialo cuando quieras.</p>
-      <div style={styles.adminAddForm}>
-        <input style={styles.input} value={codeInput} onChange={(e) => setCodeInput(e.target.value)} placeholder="Código actual" />
-        <button style={styles.exportBtn} onClick={() => onUpdateResidentCode(codeInput)}>Guardar código</button>
-      </div>
-
-      <h3 style={styles.sectionTitle}>Suscriptores por nivel</h3>
-      <div style={styles.adminStatsRow}>
-        {counts.map((c) => (
-          <div key={c.id} style={styles.adminStatCard}>
-            <span style={styles.adminStatNum}>{c.count}</span>
-            <span style={styles.adminStatLabel}>{c.adminName}</span>
-          </div>
-        ))}
-      </div>
-
-      <h3 style={styles.sectionTitle}>Registros ({accounts.length})</h3>
-      <div style={styles.adminTableWrap}>
-        {accounts.length === 0 && <p style={styles.emptyText}>Todavía no hay registros.</p>}
-        {accounts.map((a) => (
-          <div key={a.email} style={styles.adminRow}>
-            <div>
-              <div style={styles.adminRowName}>{a.name}</div>
-              <div style={styles.adminRowMeta}>{a.email} · {a.phone} · {a.studentId ? `ID: ${a.studentId} · ` : ""}{a.university} · Xtudy: {a.isXtudy === "si" ? "Sí" : "No"}</div>
-            </div>
-            <span style={styles.adminRowTier}>{TIER_NAME_ES[a.tier] || a.tier}</span>
-            <button style={styles.removeBtn} onClick={() => onRemoveAccount(a)} title="Borrar este registro"><X size={14} /></button>
-          </div>
-        ))}
-      </div>
-
-      <h3 style={styles.sectionTitle}>Restaurantes ({restaurants.length})</h3>
-      <div style={styles.adminAddForm}>
-        <input style={styles.input} placeholder="Nombre" value={newRest.name} onChange={(e) => setNewRest({ ...newRest, name: e.target.value })} />
-        <input style={styles.input} placeholder="Categoría" value={newRest.category} onChange={(e) => setNewRest({ ...newRest, category: e.target.value })} />
-        <input style={styles.input} placeholder="% de descuento (solo el número, ej. 15)" type="number" value={newRest.discountPercent} onChange={(e) => setNewRest({ ...newRest, discountPercent: e.target.value })} />
-        <input style={styles.input} placeholder="Código" value={newRest.code} onChange={(e) => setNewRest({ ...newRest, code: e.target.value })} />
-        <input style={styles.input} placeholder="Link de Google Maps" value={newRest.mapsLink} onChange={(e) => setNewRest({ ...newRest, mapsLink: e.target.value })} />
-        <div style={styles.logoUploadRow}>
-          {newRest.logoUrl && <img src={newRest.logoUrl} alt="Logo" style={styles.logoPreview} />}
-          <label style={styles.logoUploadBtn}>
-            {uploadingLogoNew ? "Subiendo…" : newRest.logoUrl ? "Cambiar logo" : "Subir logo"}
-            <input type="file" accept="image/*" onChange={handleNewLogoUpload} style={{ display: "none" }} disabled={uploadingLogoNew} />
-          </label>
-          {newRest.logoUrl && (
-            <button type="button" style={styles.removeLogoBtn} onClick={() => setNewRest({ ...newRest, logoUrl: "" })}>Quitar logo</button>
-          )}
-        </div>
-        <label style={styles.franchiseCheckLabel}>
-          <input type="checkbox" checked={newRest.needsReservation} onChange={(e) => setNewRest({ ...newRest, needsReservation: e.target.checked })} />
-          ¿Este restaurante necesita reservación?
-        </label>
-        {newRest.needsReservation && (
-          <>
-            <input style={styles.input} placeholder="WhatsApp/tel. para reservar" value={newRest.reservationPhone} onChange={(e) => setNewRest({ ...newRest, reservationPhone: e.target.value })} />
-            <select style={styles.input} value={newRest.reservationRequired ? "si" : "no"} onChange={(e) => setNewRest({ ...newRest, reservationRequired: e.target.value === "si" })}>
-              <option value="si">Reservación requerida</option>
-              <option value="no">Reservación opcional/recomendada</option>
-            </select>
-          </>
-        )}
-        <select style={styles.input} value={newRest.tier} onChange={(e) => setNewRest({ ...newRest, tier: e.target.value })}>
-          {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        <label style={styles.franchiseCheckLabel}>
-          <input type="checkbox" checked={newRest.isFranchise} onChange={(e) => setNewRest({ ...newRest, isFranchise: e.target.checked })} />
-          Es franquicia (varias sucursales)
-        </label>
-        {newRest.isFranchise && (
-          <input style={styles.input} placeholder="Sucursal donde aplica (ej. Plaza Andares)" value={newRest.branch} onChange={(e) => setNewRest({ ...newRest, branch: e.target.value })} />
-        )}
-        <div style={styles.hoursGroup}>
-          <p style={styles.demoNote}>Horario de la promo (si varía por día, escríbelos separados con un punto, ej. "Lun-jue 1pm-6pm · Vie 1pm-4pm". Si dejas algún idioma vacío, se usa el de español):</p>
-          <div style={styles.hoursInputsRow}>
-            <input style={styles.input} placeholder="🇲🇽 Ej. Lun-jue 1pm-6pm · Vie 1pm-4pm" value={newRest.promoHours.es} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, es: e.target.value } })} />
-            <input style={styles.input} placeholder="🇺🇸 English, e.g. Mon-Fri 1pm-6pm" value={newRest.promoHours.en} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, en: e.target.value } })} />
-            <input style={styles.input} placeholder="🇫🇷 Français, ex. Lun-ven 13h-18h" value={newRest.promoHours.fr} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, fr: e.target.value } })} />
-            <input style={styles.input} placeholder="🇩🇪 Deutsch, z.B. Mo-Fr 13-18 Uhr" value={newRest.promoHours.de} onChange={(e) => setNewRest({ ...newRest, promoHours: { ...newRest.promoHours, de: e.target.value } })} />
-          </div>
-        </div>
-        <button style={styles.ctaBtnSmall} onClick={onAddRest}><Plus size={15} /> Agregar restaurante</button>
-      </div>
-      <div style={styles.adminTableWrap}>
-        {restaurants.map((r) => (
-          editingRestId === r.id ? (
-            <div key={r.id} style={styles.adminEditRow}>
-              <div style={styles.adminAddForm}>
-                <input style={styles.input} placeholder="Nombre" value={editDraft.name} onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })} />
-                <input style={styles.input} placeholder="Categoría" value={editDraft.category} onChange={(e) => setEditDraft({ ...editDraft, category: e.target.value })} />
-                <input style={styles.input} placeholder="% de descuento (solo el número)" type="number" value={editDraft.discountPercent} onChange={(e) => setEditDraft({ ...editDraft, discountPercent: e.target.value })} />
-                <input style={styles.input} placeholder="O texto de descuento personalizado" value={editDraft.discount} onChange={(e) => setEditDraft({ ...editDraft, discount: e.target.value })} />
-                <input style={styles.input} placeholder="Código" value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value })} />
-                <input style={styles.input} placeholder="Link de Google Maps" value={editDraft.mapsLink} onChange={(e) => setEditDraft({ ...editDraft, mapsLink: e.target.value })} />
-                <div style={styles.logoUploadRow}>
-                  {editDraft.logoUrl && <img src={editDraft.logoUrl} alt="Logo" style={styles.logoPreview} />}
-                  <label style={styles.logoUploadBtn}>
-                    {uploadingLogoEdit ? "Subiendo…" : editDraft.logoUrl ? "Cambiar logo" : "Subir logo"}
-                    <input type="file" accept="image/*" onChange={handleEditLogoUpload} style={{ display: "none" }} disabled={uploadingLogoEdit} />
-                  </label>
-                  {editDraft.logoUrl && (
-                    <button type="button" style={styles.removeLogoBtn} onClick={() => setEditDraft({ ...editDraft, logoUrl: "" })}>Quitar logo</button>
-                  )}
-                </div>
-                <label style={styles.franchiseCheckLabel}>
-                  <input type="checkbox" checked={editDraft.needsReservation} onChange={(e) => setEditDraft({ ...editDraft, needsReservation: e.target.checked })} />
-                  ¿Este restaurante necesita reservación?
-                </label>
-                {editDraft.needsReservation && (
-                  <>
-                    <input style={styles.input} placeholder="WhatsApp/tel. para reservar" value={editDraft.reservationPhone} onChange={(e) => setEditDraft({ ...editDraft, reservationPhone: e.target.value })} />
-                    <select style={styles.input} value={editDraft.reservationRequired ? "si" : "no"} onChange={(e) => setEditDraft({ ...editDraft, reservationRequired: e.target.value === "si" })}>
-                      <option value="si">Reservación requerida</option>
-                      <option value="no">Reservación opcional/recomendada</option>
-                    </select>
-                  </>
-                )}
-                <label style={styles.franchiseCheckLabel}>
-                  <input type="checkbox" checked={editDraft.isFranchise} onChange={(e) => setEditDraft({ ...editDraft, isFranchise: e.target.checked })} />
-                  Es franquicia (varias sucursales)
-                </label>
-              </div>
-              <div style={styles.hoursGroup}>
-                <p style={styles.demoNote}>Horario de la promo (si varía por día, escríbelos separados con un punto, ej. "Lun-jue 1pm-6pm · Vie 1pm-4pm". Si dejas algún idioma vacío, se usa el de español):</p>
-                <div style={styles.hoursInputsRow}>
-                  <input style={styles.input} placeholder="🇲🇽 Ej. Lun-jue 1pm-6pm · Vie 1pm-4pm" value={editDraft.promoHours.es} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, es: e.target.value } })} />
-                  <input style={styles.input} placeholder="🇺🇸 English, e.g. Mon-Fri 1pm-6pm" value={editDraft.promoHours.en} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, en: e.target.value } })} />
-                  <input style={styles.input} placeholder="🇫🇷 Français, ex. Lun-ven 13h-18h" value={editDraft.promoHours.fr} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, fr: e.target.value } })} />
-                  <input style={styles.input} placeholder="🇩🇪 Deutsch, z.B. Mo-Fr 13-18 Uhr" value={editDraft.promoHours.de} onChange={(e) => setEditDraft({ ...editDraft, promoHours: { ...editDraft.promoHours, de: e.target.value } })} />
-                </div>
-              </div>
-              {editDraft.isFranchise && (
-                <div style={styles.branchListWrap}>
-                  <p style={styles.demoNote}>Sucursales donde aplica la promo (cada una puede tener su propio horario, por idioma):</p>
-                  {editDraft.branches.map((b, i) => (
-                    <div key={i} style={styles.branchRowWrap}>
-                      <div style={styles.branchRow}>
-                        <input style={styles.input} placeholder="Nombre de la sucursal (ej. Plaza Andares)" value={b.name} onChange={(e) => updateBranchField(i, "name", e.target.value)} />
-                        <input style={styles.input} placeholder="Link de Google Maps de esta sucursal" value={b.mapsLink || ""} onChange={(e) => updateBranchField(i, "mapsLink", e.target.value)} />
-                        <button style={styles.removeBtn} onClick={() => removeBranchRow(i)} title="Quitar esta sucursal"><X size={14} /></button>
-                      </div>
-                      <div style={styles.hoursInputsRow}>
-                        <input style={styles.input} placeholder="🇲🇽 Horario ES (opcional, si es distinto)" value={b.hours?.es || ""} onChange={(e) => updateBranchHours(i, "es", e.target.value)} />
-                        <input style={styles.input} placeholder="🇺🇸 EN" value={b.hours?.en || ""} onChange={(e) => updateBranchHours(i, "en", e.target.value)} />
-                        <input style={styles.input} placeholder="🇫🇷 FR" value={b.hours?.fr || ""} onChange={(e) => updateBranchHours(i, "fr", e.target.value)} />
-                        <input style={styles.input} placeholder="🇩🇪 DE" value={b.hours?.de || ""} onChange={(e) => updateBranchHours(i, "de", e.target.value)} />
-                      </div>
-                    </div>
-                  ))}
-                  <button style={styles.exportBtn} onClick={addBranchRow}>+ Agregar otra sucursal</button>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button style={styles.ctaBtnSmall} onClick={() => saveEditRest(r.id)}><Save size={14} /> Guardar</button>
-                <button style={styles.exportBtn} onClick={() => setEditingRestId(null)}>Cancelar</button>
-              </div>
-            </div>
-          ) : (
-            <div key={r.id} style={styles.adminRow}>
-              {r.logoUrl && <img src={r.logoUrl} alt={r.name} style={styles.logoPreview} />}
-              <div>
-                <div style={styles.adminRowName}>{r.name} <span style={styles.adminRowMeta}>({r.category})</span></div>
-                <div style={styles.adminRowMeta}>
-                  {formatDiscount(r, "es")} · código: {r.code}{r.address ? ` · ${r.address}` : ""}
-                  {r.isFranchise && getBranches(r).length > 0 ? ` · ${getBranches(r).length === 1 ? "Sucursal" : getBranches(r).length + " sucursales"}: ${getBranches(r).map((b) => b.name).join(", ")}` : ""}
-                  {r.mapsLink ? " · link de Maps personalizado ✓" : ""}
-                  {trHours(r.promoHours, "es") ? ` · horario: ${trHours(r.promoHours, "es")}` : ""}
-                  {r.reservationPhone ? ` · reservación (${r.reservationRequired === false ? "opcional" : "requerida"}): ${r.reservationPhone}` : ""}
-                </div>
-              </div>
-              <select style={styles.adminTierSelect} value={r.tier} onChange={(e) => onUpdateRestTier(r.id, e.target.value)}>
-                {RESTAURANT_TIER_OPTIONS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              <button style={styles.removeBtn} onClick={() => startEditRest(r)} title="Editar este restaurante"><Pencil size={14} /></button>
-              <button style={styles.removeBtn} onClick={() => onRemoveRest(r.id)} title="Borrar este restaurante"><X size={14} /></button>
-            </div>
-          )
-        ))}
-      </div>
-
-      <h3 style={styles.sectionTitle}><QrCode size={15} /> Canjes registrados ({(redemptions || []).length})</h3>
-      <div style={styles.adminStatsRow}>
-        <div style={styles.adminStatCard}>
-          <span style={styles.adminStatNum}>{(redemptions || []).length}</span>
-          <span style={styles.adminStatLabel}>Total de canjes</span>
-        </div>
-      </div>
-      <p style={styles.demoNote}>Por restaurante:</p>
-      <div style={styles.adminTableWrap}>
-        {Object.keys(byRestaurant).length === 0 && <p style={styles.emptyText}>Aún no hay canjes registrados.</p>}
-        {Object.entries(byRestaurant).map(([name, count]) => (
-          <div key={name} style={styles.adminRow}>
-            <div style={styles.adminRowName}>{name}</div>
-            <span style={styles.adminRowTier}>{count} canje{count === 1 ? "" : "s"}</span>
-          </div>
-        ))}
-      </div>
-      <p style={styles.demoNote}>Por estudiante:</p>
-      <div style={styles.adminTableWrap}>
-        {Object.entries(byUser).map(([email, count]) => (
-          <div key={email} style={styles.adminRow}>
-            <div style={styles.adminRowName}>{email}</div>
-            <span style={styles.adminRowTier}>{count} canje{count === 1 ? "" : "s"}</span>
-          </div>
-        ))}
-      </div>
-
-      <p style={styles.demoNote}>Bitácora (más reciente primero):</p>
-      <div style={styles.adminTableWrap}>
-        {(redemptions || []).length === 0 && <p style={styles.emptyText}>Aún no hay canjes registrados.</p>}
-        {(redemptions || []).map((r, i) => (
-          <div key={r._key || i} style={styles.adminRow}>
-            <div>
-              <div style={styles.adminRowName}>{r.name || r.email} — {r.restaurant}</div>
-              <div style={styles.adminRowMeta}>{new Date(r.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })} · nivel: {TIER_NAME_ES[r.tier] || r.tier}</div>
-            </div>
-            <button style={styles.removeBtn} onClick={() => onRemoveRedemption(r)} title="Borrar este canje"><X size={14} /></button>
-          </div>
-        ))}
-      </div>
-
-      <h3 style={styles.sectionTitle}><MessageCircle size={15} /> Clics en "Reservar por WhatsApp" ({(waClicks || []).length})</h3>
-      <p style={styles.demoNote}>Por restaurante:</p>
-      <div style={styles.adminTableWrap}>
-        {Object.keys(waByRestaurant).length === 0 && <p style={styles.emptyText}>Aún no hay clics registrados.</p>}
-        {Object.entries(waByRestaurant).map(([name, count]) => (
-          <div key={name} style={styles.adminRow}>
-            <div style={styles.adminRowName}>{name}</div>
-            <span style={styles.adminRowTier}>{count} clic{count === 1 ? "" : "s"}</span>
-          </div>
-        ))}
-      </div>
-
-      <p style={styles.demoNote}>Bitácora (más reciente primero):</p>
-      <div style={styles.adminTableWrap}>
-        {(waClicks || []).length === 0 && <p style={styles.emptyText}>Aún no hay clics registrados.</p>}
-        {(waClicks || []).map((c, i) => (
-          <div key={c._key || i} style={styles.adminRow}>
-            <div>
-              <div style={styles.adminRowName}>{c.name || c.email} — {c.restaurant}</div>
-              <div style={styles.adminRowMeta}>{new Date(c.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}{c.email ? ` · ${c.email}` : ""}</div>
-            </div>
-            <button style={styles.removeBtn} onClick={() => onRemoveWaClick(c)} title="Borrar este clic"><X size={14} /></button>
-          </div>
-        ))}
-      </div>
-
-      <h3 style={styles.sectionTitle}>Universidades ({universities.length})</h3>
-      <div style={styles.adminAddForm}>
-        <input style={styles.input} placeholder="Nombre de la universidad" value={newUni.name} onChange={(e) => setNewUni({ ...newUni, name: e.target.value })} />
-        <select style={styles.input} value={newUni.tipo} onChange={(e) => setNewUni({ ...newUni, tipo: e.target.value })}>
-          <option value="Pública">Pública</option>
-          <option value="Privada">Privada</option>
-        </select>
-        <button style={styles.ctaBtnSmall} onClick={onAddUni}><Plus size={15} /> Agregar universidad</button>
-      </div>
-      <div style={styles.adminTableWrap}>
-        {universities.map((u) => (
-          <div key={u.name} style={styles.adminRow}>
-            <div style={styles.adminRowName}>{u.name} <span style={styles.adminRowMeta}>({u.tipo})</span></div>
-            {u.tipo !== "Otra" && <button style={styles.removeBtn} onClick={() => onRemoveUni(u.name)}><X size={14} /></button>}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
