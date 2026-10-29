@@ -8,7 +8,7 @@ const WORDMARK_BLUE_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaEAAA
 
 const LangContext = createContext({ lang: "es", setLang: () => {} });
 
-import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown, Clock, MessageCircle } from "lucide-react";
+import { Lock, Check, Utensils, Star, ChevronRight, X, LogOut, ShieldCheck, Plus, QrCode, Sparkles, Instagram, MapPin, Pencil, Save, Crown, Clock, MessageCircle, Gift, ChevronDown } from "lucide-react";
 import { sb } from "./lib/storagePolyfill";
 
 // --- QR Code Generator library (MIT License, Kazuhiko Arase) ---
@@ -3606,9 +3606,12 @@ function useMember(account) {
   return { me, failed, refresh: () => setTick((t) => t + 1) };
 }
 
-function CollaboratorCode({ account, lang, onDone, as = "team" }) {
-  const pro = as === "professional";
-  const [open, setOpen] = useState(false);
+// Código de ACCESO (no es el código para invitar amigos): activa una membresía en una cuenta existente. El servidor lo valida
+// (con límite de intentos) y solo AGREGA accesos: nunca quita una membresía de equipo, de profesionista ni la distinción VIP.
+//  · as="resident"      residente estudiante (código de residentes del Club)
+//  · as="professional"  residente profesionista
+//  · as="team"          equipo Xtudy: empleados y colaboradores de Xtudy (no personal de comercios aliados)
+function AccessCodeForm({ account, lang, onDone, as }) {
   const [code, setCode] = useState("");
   const [st, setSt] = useState({ state: "idle" });
   const T = (...a) => tr(lang, ...a);
@@ -3620,31 +3623,101 @@ function CollaboratorCode({ account, lang, onDone, as = "team" }) {
       const r = await post("/api/club/collaborator", { email: account.email, memberId: account.memberId, code: code.trim(), as });
       const s = r.j.status || (r.status === 429 ? "too_many" : "error");
       setSt({ state: s });
-      if (s === "ok" || s === "already") { setCode(""); onDone(); }
+      if (s === "ok" || s === "already") { setCode(""); onDone(s, as); }
     } catch { setSt({ state: "error" }); }
   };
+  const copy = {
+    resident: {
+      label: T("Código de residente Xtudy", "Xtudy resident code", "Code résident Xtudy", "Xtudy-Bewohner-Code"),
+      hint: T("Te lo da Xtudy cuando confirmas tu reserva. Conservas tu cuenta, tus datos y tus beneficios.", "Xtudy gives it to you when your booking is confirmed. You keep your account, your details and your benefits.", "Xtudy te le donne lorsque ta réservation est confirmée. Tu gardes ton compte, tes données et tes avantages.", "Xtudy gibt ihn dir, wenn deine Buchung bestätigt ist. Du behältst dein Konto, deine Daten und deine Vorteile."),
+    },
+    professional: {
+      label: T("Código de residente profesionista", "Resident professional code", "Code résident professionnel", "Code für berufstätige Bewohner"),
+      hint: T("Para residentes de Xtudy que no son estudiantes: sin universidad ni matrícula. No crea una reserva.", "For Xtudy residents who aren't students: no university or student ID needed. It doesn't create a booking.", "Pour les résidents Xtudy qui ne sont pas étudiants : ni université ni numéro d'étudiant. Il ne crée pas de réservation.", "Für Xtudy-Bewohner, die keine Studierenden sind: keine Universität oder Matrikelnummer nötig. Es entsteht keine Buchung."),
+    },
+    team: {
+      label: T("Código de equipo Xtudy", "Xtudy team code", "Code d'équipe Xtudy", "Xtudy-Team-Code"),
+      hint: T("Para empleados y colaboradores de Xtudy (no para personal de comercios aliados). Conservas tu cuenta, tus datos y tus beneficios.", "For Xtudy employees and collaborators (not staff of partner businesses). You keep your account, your details and your benefits.", "Pour les employés et collaborateurs de Xtudy (pas le personnel des commerces partenaires). Tu gardes ton compte, tes données et tes avantages.", "Für Mitarbeiter und Partner von Xtudy (nicht für Personal von Partnergeschäften). Du behältst dein Konto, deine Daten und deine Vorteile."),
+    },
+  }[as];
   const msg = {
-    ok: pro ? T("¡Listo! Ya eres Residente profesionista: tienes los descuentos de Explorador y de Residente.", "Done! You're now a Resident professional: you get both Explorer and Resident discounts.", "C'est fait ! Tu es maintenant Résident professionnel : tu as les réductions Explorateur et Résident.", "Fertig! Du bist jetzt berufstätiger Bewohner: Du bekommst die Rabatte für Entdecker und Bewohner.") : T("¡Listo! Ya eres parte del equipo Xtudy en el Club: tienes los descuentos de Explorador y de Residente.", "Done! You're now part of the Xtudy team in the Club: you get both Explorer and Resident discounts.", "C'est fait ! Tu fais maintenant partie de l'équipe Xtudy dans le Club : tu as les réductions Explorateur et Résident.", "Fertig! Du gehörst jetzt im Club zum Xtudy-Team: Du bekommst die Rabatte für Entdecker und Bewohner."),
-    already: pro ? T("Ya eras Residente profesionista.", "You were already a Resident professional.", "Tu étais déjà Résident professionnel.", "Du warst bereits berufstätiger Bewohner.") : T("Ya eras parte del equipo Xtudy en el Club.", "You were already part of the Xtudy team in the Club.", "Tu faisais déjà partie de l'équipe Xtudy dans le Club.", "Du gehörst im Club bereits zum Xtudy-Team."),
     invalid: T("Ese código no es válido. Revísalo e intenta de nuevo.", "That code isn't valid. Check it and try again.", "Ce code n'est pas valide. Vérifie-le et réessaie.", "Dieser Code ist ungültig. Prüfe ihn und versuche es erneut."),
     expired: T("Ese código ya venció. Pide uno vigente a Xtudy.", "That code has expired. Ask Xtudy for a current one.", "Ce code a expiré. Demande-en un valide à Xtudy.", "Dieser Code ist abgelaufen. Frag Xtudy nach einem gültigen."),
     inactive: T("Ese código ya no está activo. Pide uno vigente a Xtudy.", "That code is no longer active. Ask Xtudy for a current one.", "Ce code n'est plus actif. Demande-en un valide à Xtudy.", "Dieser Code ist nicht mehr aktiv. Frag Xtudy nach einem gültigen."),
     too_many: T("Demasiados intentos. Espera un rato antes de volver a intentar.", "Too many attempts. Please wait a while before trying again.", "Trop de tentatives. Attends un peu avant de réessayer.", "Zu viele Versuche. Bitte warte etwas, bevor du es erneut versuchst."),
     error: T("No pudimos validar el código. Intenta de nuevo en un momento.", "We couldn't check the code. Please try again in a moment.", "Impossible de vérifier le code. Réessaie dans un instant.", "Der Code konnte nicht geprüft werden. Bitte versuche es gleich noch einmal."),
   }[st.state];
-  if (!open) return (
-    <button type="button" style={styles.collabLink} onClick={() => setOpen(true)}>{pro ? T("¿Eres residente profesionista? Ingresa tu código.", "Are you a resident professional? Enter your code.", "Tu es résident professionnel ? Saisis ton code.", "Bist du berufstätiger Bewohner? Gib deinen Code ein.") : T("¿Eres parte del equipo Xtudy? Ingresa tu código.", "Are you part of the Xtudy team? Enter your code.", "Tu fais partie de l'équipe Xtudy ? Saisis ton code.", "Gehörst du zum Xtudy-Team? Gib deinen Code ein.")}</button>
-  );
+  const id = `access-code-${as}`;
   return (
-    <form onSubmit={submit} style={styles.collabBox}>
-      <label style={{ ...styles.label, color: "#CFE6F5" }} htmlFor={`collab-code-${as}`}>{pro ? T("Código de residente profesionista", "Resident professional code", "Code résident professionnel", "Code für berufstätige Bewohner") : T("Código de equipo Xtudy", "Xtudy team code", "Code d'équipe Xtudy", "Xtudy-Team-Code")}</label>
+    <form onSubmit={submit} style={{ display: "grid", gap: 6 }}>
+      <label style={{ ...styles.label, color: "#CFE6F5" }} htmlFor={id}>{copy.label}</label>
       <div style={{ display: "flex", gap: 8 }}>
-        <input id={`collab-code-${as}`} style={styles.input} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" autoCapitalize="characters" maxLength={40} />
-        <button type="submit" style={{ ...styles.benefitPrimary, width: "auto", minWidth: 110 }} disabled={st.state === "sending"}>{st.state === "sending" ? T("Validando…", "Checking…", "Vérification…", "Prüfen…") : T("Validar", "Check", "Valider", "Prüfen")}</button>
+        <input id={id} style={{ ...styles.input, minWidth: 0 }} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" autoCapitalize="characters" maxLength={40} />
+        <button type="submit" style={{ ...styles.benefitPrimary, width: "auto", minWidth: 96 }} disabled={st.state === "sending"}>{st.state === "sending" ? T("Validando…", "Checking…", "Vérification…", "Prüfen…") : T("Validar", "Check", "Valider", "Prüfen")}</button>
       </div>
-      <p style={{ ...styles.partnerFine, color: "#CFE6F5", margin: 0 }}>{pro ? T("Para residentes de Xtudy que no son estudiantes. Conservas tu cuenta, tus datos y tus beneficios.", "For Xtudy residents who aren't students. You keep your account, your details and your benefits.", "Pour les résidents Xtudy qui ne sont pas étudiants. Tu gardes ton compte, tes données et tes avantages.", "Für Xtudy-Bewohner, die keine Studierenden sind. Du behältst dein Konto, deine Daten und deine Vorteile.") : T("Es para empleados y colaboradores de Xtudy. Conservas tu cuenta, tus datos y tus beneficios.", "It's for Xtudy employees and collaborators. You keep your account, your details and your benefits.", "C'est pour les employés et collaborateurs de Xtudy. Tu gardes ton compte, tes données et tes avantages.", "Für Mitarbeiter und Partner von Xtudy. Du behältst dein Konto, deine Daten und deine Vorteile.")}</p>
-      {msg && <p role="status" style={{ margin: 0, fontSize: 13.5, color: st.state === "ok" || st.state === "already" ? "#BFF0C8" : "#FFD5D0" }}>{msg}</p>}
+      <p style={{ ...styles.partnerFine, color: "#B9D3E6", margin: 0 }}>{copy.hint}</p>
+      {msg && <p role="alert" style={{ margin: 0, fontSize: 13.5, color: "#FFD5D0" }}>{msg}</p>}
     </form>
+  );
+}
+
+// «¿Tienes un código de acceso?»: acceso SECUNDARIO y plegado. Solo ofrece lo que corresponde al estado real del miembro:
+// a quien ya es residente (estudiante o profesionista) no le pregunta si es residente, y a quien ya es del equipo no le
+// pide su código de equipo. Si ya tiene todo, no se muestra. La distinción VIP es independiente y no se toca.
+function AccessPanel({ me, account, lang, onDone }) {
+  const T = (...a) => tr(lang, ...a);
+  const isResident = Boolean(me.resident || me.professional);
+  const isTeam = me.team === "employee" || me.team === "collaborator";
+  const options = [!isResident && "resident", !isTeam && "team"].filter(Boolean);
+  const [open, setOpen] = useState(false);
+  const [choice, setChoice] = useState(null);
+  const [resKind, setResKind] = useState("resident");
+  const [done, setDone] = useState(null);
+  const current = options.length === 1 ? options[0] : options.includes(choice) ? choice : null;
+  if (!options.length && !done) return null;
+  const finished = (status, as) => {
+    const msgs = {
+      resident: [T("¡Listo! Ya eres Residente Xtudy: tienes los descuentos de Explorador y de Residente.", "Done! You're now an Xtudy Resident: you get both Explorer and Resident discounts.", "C'est fait ! Tu es maintenant Résident Xtudy : tu as les réductions Explorateur et Résident.", "Fertig! Du bist jetzt Xtudy-Bewohner: Du bekommst die Rabatte für Entdecker und Bewohner."), T("Ya eras Residente Xtudy.", "You were already an Xtudy Resident.", "Tu étais déjà Résident Xtudy.", "Du warst bereits Xtudy-Bewohner.")],
+      professional: [T("¡Listo! Ya eres Residente profesionista: tienes los descuentos de Explorador y de Residente.", "Done! You're now a Resident professional: you get both Explorer and Resident discounts.", "C'est fait ! Tu es maintenant Résident professionnel : tu as les réductions Explorateur et Résident.", "Fertig! Du bist jetzt berufstätiger Bewohner: Du bekommst die Rabatte für Entdecker und Bewohner."), T("Ya eras Residente profesionista.", "You were already a Resident professional.", "Tu étais déjà Résident professionnel.", "Du warst bereits berufstätiger Bewohner.")],
+      team: [T("¡Listo! Ya eres parte del equipo Xtudy en el Club: tienes los descuentos de Explorador y de Residente.", "Done! You're now part of the Xtudy team in the Club: you get both Explorer and Resident discounts.", "C'est fait ! Tu fais maintenant partie de l'équipe Xtudy dans le Club : tu as les réductions Explorateur et Résident.", "Fertig! Du gehörst jetzt im Club zum Xtudy-Team: Du bekommst die Rabatte für Entdecker und Bewohner."), T("Ya eras parte del equipo Xtudy en el Club.", "You were already part of the Xtudy team in the Club.", "Tu faisais déjà partie de l'équipe Xtudy dans le Club.", "Du gehörst im Club bereits zum Xtudy-Team.")],
+    }[as];
+    setDone(status === "ok" ? msgs[0] : msgs[1]);
+    setChoice(null);
+    onDone();
+  };
+  const pill = (active) => ({ ...styles.accessPill, ...(active ? styles.accessPillActive : {}) });
+  return (
+    <div style={styles.accessWrap}>
+      {done && <p role="status" style={{ margin: "0 0 6px", fontSize: 13.5, color: "#BFF0C8", textAlign: "center" }}><Check size={13} /> {done}</p>}
+      {options.length > 0 && (
+        <button type="button" style={styles.accessToggle} aria-expanded={open} aria-controls="access-panel" onClick={() => setOpen((o) => !o)}>
+          {T("¿Tienes un código de acceso?", "Have an access code?", "Tu as un code d'accès ?", "Hast du einen Zugangscode?")}
+          <ChevronDown size={15} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} aria-hidden="true" />
+        </button>
+      )}
+      {open && options.length > 0 && (
+        <div id="access-panel" style={styles.accessBox}>
+          <p style={{ ...styles.partnerFine, color: "#B9D3E6", margin: 0 }}>{T("Activa tu membresía con el código que te dio Xtudy. No es el código para invitar a tus amigos.", "Activate your membership with the code Xtudy gave you. It isn't the code for inviting friends.", "Active ton adhésion avec le code que Xtudy t'a donné. Ce n'est pas le code pour inviter tes amis.", "Aktiviere deine Mitgliedschaft mit dem Code von Xtudy. Das ist nicht der Code zum Einladen von Freunden.")}</p>
+          {options.length > 1 && (
+            <div role="radiogroup" aria-label={T("Tipo de acceso", "Access type", "Type d'accès", "Zugangsart")} style={styles.accessPills}>
+              <button type="button" role="radio" aria-checked={current === "resident"} style={pill(current === "resident")} onClick={() => setChoice("resident")}>{T("Soy residente de Xtudy", "I'm an Xtudy resident", "Je suis résident Xtudy", "Ich bin Xtudy-Bewohner")}</button>
+              <button type="button" role="radio" aria-checked={current === "team"} style={pill(current === "team")} onClick={() => setChoice("team")}>{T("Soy parte del equipo Xtudy", "I'm on the Xtudy team", "Je fais partie de l'équipe Xtudy", "Ich gehöre zum Xtudy-Team")}</button>
+            </div>
+          )}
+          {options.length === 1 && <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#fff" }}>{current === "resident" ? T("Soy residente de Xtudy", "I'm an Xtudy resident", "Je suis résident Xtudy", "Ich bin Xtudy-Bewohner") : T("Soy parte del equipo Xtudy", "I'm on the Xtudy team", "Je fais partie de l'équipe Xtudy", "Ich gehöre zum Xtudy-Team")}</p>}
+          {current === "resident" && (
+            <>
+              <div role="radiogroup" aria-label={T("Tipo de residente", "Resident type", "Type de résident", "Bewohnerart")} style={styles.accessPills}>
+                <button type="button" role="radio" aria-checked={resKind === "resident"} style={pill(resKind === "resident")} onClick={() => setResKind("resident")}>{T("Estudiante", "Student", "Étudiant", "Studierende")}</button>
+                <button type="button" role="radio" aria-checked={resKind === "professional"} style={pill(resKind === "professional")} onClick={() => setResKind("professional")}>{T("Profesionista", "Professional", "Professionnel", "Berufstätig")}</button>
+              </div>
+              <AccessCodeForm key={resKind} account={account} lang={lang} onDone={finished} as={resKind} />
+            </>
+          )}
+          {current === "team" && <AccessCodeForm account={account} lang={lang} onDone={finished} as="team" />}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -3959,29 +4032,98 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
   );
 }
 
-// Código personal de referidos (residentes estudiantes y profesionistas): el amigo recibe 5% en la renta de toda su estancia.
-// El enlace solo precarga el código: el servidor lo valida al aplicarlo en la reserva.
-function ReferralBox({ referral, lang }) {
+// Porcentaje con el formato de cada idioma: «5%» (es/en), «7,5 %» (fr/de).
+const fmtPct = (lang, n) => {
+  const v = Number(n);
+  return lang === "fr" || lang === "de" ? `${String(v).replace(".", ",")} %` : `${v}%`;
+};
+const LOCALE = { es: "es-MX", en: "en-US", fr: "fr-FR", de: "de-DE" };
+
+// Código personal de referidos (residentes estudiantes y profesionistas). El descuento es para la PERSONA INVITADA, con el
+// porcentaje real que configuró Xtudy (5% por defecto). Quien comparte no recibe dinero, comisión ni descuento. El enlace
+// solo precarga el código: el servidor lo valida al aplicarlo en la reserva. Si el código está inactivo o vencido no se
+// invita a compartirlo: solo un estado discreto.
+function ReferralStrip({ referral, lang }) {
+  const T = (...a) => tr(lang, ...a);
+  const [open, setOpen] = useState(false);
+  const btnRef = React.useRef(null);
+  if (!referral) return null;
+  if (referral.status !== "active" || !referral.code) {
+    return (
+      <p style={styles.referralOff} role="note">
+        <Gift size={13} aria-hidden="true" /> {referral.status === "expired"
+          ? T("Tu código para invitar amigos venció.", "Your code for inviting friends has expired.", "Ton code pour inviter des amis a expiré.", "Dein Code zum Einladen von Freunden ist abgelaufen.")
+          : T("Tu código para invitar amigos no está disponible por ahora.", "Your code for inviting friends isn't available right now.", "Ton code pour inviter des amis n'est pas disponible pour le moment.", "Dein Code zum Einladen von Freunden ist derzeit nicht verfügbar.")}
+      </p>
+    );
+  }
+  const p = fmtPct(lang, referral.pct);
+  const close = () => { setOpen(false); setTimeout(() => btnRef.current && btnRef.current.focus({ preventScroll: true }), 0); };
+  return (
+    <>
+      <section style={styles.referralStrip} aria-labelledby="ref-title">
+        <span style={styles.referralIcon} aria-hidden="true"><Gift size={18} /></span>
+        <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+          <h3 id="ref-title" style={styles.referralTitle}>{T(`Regala un ${p} de descuento a un amigo`, `Give a friend ${p} off`, `Offre ${p} de réduction à un ami`, `Schenke einem Freund ${p} Rabatt`)}</h3>
+          <p style={styles.referralText}>{T("Para la renta de su próxima estancia con Xtudy.", "On the rent for their next stay with Xtudy.", "Sur le loyer de son prochain séjour chez Xtudy.", "Auf die Miete seines nächsten Aufenthalts bei Xtudy.")}</p>
+        </div>
+        <button ref={btnRef} type="button" style={styles.referralCta} onClick={() => setOpen(true)}>{T("Compartir mi código", "Share my code", "Partager mon code", "Meinen Code teilen")}</button>
+      </section>
+      {open && <ReferralSheet referral={referral} lang={lang} onClose={close} />}
+    </>
+  );
+}
+
+function ReferralSheet({ referral, lang, onClose }) {
   const T = (...a) => tr(lang, ...a);
   const [copied, setCopied] = useState(null);
-  if (!referral || !referral.active) return null;
-  const copy = (what, text) => navigator.clipboard?.writeText(text).then(() => { setCopied(what); setTimeout(() => setCopied(null), 1800); }).catch(() => {});
-  const share = async () => {
-    const text = T(`Te comparto mi código de Xtudy: ${referral.code}. Te da ${referral.pct}% de descuento en la renta de tu estancia.`, `Here's my Xtudy code: ${referral.code}. It gives you ${referral.pct}% off the rent for your stay.`, `Voici mon code Xtudy : ${referral.code}. Il te donne ${referral.pct} % de réduction sur le loyer de ton séjour.`, `Hier ist mein Xtudy-Code: ${referral.code}. Er gibt dir ${referral.pct} % Rabatt auf die Miete deines Aufenthalts.`);
-    try { if (navigator.share) { await navigator.share({ title: "Xtudy", text, url: referral.shareUrl }); return; } } catch { return; }
-    copy("link", `${text} ${referral.shareUrl}`);
+  const p = fmtPct(lang, referral.pct);
+  const message = T(
+    `¡Te comparto un ${p} de descuento en la renta de tu estancia con Xtudy! Reserva con mi código ${referral.code}: ${referral.shareUrl}. Aplica solo a renta, no al depósito. Sujeto a condiciones.`,
+    `I'm sharing ${p} off the rent for your stay with Xtudy! Book with my code ${referral.code}: ${referral.shareUrl}. Rent only, not the deposit. Terms apply.`,
+    `Je te partage ${p} de réduction sur le loyer de ton séjour chez Xtudy ! Réserve avec mon code ${referral.code} : ${referral.shareUrl}. Uniquement sur le loyer, pas sur le dépôt. Sous conditions.`,
+    `Ich schenke dir ${p} Rabatt auf die Miete deines Aufenthalts bei Xtudy! Buche mit meinem Code ${referral.code}: ${referral.shareUrl}. Nur auf die Miete, nicht auf die Kaution. Es gelten Bedingungen.`);
+  const copy = (what, text) => {
+    const ok = () => { setCopied(what); setTimeout(() => setCopied((c) => (c === what ? null : c)), 1800); };
+    try { navigator.clipboard.writeText(text).then(ok, () => setCopied("fail")); } catch { setCopied("fail"); }
   };
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const share = async () => {
+    try { await navigator.share({ title: "Xtudy", text: message }); } catch (e) { if (e && e.name !== "AbortError") copy("message", message); }
+  };
+  const label = (what, idle) => (copied === what ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : idle);
+  const until = referral.validUntil ? new Date(`${referral.validUntil}T12:00:00`).toLocaleDateString(LOCALE[lang] || "es-MX", { day: "numeric", month: "long", year: "numeric" }) : null;
   return (
-    <section style={styles.referralBox} aria-labelledby="ref-title">
-      <h3 id="ref-title" style={styles.referralTitle}>{T("Invita a un amigo", "Invite a friend", "Invite un ami", "Lade einen Freund ein")}</h3>
-      <p style={styles.referralText}>{T(`Tu amigo recibe ${referral.pct}% de descuento en la renta de toda su estancia (no en el depósito ni otros cargos) al reservar con tu código.`, `Your friend gets ${referral.pct}% off the rent for their whole stay (not the deposit or other charges) when booking with your code.`, `Ton ami reçoit ${referral.pct} % de réduction sur le loyer de tout son séjour (pas sur le dépôt ni les autres frais) en réservant avec ton code.`, `Dein Freund erhält ${referral.pct} % Rabatt auf die Miete seines gesamten Aufenthalts (nicht auf Kaution oder sonstige Kosten), wenn er mit deinem Code bucht.`)}</p>
+    <Sheet title={T("Comparte tu código", "Share your code", "Partage ton code", "Teile deinen Code")} onClose={onClose} labelledBy="ref-sheet-title">
+      <p style={styles.modalText}>{T(`Tu amigo recibe ${p} de descuento en la renta de toda su estancia al reservar con tu código.`, `Your friend gets ${p} off the rent for their whole stay when booking with your code.`, `Ton ami reçoit ${p} de réduction sur le loyer de tout son séjour en réservant avec ton code.`, `Dein Freund erhält ${p} Rabatt auf die Miete seines gesamten Aufenthalts, wenn er mit deinem Code bucht.`)}</p>
       <div style={styles.codeRow}>
-        <code style={{ ...styles.codeBox, background: "rgba(255,255,255,0.12)", color: "#fff", borderColor: "rgba(255,255,255,0.25)" }}>{referral.code}</code>
-        <button type="button" style={styles.benefitSecondary} onClick={() => copy("code", referral.code)}>{copied === "code" ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
-        <button type="button" style={styles.benefitPrimary} onClick={share}>{copied === "link" ? T("¡Enlace copiado!", "Link copied!", "Lien copié !", "Link kopiert!") : T("Compartir enlace", "Share link", "Partager le lien", "Link teilen")}</button>
+        <code style={styles.codeBox}>{referral.code}</code>
+        <button type="button" style={styles.benefitSecondary} onClick={() => copy("code", referral.code)}>{label("code", T("Copiar", "Copy", "Copier", "Kopieren"))}</button>
       </div>
-      <p style={{ ...styles.partnerFine, color: "#CFE6F5", margin: 0 }}>{T("No es para tu propia reserva y no se combina con otros códigos. El descuento se confirma al aplicarlo en la reserva.", "It isn't for your own booking and can't be combined with other codes. The discount is confirmed when it's applied to the booking.", "Il n'est pas pour ta propre réservation et ne se cumule pas avec d'autres codes. La réduction est confirmée lorsqu'elle est appliquée à la réservation.", "Er gilt nicht für deine eigene Buchung und ist nicht mit anderen Codes kombinierbar. Der Rabatt wird beim Anwenden in der Buchung bestätigt.")}</p>
-    </section>
+      <label style={styles.label}>{T("Enlace de reserva con tu código", "Booking link with your code", "Lien de réservation avec ton code", "Buchungslink mit deinem Code")}
+        <div style={{ display: "flex", gap: 8 }}>
+          <input readOnly value={referral.shareUrl} onFocus={(e) => e.currentTarget.select()} style={{ ...styles.input, minWidth: 0, fontSize: 13 }} />
+          <button type="button" style={{ ...styles.benefitSecondary, flex: "none" }} onClick={() => copy("link", referral.shareUrl)}>{label("link", T("Copiar enlace", "Copy link", "Copier le lien", "Link kopieren"))}</button>
+        </div>
+      </label>
+      <label style={styles.label}>{T("Mensaje listo para compartir", "Ready-to-share message", "Message prêt à partager", "Nachricht zum Teilen")}
+        <textarea readOnly value={message} rows={4} onFocus={(e) => e.currentTarget.select()} style={{ ...styles.input, resize: "none", fontSize: 13.5, lineHeight: 1.45 }} />
+      </label>
+      <div style={{ display: "grid", gap: 8, gridTemplateColumns: canShare ? "1fr 1fr" : "1fr" }}>
+        {canShare && <button type="button" style={styles.benefitPrimary} onClick={share}>{T("Compartir", "Share", "Partager", "Teilen")}</button>}
+        <button type="button" style={canShare ? { ...styles.benefitSecondary, minHeight: 44 } : styles.benefitPrimary} onClick={() => copy("message", message)}>{label("message", T("Copiar mensaje", "Copy message", "Copier le message", "Nachricht kopieren"))}</button>
+      </div>
+      {copied === "fail" && <p role="alert" style={{ ...styles.modalText, fontSize: 13 }}>{T("No pudimos copiar automáticamente. Mantén presionado el texto para copiarlo.", "We couldn't copy automatically. Press and hold the text to copy it.", "Impossible de copier automatiquement. Appuie longuement sur le texte pour le copier.", "Automatisches Kopieren nicht möglich. Halte den Text gedrückt, um ihn zu kopieren.")}</p>}
+      <div style={{ borderTop: `1px solid ${colors.line}`, paddingTop: 10, display: "grid", gap: 4 }}>
+        <h4 style={styles.modalH}>{T("Condiciones", "Terms", "Conditions", "Bedingungen")}</h4>
+        <p style={{ ...styles.modalText, fontSize: 13, color: colors.muted }}>{T(
+          `El descuento es para la persona que invitas: ${p} en la renta de toda su estancia. No aplica al depósito ni a otros cargos, ni a renovaciones. No sirve para tu propia reserva y no se combina con otros códigos ni con el beneficio VIP. Tú no recibes dinero, comisión ni descuento por compartirlo. El descuento se confirma al aplicarlo en la reserva.`,
+          `The discount is for the person you invite: ${p} off the rent for their whole stay. It doesn't apply to the deposit, other charges or renewals. It can't be used for your own booking and can't be combined with other codes or the VIP benefit. You don't receive money, a commission or a discount for sharing it. The discount is confirmed when it's applied to the booking.`,
+          `La réduction est pour la personne que tu invites : ${p} sur le loyer de tout son séjour. Elle ne s'applique ni au dépôt, ni aux autres frais, ni aux renouvellements. Elle n'est pas valable pour ta propre réservation et ne se cumule ni avec d'autres codes ni avec l'avantage VIP. Tu ne reçois ni argent, ni commission, ni réduction en la partageant. La réduction est confirmée lorsqu'elle est appliquée à la réservation.`,
+          `Der Rabatt ist für die Person, die du einlädst: ${p} auf die Miete ihres gesamten Aufenthalts. Er gilt nicht für die Kaution, sonstige Kosten oder Verlängerungen. Er gilt nicht für deine eigene Buchung und ist nicht mit anderen Codes oder dem VIP-Vorteil kombinierbar. Du erhältst für das Teilen weder Geld noch Provision noch Rabatt. Der Rabatt wird beim Anwenden in der Buchung bestätigt.`)}
+          {until ? ` ${T(`Válido hasta el ${until}.`, `Valid until ${until}.`, `Valable jusqu'au ${until}.`, `Gültig bis ${until}.`)}` : ""}</p>
+      </div>
+    </Sheet>
   );
 }
 
@@ -4082,13 +4224,9 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button type="button" style={styles.cardQrBtn} onClick={() => setQrOpen(true)}><QrCode size={16} /> {tr(lang, "Mi tarjeta de membresía", "My membership card", "Ma carte de membre", "Meine Mitgliedskarte")}</button>
         <WalletButtons me={me} account={account} lang={lang} />
       </div>
-      {me && me.referral && <ReferralBox referral={me.referral} lang={lang} />}
-      {me && (!team || !residentLevel) && (
-        <div style={{ margin: "6px 0 4px", display: "grid", gap: 2, justifyItems: "center", textAlign: "center" }}>
-          {!team && <CollaboratorCode account={account} lang={lang} onDone={refresh} />}
-          {!residentLevel && <CollaboratorCode account={account} lang={lang} onDone={refresh} as="professional" />}
-        </div>
-      )}
+      {/* Debajo de la tarjeta y del mensaje VIP: invitación compacta para compartir el descuento y, aparte y plegado, el acceso secundario con código. */}
+      {me && me.referral && <ReferralStrip referral={me.referral} lang={lang} />}
+      {me && <AccessPanel me={me} account={account} lang={lang} onDone={refresh} />}
       {qrOpen && <CardQrSheet me={me} account={account} lang={lang} levelId={cardTier} vip={gold} onClose={() => setQrOpen(false)} />}
       {vipOpen && me && <VipSheet me={me} account={account} lang={lang} onClose={() => setVipOpen(false)} onPrefs={refresh} />}
 
@@ -4268,9 +4406,18 @@ const styles = {
   errorText: { fontSize: 12.5, color: "#B3261E" },
   yearRow: { display: "flex", gap: 8, flexWrap: "wrap", margin: "4px 0 6px" },
   yearPill: { display: "grid", gap: 2, background: "#F6F1E6", border: "1px solid #E4D5B4", borderRadius: 12, padding: "8px 12px", minWidth: 130, fontSize: 13.5 },
-  referralBox: { display: "grid", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 16, padding: 16, margin: "14px auto 4px", maxWidth: 560 },
-  referralTitle: { margin: 0, fontFamily: "'Host Grotesk', sans-serif", fontSize: 18, fontWeight: 800, color: "#fff" },
-  referralText: { margin: 0, fontSize: 14, lineHeight: 1.5, color: "#E3F0F9" },
+  referralStrip: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", maxWidth: 420, margin: "6px auto 8px", padding: "12px 14px", borderRadius: 14, background: "linear-gradient(135deg, rgba(0,130,203,0.28), rgba(79,195,247,0.10))", border: "1px solid rgba(79,195,247,0.35)" },
+  referralIcon: { flex: "none", width: 36, height: 36, borderRadius: 10, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.12)", color: "#BFE6FB" },
+  referralTitle: { margin: 0, fontFamily: "'Host Grotesk', sans-serif", fontSize: 15.5, fontWeight: 800, color: "#fff", lineHeight: 1.25 },
+  referralText: { margin: "2px 0 0", fontSize: 12.5, lineHeight: 1.4, color: "#CFE6F5" },
+  referralCta: { flex: "none", marginLeft: "auto", background: "#fff", color: colors.navy, border: "none", borderRadius: 999, minHeight: 40, padding: "8px 16px", fontSize: 13.5, fontWeight: 800, cursor: "pointer" },
+  referralOff: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, maxWidth: 420, margin: "4px auto 6px", fontSize: 12.5, color: "#9FB7C9", textAlign: "center" },
+  accessWrap: { maxWidth: 420, margin: "2px auto 10px", display: "grid", justifyItems: "center" },
+  accessToggle: { display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", color: "#B9D3E6", fontSize: 13, cursor: "pointer", padding: "8px 6px", minHeight: 36 },
+  accessBox: { display: "grid", gap: 10, width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 14, padding: 14 },
+  accessPills: { display: "flex", gap: 6, flexWrap: "wrap" },
+  accessPill: { flex: "1 1 140px", background: "transparent", color: "#E3F0F9", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 999, minHeight: 38, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  accessPillActive: { background: "#fff", color: colors.navy, borderColor: "#fff" },
   loadNotice: { textAlign: "center", fontSize: 13.5, color: "#FFE2A8", margin: "8px 0" },
   teamToggle: { display: "block", width: "100%", textAlign: "left", background: "#F2F8FD", border: `1px dashed ${colors.blue}`, borderRadius: 12, color: colors.navy, fontSize: 13.5, fontWeight: 600, padding: "11px 14px", margin: "0 0 16px", cursor: "pointer", fontFamily: "'Inter', sans-serif" },
   teamBox: { display: "grid", gap: 8, background: "#F2F8FD", border: `1px solid ${colors.line}`, borderRadius: 12, padding: 12, margin: "0 0 16px" },
@@ -4332,8 +4479,6 @@ const styles = {
   promoChoiceOn: { border: `2px solid ${colors.blue}`, background: "#F2F8FD" },
   promoChoiceSub: { fontWeight: 500, color: colors.muted },
   lockedBox: { display: "flex", gap: 10, alignItems: "flex-start", background: "#F1F5F9", color: colors.ink, borderRadius: 10, padding: "10px 12px", fontSize: 14, lineHeight: 1.45 },
-  collabLink: { background: "none", border: "none", color: colors.blueLight, textDecoration: "underline", fontSize: 13.5, cursor: "pointer", padding: "6px 0" },
-  collabBox: { display: "grid", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 12, padding: 12, maxWidth: 460 },
   membershipCardGold: { background: "linear-gradient(135deg, #FFF6DA 0%, #F2D27A 45%, #E2B44B 100%)", border: "1.5px solid #B8860B", boxShadow: "0 10px 30px rgba(184,134,11,0.28)" },
   goldBadge: { background: "linear-gradient(135deg, #B8860B, #8A6508)", color: "#fff" },
   goldPanel: { background: "#FFFBEF", color: colors.ink, border: "1.5px solid #E2B44B", borderRadius: 16, padding: 16, margin: "12px 0 4px", display: "grid", gap: 10, maxWidth: 620 },
