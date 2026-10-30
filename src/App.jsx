@@ -3721,12 +3721,6 @@ function AccessPanel({ me, account, lang, onDone }) {
   );
 }
 
-const GOLD_CONDITIONS_TX = [
-  "Hasta 5 noches sin costo de renta por año calendario, para una nueva estancia que empiece después de terminar tu estancia original (ese mismo año o cualquier año posterior), sujetas a disponibilidad. Cuenta el año de entrada de la nueva estancia; una estancia de diciembre a enero usa un solo beneficio. Se renueva cada 1 de enero sin necesidad de otra reserva; las noches no usadas no se acumulan. Un uso por año en una sola reserva: si tu estancia tiene menos de 5 noches no queda remanente; si tiene más, pagas la renta de las noches restantes. Solo cubre renta (no el depósito ni otros cargos). Personal e intransferible, sin devolución en efectivo. No se combina con otros códigos de descuento.",
-  "Up to 5 rent-free nights per calendar year, for a new stay starting after your original stay ends (that same year or any later year), subject to availability. The year of the new stay's move-in date counts; a December–January stay uses a single benefit. It renews every January 1 without needing another booking; unused nights don't carry over. One use per year in a single booking: if your stay is shorter than 5 nights there's no remainder; if longer, you pay rent for the remaining nights. Rent only (not the deposit or other charges). Personal and non-transferable, no cash refund. Can't be combined with other discount codes.",
-  "Jusqu'à 5 nuits sans loyer par année civile, pour un nouveau séjour qui commence après la fin de ton séjour initial (la même année ou n'importe quelle année suivante), selon les disponibilités. C'est l'année d'arrivée du nouveau séjour qui compte ; un séjour de décembre à janvier utilise un seul avantage. Renouvelé chaque 1er janvier sans autre réservation ; les nuits non utilisées ne se cumulent pas. Une utilisation par an dans une seule réservation : si ton séjour fait moins de 5 nuits, il n'y a pas de reste ; s'il est plus long, tu paies le loyer des nuits restantes. Loyer uniquement (ni dépôt ni autres frais). Personnel et non transférable, sans remboursement en espèces. Non cumulable avec d'autres codes de réduction.",
-  "Bis zu 5 mietfreie Nächte pro Kalenderjahr für einen neuen Aufenthalt, der nach dem Ende deines ursprünglichen Aufenthalts beginnt (im selben oder einem späteren Jahr), je nach Verfügbarkeit. Es zählt das Einzugsjahr des neuen Aufenthalts; ein Aufenthalt von Dezember bis Januar nutzt nur einen Vorteil. Erneuert sich jeden 1. Januar ohne weitere Buchung; ungenutzte Nächte verfallen. Eine Nutzung pro Jahr in einer einzigen Buchung: Ist dein Aufenthalt kürzer als 5 Nächte, gibt es keinen Rest; ist er länger, zahlst du die Miete der übrigen Nächte. Nur Miete (keine Kaution oder sonstigen Kosten). Persönlich und nicht übertragbar, keine Barauszahlung. Nicht mit anderen Rabattcodes kombinierbar.",
-];
 const TICKET_STATUS = {
   available: ["Disponible", "Available", "Disponible", "Verfügbar"],
   applied: ["Apartado por una reserva en proceso", "Held by a booking in progress", "Réservé par une réservation en cours", "Für eine laufende Buchung reserviert"],
@@ -3736,26 +3730,48 @@ const TICKET_STATUS = {
 };
 
 // --- V20 · Tarjeta, VIP y Wallet ---------------------------------------------------------------------------------------
-const VIP_TITLE = ["Un reconocimiento especial para ti", "A special recognition for you", "Une reconnaissance spéciale pour toi", "Eine besondere Anerkennung für dich"];
-const VIP_MESSAGE = [
-  "Nos encantó recibirte y queremos que vuelvas. Como parte de nuestra lista VIP, tienes hasta 5 noches de renta gratis cada año calendario para una nueva estancia, una vez que haya terminado tu estancia original con Xtudy. Tu beneficio se renueva automáticamente cada 1 de enero y está sujeto a disponibilidad.",
-  "We loved having you and we want you back. As part of our VIP list, you get up to 5 rent-free nights every calendar year for a new stay, once your original stay with Xtudy has ended. Your benefit renews automatically every January 1 and is subject to availability.",
-  "Nous avons adoré t'accueillir et nous voulons que tu reviennes. En tant que membre de notre liste VIP, tu as jusqu'à 5 nuits sans loyer chaque année civile pour un nouveau séjour, une fois ton séjour initial chez Xtudy terminé. Ton avantage se renouvelle automatiquement chaque 1er janvier et dépend des disponibilités.",
-  "Wir haben dich gern bei uns gehabt und möchten, dass du wiederkommst. Als Teil unserer VIP-Liste hast du jedes Kalenderjahr bis zu 5 mietfreie Nächte für einen neuen Aufenthalt, sobald dein ursprünglicher Aufenthalt bei Xtudy beendet ist. Dein Vorteil erneuert sich automatisch jeden 1. Januar und hängt von der Verfügbarkeit ab.",
+const VIP_TITLE = ["Tu regalo", "Your gift", "Ton cadeau", "Dein Geschenk"];
+// Mensaje VIP: emoción primero, condiciones después (en «Términos y condiciones»).
+const VIP_HELLO = [
+  "Hay personas que hacen especial a Xtudy. Tú eres una de ellas. 💛",
+  "Some people make Xtudy special. You're one of them. 💛",
+  "Certaines personnes rendent Xtudy spécial. Tu en fais partie. 💛",
+  "Manche Menschen machen Xtudy besonders. Du bist einer von ihnen. 💛",
 ];
+const VIP_GIFT = [
+  "Nos encantó tenerte en casa y queremos volver a recibirte: tienes 5 noches de regalo cada año para tu próxima aventura.",
+  "We loved having you home and we'd love to welcome you back: you have 5 nights as a gift every year for your next adventure.",
+  "Nous avons adoré t'avoir à la maison et nous voulons t'accueillir à nouveau : tu as 5 nuits offertes chaque année pour ta prochaine aventure.",
+  "Wir haben es geliebt, dich bei uns zu haben, und möchten dich wieder empfangen: Du hast jedes Jahr 5 Nächte geschenkt für dein nächstes Abenteuer.",
+];
+// Sin beneficio disponible (usado o retirado): se conserva el reconocimiento, sin prometer noches.
+const VIP_THANKS = [
+  "Nos encantó tenerte en casa. Siempre serás parte de nuestra lista VIP.",
+  "We loved having you home. You'll always be part of our VIP list.",
+  "Nous avons adoré t'avoir à la maison. Tu feras toujours partie de notre liste VIP.",
+  "Wir haben es geliebt, dich bei uns zu haben. Du bleibst immer Teil unserer VIP-Liste.",
+];
+const VIP_CTA = ["Ver mi regalo", "See my gift", "Voir mon cadeau", "Mein Geschenk ansehen"];
 // Consejo (no garantiza disponibilidad ni limita el beneficio a esos meses).
 const VIP_TIP = [
-  "Tip: enero y julio suelen ofrecer más posibilidades de encontrar espacio entre semestres. Escríbenos con tiempo y revisamos las opciones contigo.",
-  "Tip: January and July usually offer better chances of finding space between semesters. Write to us early and we'll review the options with you.",
-  "Astuce : janvier et juillet offrent souvent plus de possibilités de trouver de la place entre deux semestres. Écris-nous à l'avance et nous verrons les options avec toi.",
-  "Tipp: Januar und Juli bieten zwischen den Semestern meist mehr Chancen auf einen freien Platz. Schreib uns frühzeitig und wir prüfen die Optionen mit dir.",
+  "Tip: enero y julio suelen tener más espacios disponibles entre semestres. Escríbenos con tiempo y lo revisamos contigo.",
+  "Tip: January and July usually have more space available between semesters. Write to us early and we'll review it with you.",
+  "Astuce : janvier et juillet ont souvent plus de places disponibles entre deux semestres. Écris-nous à l'avance et nous verrons avec toi.",
+  "Tipp: Januar und Juli haben zwischen den Semestern meist mehr freie Plätze. Schreib uns frühzeitig und wir prüfen es gemeinsam.",
 ];
-// Si el beneficio ya se usó, venció o se revocó, no se anuncian noches disponibles.
-const VIP_MESSAGE_PLAIN = [
-  "Ha sido un honor recibirte en Xtudy. Eres parte de nuestra lista VIP.",
-  "It has been an honor to host you at Xtudy. You're on our VIP list.",
-  "Ce fut un honneur de t'accueillir chez Xtudy. Tu fais partie de notre liste VIP.",
-  "Es war uns eine Ehre, dich bei Xtudy zu begrüßen. Du bist auf unserer VIP-Liste.",
+const VIP_TERMS_TITLE = ["Términos y condiciones", "Terms and conditions", "Conditions générales", "Bedingungen"];
+// Mismas reglas de siempre (renovación cada 1 de enero, año de entrada de la nueva estancia); solo cambia la forma de decirlo.
+const VIP_TERMS = [
+  ["Para una nueva estancia después de concluir tu estancia original.", "For a new stay after your original stay ends.", "Pour un nouveau séjour après la fin de ton séjour initial.", "Für einen neuen Aufenthalt nach dem Ende deines ursprünglichen Aufenthalts."],
+  ["Hasta 5 noches sin costo de renta por año calendario.", "Up to 5 rent-free nights per calendar year.", "Jusqu'à 5 nuits sans loyer par année civile.", "Bis zu 5 mietfreie Nächte pro Kalenderjahr."],
+  ["Sujeto a disponibilidad.", "Subject to availability.", "Selon les disponibilités.", "Je nach Verfügbarkeit."],
+  ["Un uso anual en una sola reserva.", "One use per year, in a single booking.", "Une utilisation par an, dans une seule réservation.", "Eine Nutzung pro Jahr in einer einzigen Buchung."],
+  ["Las noches no utilizadas no se acumulan.", "Unused nights don't carry over.", "Les nuits non utilisées ne se cumulent pas.", "Ungenutzte Nächte verfallen."],
+  ["Personal y no transferible.", "Personal and non-transferable.", "Personnel et non transférable.", "Persönlich und nicht übertragbar."],
+  ["No incluye depósito ni otros cargos.", "Doesn't include the deposit or other charges.", "N'inclut ni le dépôt ni d'autres frais.", "Umfasst weder Kaution noch andere Kosten."],
+  ["Si reservas más noches, pagas la renta restante.", "If you book more nights, you pay the remaining rent.", "Si tu réserves plus de nuits, tu paies le loyer restant.", "Buchst du mehr Nächte, zahlst du die restliche Miete."],
+  ["Aplican las reglas vigentes de compatibilidad con promociones.", "Current rules on combining with promotions apply.", "Les règles en vigueur de cumul avec les promotions s'appliquent.", "Es gelten die aktuellen Regeln zur Kombination mit Aktionen."],
+  ["Se renueva cada 1 de enero; cuenta el año de entrada de tu nueva estancia.", "Renews every January 1; the year of your new stay's move-in date counts.", "Renouvelé chaque 1er janvier ; c'est l'année d'arrivée de ton nouveau séjour qui compte.", "Erneuert sich jeden 1. Januar; es zählt das Einzugsjahr deines neuen Aufenthalts."],
 ];
 const LEVEL_NAME = {
   guest: ["Explorador", "Explorer", "Explorateur", "Entdecker"],
@@ -3976,52 +3992,50 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
   }[req.state === "not_found" ? "error" : req.state];
   return (
     <Sheet title={T(...VIP_TITLE)} onClose={onClose} labelledBy="vip-title">
-      <p style={styles.modalText}>{T(...(t && t.vipActive ? VIP_MESSAGE : VIP_MESSAGE_PLAIN))}</p>
-      {t && t.vipActive && <p style={{ ...styles.modalText, fontSize: 14, color: colors.muted }}>{T(...VIP_TIP)}</p>}
-      {t && t.vipActive && t.eligibleFrom && (
-        <p style={{ ...styles.modalText, fontSize: 14 }}>{t.notYet
-          ? T(`Podrás usarlo en una nueva estancia que empiece a partir del ${fmtDay(t.eligibleFrom)}, cuando termine tu estancia actual.`, `You can use it on a new stay starting from ${fmtDay(t.eligibleFrom)}, once your current stay ends.`, `Tu pourras l'utiliser pour un nouveau séjour à partir du ${fmtDay(t.eligibleFrom)}, une fois ton séjour actuel terminé.`, `Du kannst ihn für einen neuen Aufenthalt ab dem ${fmtDay(t.eligibleFrom)} nutzen, sobald dein aktueller Aufenthalt endet.`)
-          : T(`Disponible para estancias que empiecen desde el ${fmtDay(t.eligibleFrom)}.`, `Available for stays starting from ${fmtDay(t.eligibleFrom)}.`, `Disponible pour les séjours commençant à partir du ${fmtDay(t.eligibleFrom)}.`, `Verfügbar für Aufenthalte ab dem ${fmtDay(t.eligibleFrom)}.`)}</p>
-      )}
-      {t && (
+      {/* El mensaje ya se ve en el perfil: aquí solo el regalo (sin repetir texto). Sin beneficio activo, solo el agradecimiento. */}
+      {!(t && t.vipActive) && <p style={styles.modalText}>{T(...VIP_THANKS)}</p>}
+      {t && t.vipActive && (
         <section style={styles.vipBenefit}>
-          <h4 style={styles.modalH}>{T("Tu beneficio anual · hasta 5 noches sin costo de renta", "Your yearly benefit · up to 5 rent-free nights", "Ton avantage annuel · jusqu'à 5 nuits sans loyer", "Dein jährlicher Vorteil · bis zu 5 mietfreie Nächte")}</h4>
+          <div style={styles.codeRow}>
+            <code style={styles.codeBox}>{t.code}</code>
+            <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
+          </div>
+          {/* Estado real del beneficio (por año de entrada de la nueva estancia). */}
           <div style={styles.yearRow}>
             {(t.years || []).map((y) => (
               <div key={y.year} style={styles.yearPill}>
                 <strong>{y.year}</strong>
-                <span style={{ color: y.status === "available" ? "#1F7A3D" : y.status === "applied" ? colors.blue : colors.muted }}>{T(...(TICKET_STATUS[y.status] || TICKET_STATUS.inactive))}</span>
+                <span style={{ color: y.status === "available" && !t.notYet ? "#1F7A3D" : y.status === "applied" ? colors.blue : colors.muted }}>{t.notYet && y.status === "available" ? T("Aún no", "Not yet", "Pas encore", "Noch nicht") : T(...(TICKET_STATUS[y.status] || TICKET_STATUS.inactive))}</span>
               </div>
             ))}
           </div>
-          <p style={styles.partnerFine}>{T("Cada año cuenta por separado: el de la fecha de entrada de tu nueva estancia. Se renueva cada 1 de enero.", "Each year counts separately: the year of your new stay's move-in date. It renews every January 1.", "Chaque année compte séparément : celle de la date d'arrivée de ton nouveau séjour. Renouvelé chaque 1er janvier.", "Jedes Jahr zählt für sich: das Einzugsjahr deines neuen Aufenthalts. Erneuert sich jeden 1. Januar.")}</p>
-          {t.vipActive && (
-            <>
-              <h4 style={styles.modalH}>{T("Tu código personal", "Your personal code", "Ton code personnel", "Dein persönlicher Code")}</h4>
-              <div style={styles.codeRow}>
-                <code style={styles.codeBox}>{t.code}</code>
-                <button type="button" style={styles.benefitSecondary} onClick={() => navigator.clipboard?.writeText(t.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {})}>{copied ? T("¡Copiado!", "Copied!", "Copié !", "Kopiert!") : T("Copiar", "Copy", "Copier", "Kopieren")}</button>
-              </div>
-              <p style={styles.modalText}>{T("Elige tus fechas en nuestra página y, antes de pagar, escribe tu código en «Código promocional». Cubre la renta de hasta 5 noches de una sola reserva; el depósito y otros cargos no cambian.", "Choose your dates on our website and, before paying, enter your code under “Promo code”. It covers rent for up to 5 nights of a single booking; the deposit and other charges don't change.", "Choisis tes dates sur notre site et, avant de payer, saisis ton code dans « Code promo ». Il couvre le loyer de 5 nuits maximum d'une seule réservation ; le dépôt et les autres frais ne changent pas.", "Wähle deine Daten auf unserer Website und gib vor dem Bezahlen deinen Code unter „Gutscheincode“ ein. Er deckt die Miete für bis zu 5 Nächte einer einzigen Buchung; Kaution und andere Kosten ändern sich nicht.")}</p>
-              {available && <a href={`${PLATFORM_URL}/${lang === "es" ? "es" : "en"}/explorar`} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>{T("Consultar disponibilidad y reservar", "Check availability and book", "Voir les disponibilités et réserver", "Verfügbarkeit prüfen und buchen")} <ChevronRight size={16} /></a>}
-            </>
-          )}
-          <p style={styles.partnerFine}>{T(...GOLD_CONDITIONS_TX)}</p>
+          {t.eligibleFrom && t.notYet && <p style={{ ...styles.modalText, fontSize: 14 }}>{T(`Podrás usarlo en una nueva estancia que empiece a partir del ${fmtDay(t.eligibleFrom)}.`, `You can use it on a new stay starting from ${fmtDay(t.eligibleFrom)}.`, `Tu pourras l'utiliser pour un nouveau séjour à partir du ${fmtDay(t.eligibleFrom)}.`, `Du kannst es für einen neuen Aufenthalt ab dem ${fmtDay(t.eligibleFrom)} nutzen.`)}</p>}
+          {available && <>
+            <p style={{ ...styles.modalText, fontSize: 14 }}>{T("Elige tus fechas y, antes de pagar, escribe tu código en «Código promocional».", "Choose your dates and, before paying, enter your code under “Promo code”.", "Choisis tes dates et, avant de payer, saisis ton code dans « Code promo ».", "Wähle deine Daten und gib vor dem Bezahlen deinen Code unter „Gutscheincode“ ein.")}</p>
+            <a href={`${PLATFORM_URL}/${lang === "es" ? "es" : "en"}/explorar`} target="_blank" rel="noopener noreferrer" style={styles.goBtn}>{T("Reservar o consultar disponibilidad", "Book or check availability", "Réserver ou voir les disponibilités", "Buchen oder Verfügbarkeit prüfen")} <ChevronRight size={16} /></a>
+          </>}
+          {!available && !t.notYet && <p style={{ ...styles.modalText, fontSize: 14 }}>{T("Tu regalo de este año ya está apartado o utilizado. Se renueva cada 1 de enero.", "This year's gift is already held or used. It renews every January 1.", "Ton cadeau de cette année est déjà réservé ou utilisé. Il se renouvelle chaque 1er janvier.", "Das Geschenk dieses Jahres ist bereits reserviert oder genutzt. Es erneuert sich jeden 1. Januar.")}</p>}
+          <p style={{ ...styles.partnerFine, fontStyle: "italic" }}>{T(...VIP_TIP)}</p>
           {available && (req.open ? (
             <form onSubmit={send} style={{ display: "grid", gap: 8 }}>
-              <h4 style={styles.modalH}>{T("Solicitar revisión para una estancia corta", "Request review for a short stay", "Demander une validation pour un court séjour", "Prüfung für kurzen Aufenthalt anfragen")}</h4>
+              <h4 style={styles.modalH}>{T("Consultar fechas con Xtudy", "Ask Xtudy about dates", "Demander des dates à Xtudy", "Daten mit Xtudy abklären")}</h4>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <label style={{ ...styles.label, flex: 1, minWidth: 140 }}>{T("Llegada", "Check-in", "Arrivée", "Anreise")}<input type="date" required style={styles.input} value={req.checkIn} onChange={(e) => setReq({ ...req, checkIn: e.target.value })} /></label>
                 <label style={{ ...styles.label, flex: 1, minWidth: 140 }}>{T("Salida", "Check-out", "Départ", "Abreise")}<input type="date" required style={styles.input} value={req.checkOut} onChange={(e) => setReq({ ...req, checkOut: e.target.value })} /></label>
               </div>
-              <label style={styles.label}>{T("Propiedad (opcional)", "Property (optional)", "Logement (facultatif)", "Unterkunft (optional)")}<input style={styles.input} maxLength={120} value={req.property} onChange={(e) => setReq({ ...req, property: e.target.value })} /></label>
-              <label style={styles.label}>{T("Mensaje (opcional)", "Message (optional)", "Message (facultatif)", "Nachricht (optional)")}<textarea style={{ ...styles.input, minHeight: 70 }} maxLength={600} value={req.message} onChange={(e) => setReq({ ...req, message: e.target.value })} /></label>
-              <button type="submit" style={styles.benefitPrimary} disabled={req.state === "sending" || req.state === "sent"}>{req.state === "sending" ? T("Enviando…", "Sending…", "Envoi…", "Senden…") : T("Enviar solicitud", "Send request", "Envoyer la demande", "Anfrage senden")}</button>
+              <label style={styles.label}>{T("Mensaje (opcional)", "Message (optional)", "Message (facultatif)", "Nachricht (optional)")}<textarea style={{ ...styles.input, minHeight: 60 }} maxLength={600} value={req.message} onChange={(e) => setReq({ ...req, message: e.target.value })} /></label>
+              <button type="submit" style={styles.benefitPrimary} disabled={req.state === "sending" || req.state === "sent"}>{req.state === "sending" ? T("Enviando…", "Sending…", "Envoi…", "Senden…") : T("Enviar", "Send", "Envoyer", "Senden")}</button>
               {reqMsg && <p role="status" style={styles.modalText}>{reqMsg}</p>}
             </form>
-          ) : <button type="button" style={styles.benefitSecondary} onClick={() => setReq({ ...req, open: true })}>{T("¿Tu estancia es más corta que el mínimo? Solicita una revisión", "Is your stay shorter than the minimum? Request a review", "Ton séjour est plus court que le minimum ? Demande une validation", "Kürzer als das Minimum? Prüfung anfragen")}</button>)}
-          {thisYear && !t.vipActive && <p style={styles.modalText}>{T("Tu beneficio anual no está disponible en este momento.", "Your yearly benefit isn't available right now.", "Ton avantage annuel n'est pas disponible pour le moment.", "Dein jährlicher Vorteil ist derzeit nicht verfügbar.")}</p>}
+          ) : <button type="button" style={styles.vipTermsLink} onClick={() => setReq({ ...req, open: true })}>{T("¿Prefieres que revisemos fechas contigo? Escríbenos", "Prefer that we check dates with you? Write to us", "Tu préfères qu'on vérifie les dates avec toi ? Écris-nous", "Sollen wir die Daten mit dir prüfen? Schreib uns")}</button>)}
         </section>
+      )}
+      {thisYear && t && !t.vipActive && <p style={{ ...styles.modalText, fontSize: 14 }}>{T("Tu regalo anual no está disponible en este momento.", "Your yearly gift isn't available right now.", "Ton cadeau annuel n'est pas disponible pour le moment.", "Dein jährliches Geschenk ist derzeit nicht verfügbar.")}</p>}
+      {t && t.vipActive && (
+        <details>
+          <summary style={styles.vipTermsLink}>{T(...VIP_TERMS_TITLE)}</summary>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 18, display: "grid", gap: 4, fontSize: 13.5, color: colors.muted }}>{VIP_TERMS.map((x) => <li key={x[0]}>{T(...x)}</li>)}</ul>
+        </details>
       )}
       <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: colors.ink, borderTop: `1px solid ${colors.line}`, paddingTop: 12 }}>
         <input type="checkbox" checked={celebrate} onChange={toggle} /> {T("Mostrar una pequeña celebración al entrar", "Show a small celebration when I sign in", "Afficher une petite célébration à l'arrivée", "Beim Öffnen eine kleine Feier zeigen")}
@@ -4202,8 +4216,9 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           Lo que no aplica no deja huecos. Sin QR general de membresía: los descuentos usan el QR de cada comercio. */}
       {gold && (
         <div style={styles.vipLine}>
-          <span>✦ {tr(lang, "Estás en nuestra lista VIP.", "You're on our VIP list.", "Tu fais partie de notre liste VIP.", "Du bist auf unserer VIP-Liste.")}</span>
-          <button type="button" style={styles.vipLink} onClick={() => setVipOpen(true)}>{tr(lang, "¿Qué significa?", "What does it mean?", "Qu'est-ce que ça veut dire ?", "Was bedeutet das?")}</button>
+          <p style={styles.vipHello}>{tr(lang, ...VIP_HELLO)}</p>
+          <p style={styles.vipGift}>{tr(lang, ...(me && me.ticket && !me.ticket.vipActive ? VIP_THANKS : VIP_GIFT))}</p>
+          <button type="button" style={styles.vipCta} onClick={() => setVipOpen(true)}>{tr(lang, ...VIP_CTA)}</button>
         </div>
       )}
       {me && <AccessPanel me={me} account={account} lang={lang} onDone={refresh} />}
@@ -4490,7 +4505,11 @@ const styles = {
   vipLabel: { fontSize: 11.5, color: "#C9D6E2" },
   vipLevel: { fontSize: 13.5, fontWeight: 700, color: "#E8D5A8" },
   vipMember: { marginTop: 10, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, letterSpacing: 1.5, color: "#AFC0CF" },
-  vipLine: { display: "flex", gap: 8, justifyContent: "center", alignItems: "center", flexWrap: "wrap", fontSize: 14, color: "#E8D5A8", margin: "0 auto 10px", textAlign: "center" },
+  vipLine: { display: "flex", flexDirection: "column", gap: 6, alignItems: "center", maxWidth: 460, margin: "0 auto 12px", textAlign: "center" },
+  vipHello: { margin: 0, fontSize: 16, fontWeight: 650, color: "#F1DFB4", lineHeight: 1.35 },
+  vipGift: { margin: 0, fontSize: 14, color: "#E6EEF4", lineHeight: 1.45 },
+  vipCta: { marginTop: 4, background: "linear-gradient(135deg, #F1DFB4, #D9B86A)", color: "#3A2A05", border: "none", borderRadius: 999, padding: "9px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", minHeight: 40 },
+  vipTermsLink: { background: "none", border: "none", color: colors.blue, textDecoration: "underline", fontSize: 13.5, cursor: "pointer", padding: "4px 0", textAlign: "left" },
   vipLink: { background: "none", border: "none", color: "#CFE6F5", textDecoration: "underline", fontSize: 14, cursor: "pointer", padding: "6px 4px", minHeight: 32 },
   vipToast: { position: "fixed", left: "50%", top: 18, transform: "translateX(-50%)", zIndex: 61, background: "#0B2A45", color: "#F4EBD8", border: "1px solid rgba(217,192,142,0.7)", borderRadius: 999, padding: "10px 18px", fontSize: 14.5, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", pointerEvents: "none", maxWidth: "calc(100vw - 32px)", textAlign: "center" },
   vipBenefit: { display: "grid", gap: 8, background: "#FBF7EE", border: "1px solid #E6D8B8", borderRadius: 12, padding: 12 },
