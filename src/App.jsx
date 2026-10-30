@@ -3722,10 +3722,10 @@ function AccessPanel({ me, account, lang, onDone }) {
 }
 
 const GOLD_CONDITIONS_TX = [
-  "Hasta 5 noches sin costo de renta por año calendario (el año de tu fecha de entrada), en una sola reserva, sujetas a disponibilidad. Se renueva cada 1 de enero y las noches no se acumulan entre años. Si tu estancia tiene menos de 5 noches no hay devolución ni saldo a favor; si tiene más, pagas la renta de las noches restantes. Solo cubre renta: no el depósito en garantía ni otros cargos. No se combina con otros códigos de descuento. Las estancias más cortas que el mínimo habitual requieren revisión de Xtudy.",
-  "Up to 5 rent-free nights per calendar year (the year of your move-in date), in a single booking, subject to availability. It renews every January 1 and nights don't carry over between years. If your stay is shorter than 5 nights there is no refund or credit; if longer, you pay rent for the remaining nights. Rent only: it doesn't cover the security deposit or other charges. It can't be combined with other discount codes. Stays shorter than the usual minimum require review by Xtudy.",
-  "Jusqu'à 5 nuits sans loyer par année civile (l'année de ta date d'arrivée), dans une seule réservation, sous réserve de disponibilité. Renouvelé chaque 1er janvier ; les nuits ne se cumulent pas d'une année à l'autre. Si ton séjour dure moins de 5 nuits, il n'y a ni remboursement ni crédit ; s'il est plus long, tu paies le loyer des nuits restantes. Loyer uniquement : ni le dépôt de garantie ni d'autres frais. Non cumulable avec d'autres codes de réduction. Les séjours plus courts que le minimum habituel nécessitent une validation de Xtudy.",
-  "Bis zu 5 mietfreie Nächte pro Kalenderjahr (das Jahr deines Einzugsdatums), in einer einzigen Buchung, je nach Verfügbarkeit. Erneuert sich jeden 1. Januar; Nächte werden nicht ins nächste Jahr übertragen. Ist dein Aufenthalt kürzer als 5 Nächte, gibt es keine Erstattung oder Gutschrift; ist er länger, zahlst du die Miete der restlichen Nächte. Nur Miete: keine Kaution oder sonstigen Kosten. Nicht mit anderen Rabattcodes kombinierbar. Aufenthalte unter dem üblichen Minimum werden von Xtudy geprüft.",
+  "Hasta 5 noches sin costo de renta por año calendario, para una nueva estancia que empiece después de terminar tu estancia original (ese mismo año o cualquier año posterior), sujetas a disponibilidad. Cuenta el año de entrada de la nueva estancia; una estancia de diciembre a enero usa un solo beneficio. Se renueva cada 1 de enero sin necesidad de otra reserva; las noches no usadas no se acumulan. Un uso por año en una sola reserva: si tu estancia tiene menos de 5 noches no queda remanente; si tiene más, pagas la renta de las noches restantes. Solo cubre renta (no el depósito ni otros cargos). Personal e intransferible, sin devolución en efectivo. No se combina con otros códigos de descuento.",
+  "Up to 5 rent-free nights per calendar year, for a new stay starting after your original stay ends (that same year or any later year), subject to availability. The year of the new stay's move-in date counts; a December–January stay uses a single benefit. It renews every January 1 without needing another booking; unused nights don't carry over. One use per year in a single booking: if your stay is shorter than 5 nights there's no remainder; if longer, you pay rent for the remaining nights. Rent only (not the deposit or other charges). Personal and non-transferable, no cash refund. Can't be combined with other discount codes.",
+  "Jusqu'à 5 nuits sans loyer par année civile, pour un nouveau séjour qui commence après la fin de ton séjour initial (la même année ou n'importe quelle année suivante), selon les disponibilités. C'est l'année d'arrivée du nouveau séjour qui compte ; un séjour de décembre à janvier utilise un seul avantage. Renouvelé chaque 1er janvier sans autre réservation ; les nuits non utilisées ne se cumulent pas. Une utilisation par an dans une seule réservation : si ton séjour fait moins de 5 nuits, il n'y a pas de reste ; s'il est plus long, tu paies le loyer des nuits restantes. Loyer uniquement (ni dépôt ni autres frais). Personnel et non transférable, sans remboursement en espèces. Non cumulable avec d'autres codes de réduction.",
+  "Bis zu 5 mietfreie Nächte pro Kalenderjahr für einen neuen Aufenthalt, der nach dem Ende deines ursprünglichen Aufenthalts beginnt (im selben oder einem späteren Jahr), je nach Verfügbarkeit. Es zählt das Einzugsjahr des neuen Aufenthalts; ein Aufenthalt von Dezember bis Januar nutzt nur einen Vorteil. Erneuert sich jeden 1. Januar ohne weitere Buchung; ungenutzte Nächte verfallen. Eine Nutzung pro Jahr in einer einzigen Buchung: Ist dein Aufenthalt kürzer als 5 Nächte, gibt es keinen Rest; ist er länger, zahlst du die Miete der übrigen Nächte. Nur Miete (keine Kaution oder sonstigen Kosten). Persönlich und nicht übertragbar, keine Barauszahlung. Nicht mit anderen Rabattcodes kombinierbar.",
 ];
 const TICKET_STATUS = {
   available: ["Disponible", "Available", "Disponible", "Verfügbar"],
@@ -3738,10 +3738,17 @@ const TICKET_STATUS = {
 // --- V20 · Tarjeta, VIP y Wallet ---------------------------------------------------------------------------------------
 const VIP_TITLE = ["Un reconocimiento especial para ti", "A special recognition for you", "Une reconnaissance spéciale pour toi", "Eine besondere Anerkennung für dich"];
 const VIP_MESSAGE = [
-  "Ser parte de nuestra lista VIP es para siempre. Disfruta de hasta 5 noches de hospedaje sin costo de renta cada año calendario, sujetas a disponibilidad. Reserva en nuestra página con tu código personal.",
-  "Being on our VIP list is forever. Enjoy up to 5 nights of accommodation with no rent every calendar year, subject to availability. Book on our website with your personal code.",
-  "Faire partie de notre liste VIP, c'est pour toujours. Profite de jusqu'à 5 nuits d'hébergement sans loyer chaque année civile, sous réserve de disponibilité. Réserve sur notre site avec ton code personnel.",
-  "Auf unserer VIP-Liste bist du für immer. Genieße jedes Kalenderjahr bis zu 5 Übernachtungen ohne Miete, je nach Verfügbarkeit. Buche auf unserer Website mit deinem persönlichen Code.",
+  "Nos encantó recibirte y queremos que vuelvas. Como parte de nuestra lista VIP, tienes hasta 5 noches de renta gratis cada año calendario para una nueva estancia, una vez que haya terminado tu estancia original con Xtudy. Tu beneficio se renueva automáticamente cada 1 de enero y está sujeto a disponibilidad.",
+  "We loved having you and we want you back. As part of our VIP list, you get up to 5 rent-free nights every calendar year for a new stay, once your original stay with Xtudy has ended. Your benefit renews automatically every January 1 and is subject to availability.",
+  "Nous avons adoré t'accueillir et nous voulons que tu reviennes. En tant que membre de notre liste VIP, tu as jusqu'à 5 nuits sans loyer chaque année civile pour un nouveau séjour, une fois ton séjour initial chez Xtudy terminé. Ton avantage se renouvelle automatiquement chaque 1er janvier et dépend des disponibilités.",
+  "Wir haben dich gern bei uns gehabt und möchten, dass du wiederkommst. Als Teil unserer VIP-Liste hast du jedes Kalenderjahr bis zu 5 mietfreie Nächte für einen neuen Aufenthalt, sobald dein ursprünglicher Aufenthalt bei Xtudy beendet ist. Dein Vorteil erneuert sich automatisch jeden 1. Januar und hängt von der Verfügbarkeit ab.",
+];
+// Consejo (no garantiza disponibilidad ni limita el beneficio a esos meses).
+const VIP_TIP = [
+  "Tip: enero y julio suelen ofrecer más posibilidades de encontrar espacio entre semestres. Escríbenos con tiempo y revisamos las opciones contigo.",
+  "Tip: January and July usually offer better chances of finding space between semesters. Write to us early and we'll review the options with you.",
+  "Astuce : janvier et juillet offrent souvent plus de possibilités de trouver de la place entre deux semestres. Écris-nous à l'avance et nous verrons les options avec toi.",
+  "Tipp: Januar und Juli bieten zwischen den Semestern meist mehr Chancen auf einen freien Platz. Schreib uns frühzeitig und wir prüfen die Optionen mit dir.",
 ];
 // Si el beneficio ya se usó, venció o se revocó, no se anuncian noches disponibles.
 const VIP_MESSAGE_PLAIN = [
@@ -3923,34 +3930,17 @@ function WalletButtons({ me, account, lang }) {
     setBusy(null);
   };
   const showApple = me.wallet.apple && isApple(), showGoogle = me.wallet.google && !isIOS();
+  // Solo se muestran las opciones que funcionan en este dispositivo (nada en computadoras sin Wallet).
+  if (!showApple && !showGoogle) return null;
   return (
     <div style={{ display: "grid", gap: 8, justifyItems: "center" }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
         {showApple && <button type="button" style={styles.walletBtn} disabled={Boolean(busy)} onClick={() => go("apple")}>{busy === "apple" ? T("Preparando…", "Preparing…", "Préparation…", "Wird vorbereitet…") : T("Agregar a Apple Wallet", "Add to Apple Wallet", "Ajouter à Apple Wallet", "Zu Apple Wallet hinzufügen")}</button>}
         {showGoogle && <button type="button" style={styles.walletBtn} disabled={Boolean(busy)} onClick={() => go("google")}>{busy === "google" ? T("Preparando…", "Preparing…", "Préparation…", "Wird vorbereitet…") : T("Agregar a Google Wallet", "Add to Google Wallet", "Ajouter à Google Wallet", "Zu Google Wallet hinzufügen")}</button>}
       </div>
-      {!showApple && !showGoogle && <p style={{ ...styles.partnerFine, color: "#CFE6F5", textAlign: "center", margin: 0 }}>{T("Para guardarla en Wallet, abre Xtudy Club desde tu teléfono.", "To save it to Wallet, open Xtudy Club on your phone.", "Pour l'enregistrer dans Wallet, ouvre Xtudy Club sur ton téléphone.", "Um sie in Wallet zu speichern, öffne Xtudy Club auf deinem Handy.")}</p>}
+
       {err && <p role="alert" style={{ margin: 0, color: "#FFD5D0", fontSize: 13.5 }}>{err}</p>}
     </div>
-  );
-}
-
-// La tarjeta de MEMBRESÍA: su QR solo confirma que la membresía está vigente (no sabe qué comercio ni qué promoción).
-// Los descuentos usan el QR de cada promoción («Mostrar QR» en el comercio).
-function CardQrSheet({ me, account, lang, levelId, vip, onClose }) {
-  const T = (...a) => tr(lang, ...a);
-  return (
-    <Sheet title={T("Tu tarjeta de membresía", "Your membership card", "Ta carte de membre", "Deine Mitgliedskarte")} onClose={onClose} labelledBy="card-qr-title">
-      {me && me.card ? (
-        <div style={{ display: "grid", gap: 12, justifyItems: "center", textAlign: "center" }}>
-          <div style={{ background: "#fff", padding: 12, borderRadius: 14, border: `1px solid ${colors.line}` }}><QRCode value={me.card.qr} size={220} /></div>
-          <div><div style={{ fontWeight: 700, fontSize: 18 }}>{account.name}</div><div style={styles.partnerFine}>{T(...LEVEL_NAME[levelId])}{vip ? " · Xtudy VIP" : ""} · {me.card.memberId}</div></div>
-          <p style={styles.modalText}>{T("Este QR solo confirma tu membresía. No aplica un descuento por sí solo.", "This QR only confirms your membership. It doesn't apply a discount on its own.", "Ce QR confirme seulement ton adhésion. Il n'applique pas de réduction à lui seul.", "Dieser QR bestätigt nur deine Mitgliedschaft. Er gewährt allein keinen Rabatt.")}</p>
-          <div style={styles.cardHint}><span style={styles.partnerFine}>{T("Para usar un descuento: elige el comercio en tus beneficios y pulsa «Mostrar QR». Ese QR es el de la promoción.", "To use a discount: choose the business in your perks and tap \"Show QR\". That QR is the promotion's.", "Pour utiliser une réduction : choisis le commerce dans tes avantages et appuie sur « Afficher le QR ». Ce QR est celui de la promotion.", "Für einen Rabatt: Wähle das Geschäft in deinen Vorteilen und tippe auf „QR anzeigen“. Das ist der QR des Angebots.")}</span></div>
-          <p style={styles.partnerFine}>{T("Los servicios en línea se usan desde tu perfil, con su código o enlace.", "Online services are used from your profile, with their code or link.", "Les services en ligne s'utilisent depuis ton profil, avec leur code ou lien.", "Online-Dienste nutzt du über dein Profil, mit ihrem Code oder Link.")}</p>
-        </div>
-      ) : <p style={styles.modalText}>{T("Cargando tu tarjeta… Se necesita conexión para mostrarla.", "Loading your card… A connection is needed to show it.", "Chargement de ta carte… Une connexion est nécessaire.", "Deine Karte wird geladen… Dafür ist eine Verbindung nötig.")}</p>}
-    </Sheet>
   );
 }
 
@@ -3958,7 +3948,9 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
   const T = (...a) => tr(lang, ...a);
   const t = me.ticket;
   const thisYear = t && t.years ? t.years[0] : null;
-  const available = Boolean(t && t.vipActive && t.years && t.years.some((y) => y.status === "available"));
+  // No se anuncia disponibilidad si ya se usó, se revocó o todavía no corresponde (estancia original sin terminar).
+  const available = Boolean(t && t.vipActive && !t.notYet && t.years && t.years.some((y) => y.status === "available"));
+  const fmtDay = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString({ es: "es-MX", en: "en-US", fr: "fr-FR", de: "de-DE" }[lang] || "es-MX", { day: "numeric", month: "long", year: "numeric" });
   const [copied, setCopied] = useState(false);
   const [celebrate, setCelebrate] = useState(me.prefs ? me.prefs.celebrate : true);
   const [req, setReq] = useState({ open: false, checkIn: "", checkOut: "", property: "", message: "", state: "idle" });
@@ -3985,6 +3977,12 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
   return (
     <Sheet title={T(...VIP_TITLE)} onClose={onClose} labelledBy="vip-title">
       <p style={styles.modalText}>{T(...(t && t.vipActive ? VIP_MESSAGE : VIP_MESSAGE_PLAIN))}</p>
+      {t && t.vipActive && <p style={{ ...styles.modalText, fontSize: 14, color: colors.muted }}>{T(...VIP_TIP)}</p>}
+      {t && t.vipActive && t.eligibleFrom && (
+        <p style={{ ...styles.modalText, fontSize: 14 }}>{t.notYet
+          ? T(`Podrás usarlo en una nueva estancia que empiece a partir del ${fmtDay(t.eligibleFrom)}, cuando termine tu estancia actual.`, `You can use it on a new stay starting from ${fmtDay(t.eligibleFrom)}, once your current stay ends.`, `Tu pourras l'utiliser pour un nouveau séjour à partir du ${fmtDay(t.eligibleFrom)}, une fois ton séjour actuel terminé.`, `Du kannst ihn für einen neuen Aufenthalt ab dem ${fmtDay(t.eligibleFrom)} nutzen, sobald dein aktueller Aufenthalt endet.`)
+          : T(`Disponible para estancias que empiecen desde el ${fmtDay(t.eligibleFrom)}.`, `Available for stays starting from ${fmtDay(t.eligibleFrom)}.`, `Disponible pour les séjours commençant à partir du ${fmtDay(t.eligibleFrom)}.`, `Verfügbar für Aufenthalte ab dem ${fmtDay(t.eligibleFrom)}.`)}</p>
+      )}
       {t && (
         <section style={styles.vipBenefit}>
           <h4 style={styles.modalH}>{T("Tu beneficio anual · hasta 5 noches sin costo de renta", "Your yearly benefit · up to 5 rent-free nights", "Ton avantage annuel · jusqu'à 5 nuits sans loyer", "Dein jährlicher Vorteil · bis zu 5 mietfreie Nächte")}</h4>
@@ -3996,7 +3994,7 @@ function VipSheet({ me, account, lang, onClose, onPrefs }) {
               </div>
             ))}
           </div>
-          <p style={styles.partnerFine}>{T("El beneficio corresponde al año de tu fecha de entrada y se renueva cada 1 de enero.", "The benefit belongs to the year of your move-in date and renews every January 1.", "L'avantage correspond à l'année de ta date d'arrivée et se renouvelle chaque 1er janvier.", "Der Vorteil gilt für das Jahr deines Einzugsdatums und erneuert sich jeden 1. Januar.")}</p>
+          <p style={styles.partnerFine}>{T("Cada año cuenta por separado: el de la fecha de entrada de tu nueva estancia. Se renueva cada 1 de enero.", "Each year counts separately: the year of your new stay's move-in date. It renews every January 1.", "Chaque année compte séparément : celle de la date d'arrivée de ton nouveau séjour. Renouvelé chaque 1er janvier.", "Jedes Jahr zählt für sich: das Einzugsjahr deines neuen Aufenthalts. Erneuert sich jeden 1. Januar.")}</p>
           {t.vipActive && (
             <>
               <h4 style={styles.modalH}>{T("Tu código personal", "Your personal code", "Ton code personnel", "Dein persönlicher Code")}</h4>
@@ -4166,7 +4164,6 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
   const professional = Boolean(me && me.professional);
   const residentLevel = professional ? "professional" : resident ? "resident" : null;
   const cardTier = !me && account.memberType === "team" ? "team" : team && !residentLevel ? team : residentLevel || "guest";
-  const [qrOpen, setQrOpen] = useState(false);
   const [vipOpen, setVipOpen] = useState(false);
   const [celebration, endCelebrationRaw] = useVipCelebration(me, account);
   const endCelebration = React.useCallback(() => { endCelebrationRaw(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4201,6 +4198,15 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={15} /> {tr(lang, "Salir", "Log out", "Se déconnecter", "Abmelden")}</button>
       </div>
 
+      {/* Orden del perfil: 1) aviso VIP · 2) código de acceso (solo si aplica) · 3) tarjeta · 4) compartir el descuento · 5) beneficios.
+          Lo que no aplica no deja huecos. Sin QR general de membresía: los descuentos usan el QR de cada comercio. */}
+      {gold && (
+        <div style={styles.vipLine}>
+          <span>✦ {tr(lang, "Estás en nuestra lista VIP.", "You're on our VIP list.", "Tu fais partie de notre liste VIP.", "Du bist auf unserer VIP-Liste.")}</span>
+          <button type="button" style={styles.vipLink} onClick={() => setVipOpen(true)}>{tr(lang, "¿Qué significa?", "What does it mean?", "Qu'est-ce que ça veut dire ?", "Was bedeutet das?")}</button>
+        </div>
+      )}
+      {me && <AccessPanel me={me} account={account} lang={lang} onDone={refresh} />}
       {loadingMe ? <CardSkeleton lang={lang} /> : !me ? <NeutralCard account={account} lang={lang} /> : (
         <div className={celebration && celebration.flip ? "xc-vip-reveal" : undefined}>
           <MemberCard account={account} lang={lang} levelId={cardTier} vip={gold} teamToo={residentLevel ? team : null} />
@@ -4210,24 +4216,11 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
         <p role="alert" style={styles.loadNotice}>{tr(lang, "No pudimos confirmar tu nivel en este momento. Mostramos solo los beneficios para todos.", "We couldn't confirm your tier right now. We're only showing benefits open to everyone.", "Impossible de confirmer ton niveau pour le moment. Nous n'affichons que les avantages ouverts à tous.", "Deine Stufe konnte gerade nicht bestätigt werden. Wir zeigen nur Vorteile für alle.")}{" "}
           <button type="button" style={styles.vipLink} onClick={refresh}>{tr(lang, "Reintentar", "Retry", "Réessayer", "Erneut versuchen")}</button></p>
       )}
-      {gold && (
-        <div style={styles.vipLine}>
-          <span>✦ {tr(lang, "Estás en nuestra lista VIP.", "You're on our VIP list.", "Tu fais partie de notre liste VIP.", "Du bist auf unserer VIP-Liste.")}</span>
-          <button type="button" style={styles.vipLink} onClick={() => setVipOpen(true)}>{tr(lang, "¿Qué significa?", "What does it mean?", "Qu'est-ce que ça veut dire ?", "Was bedeutet das?")}</button>
-        </div>
-      )}
       {celebration && !celebration.staticOnly && <VipCelebration special={celebration.special} onDone={endCelebration} />}
       {celebration && celebration.special && !celebration.done && (
         <div role="status" style={styles.vipToast}>✦ {tr(lang, "¡Bienvenido a la lista VIP de Xtudy!", "Welcome to the Xtudy VIP list!", "Bienvenue dans la liste VIP de Xtudy !", "Willkommen auf der VIP-Liste von Xtudy!")}</div>
       )}
-      <div style={styles.cardActions}>
-        <button type="button" style={styles.cardQrBtn} onClick={() => setQrOpen(true)}><QrCode size={16} /> {tr(lang, "Mi tarjeta de membresía", "My membership card", "Ma carte de membre", "Meine Mitgliedskarte")}</button>
-        <WalletButtons me={me} account={account} lang={lang} />
-      </div>
-      {/* Debajo de la tarjeta y del mensaje VIP: invitación compacta para compartir el descuento y, aparte y plegado, el acceso secundario con código. */}
       {me && me.referral && <ReferralStrip referral={me.referral} lang={lang} />}
-      {me && <AccessPanel me={me} account={account} lang={lang} onDone={refresh} />}
-      {qrOpen && <CardQrSheet me={me} account={account} lang={lang} levelId={cardTier} vip={gold} onClose={() => setQrOpen(false)} />}
       {vipOpen && me && <VipSheet me={me} account={account} lang={lang} onClose={() => setVipOpen(false)} onPrefs={refresh} />}
 
       {SHOW_PLANS && account.tier === "guest" && (
@@ -4284,6 +4277,8 @@ function Dashboard({ account, restaurants, onChangeTier, onLogout }) {
           </div>
         </>
       )}
+      {/* Acceso secundario: tarjeta en Wallet (solo si funciona en este dispositivo; los pases emitidos se conservan). */}
+      {me && <div style={{ marginTop: 28 }}><WalletButtons me={me} account={account} lang={lang} /></div>}
     </div>
   );
 }
@@ -4500,7 +4495,6 @@ const styles = {
   vipToast: { position: "fixed", left: "50%", top: 18, transform: "translateX(-50%)", zIndex: 61, background: "#0B2A45", color: "#F4EBD8", border: "1px solid rgba(217,192,142,0.7)", borderRadius: 999, padding: "10px 18px", fontSize: 14.5, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)", pointerEvents: "none", maxWidth: "calc(100vw - 32px)", textAlign: "center" },
   vipBenefit: { display: "grid", gap: 8, background: "#FBF7EE", border: "1px solid #E6D8B8", borderRadius: 12, padding: 12 },
   cardActions: { display: "grid", gap: 10, justifyItems: "center", margin: "4px auto 8px", maxWidth: 420 },
-  cardQrBtn: { display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: colors.navy, border: "none", borderRadius: 999, minHeight: 44, padding: "10px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer" },
   walletBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#000", color: "#fff", border: "1px solid #3a3a3a", borderRadius: 10, minHeight: 44, padding: "10px 16px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
   cardHint: { background: "#F2F6F9", borderRadius: 10, padding: "8px 12px", display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap", justifyContent: "center" },
   benefitCard: { background: colors.card, color: colors.ink, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 8, minHeight: 236 },
